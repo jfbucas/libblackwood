@@ -18,3 +18,5 @@ It is written in Python3 and generates a C external library.
 
 * run just the library as one thread
   * ```python3 libblackwood.py```
+
+    ![Demo libblackwood](https://raw.githubusercontent.com/jfbucas/libblackwood/main/img/libblackwood.gif)
