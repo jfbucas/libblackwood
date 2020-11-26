@@ -1,0 +1,90 @@
+#!/bin/bash
+
+## TARGET
+## the score target that the program is trying to reach
+## 
+## Values: 469 | 470 | ...
+## Default: 470
+##
+#export TARGET=470
+
+
+## DEBUG
+## activate DEBUG information
+## switch compilation options from Optimization to Normal 
+##
+## Values: None | 1 | 2 | 3 | ...
+## Default: None 
+##
+#export DEBUG=
+
+
+## CPUS | CORE | CORES
+## specify the number of threads to start
+##
+## Values : None | 1 | 2 | ...
+## Default: None = all the cores available
+##
+#export CORES=
+
+
+## NICE
+## specify the kernel scheduling priority
+##
+## Values : None | -19 | ... | 19
+## Default: 19 = least favorable to the process
+##
+#export NICE=19
+
+
+## SEED
+## the random seed to use to shuffle the pieces
+##
+## Values: integer
+## Default: random
+##
+#export SEED=0
+
+
+## REPORT_URL
+## address to report to when a solution is found
+##
+## Values: URL
+##
+#export REPORT_URL="https://server.fqdn.xyz/report.php
+
+"https://e2.bucas.name/report_solution.php"
+
+
+## HOSTNAME
+## specify the hostname instead of the machine hostname
+## can be used so that two machines running off NFS don't use the same generated files
+## 
+## Values: string
+##
+#export HOSTNAME="example"
+
+
+## DESKTOP
+## decide if the program only runs between certain hours (see thread_lca.py)
+##
+## Values: None | 1
+## Default: None
+##
+#export DESKTOP=
+
+
+## ASM
+## ask the compiler to keep the assembly generated file
+##
+## Values: None | 1
+## Default: None
+##
+#export ASM=
+
+
+#
+#   x-[ Execution ]-x
+#
+
+./main.py
