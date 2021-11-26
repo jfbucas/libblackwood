@@ -53,8 +53,6 @@
 ##
 #export REPORT_URL="https://server.fqdn.xyz/report.php
 
-"https://e2.bucas.name/report_solution.php"
-
 
 ## HOSTNAME
 ## specify the hostname instead of the machine hostname
