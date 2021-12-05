@@ -27,6 +27,7 @@ class LibArrays( external_libs.External_Libs ):
 
 		self.puzzle = puzzle
 
+
 		# Params for External_Libs
 		self.EXTRA_NAME = extra_name
 		self.GCC_EXTRA_PARAMS = ""
@@ -56,6 +57,10 @@ class LibArrays( external_libs.External_Libs ):
 		output = []
 
 		# ---------------------------------
+		if not only_signature:
+			output.append( (0 , "#define LAST "+format(len(self.puzzle.master_lists_of_rotated_pieces)-1, '6')) )
+
+		# ---------------------------------
 		if only_signature:
 			output.append( (0 , "uint64 seed;") )
 		else:
@@ -69,9 +74,9 @@ class LibArrays( external_libs.External_Libs ):
 			for name,array in self.puzzle.master_index.items():
 				output.append( (0 , "uint64 master_index_"+name+"[] = {") )
 			
-				l = len([x for x in self.chunks(array, 32)])
-				for x in self.chunks(array, 32):
-					output.append( (2 , ", ".join([format(n, '6') if n != None else "0xffff" for n in x]) + ( "," if l!=0 else "" )) )
+				l = len([x for x in self.chunks(array, 1<<self.EDGE_SHIFT_LEFT)])
+				for x in self.chunks(array, 1<<self.EDGE_SHIFT_LEFT):
+					output.append( (2 , ", ".join([format(n, '6') if n != None else "  LAST" for n in x]) + ( "," if l!=0 else "" )) )
 					l -= 1
 
 				output.append( (2 , "};") )
@@ -82,9 +87,11 @@ class LibArrays( external_libs.External_Libs ):
 		if only_signature:
 			output.append( (0 , "p_rotated_piece master_lists_of_rotated_pieces[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
 		else:
+			
+			output.append( (0 , "#define MARP master_all_rotated_pieces") )
 			output.append( (0 , "p_rotated_piece master_lists_of_rotated_pieces[] = {") )
-			for x in self.chunks(self.puzzle.master_lists_of_rotated_pieces, 8):
-				output.append( (2 , ", ".join(["&(master_all_rotated_pieces["+format(n, '6')+"])" if n != None else format("NULL", '36') for n in x]) + ( "," if len(x)==8 else "" )) )
+			for x in self.chunks(self.puzzle.master_lists_of_rotated_pieces, 16):
+				output.append( (2 , ", ".join(["&(MARP["+format(n, '4')+"])" if n != None else format("NULL", '13') for n in x]) + ( "," if len(x)==16 else "" )) )
 
 			output.append( (2 , "};") )
 			output.append( (0 , "") )
@@ -97,9 +104,11 @@ class LibArrays( external_libs.External_Libs ):
 		else:
 			output.append( (0 , "t_rotated_piece master_all_rotated_pieces[] = {") )
 			l = sorted(self.puzzle.master_all_rotated_pieces.keys())
+			i = 0
 			for y in l:
 				x = self.puzzle.master_all_rotated_pieces[y]
-				output.append( (2, "{ .p ="+format(x.p, "3")+ ", .u ="+format(x.u, "3")+ ",  .r ="+format(x.r, "3") + ", .heuristic_side_and_break_count =("+format(x.heuristic_side_count, "3") + "<< 1) +"+format(x.break_count, "3")+ "  }" + (", " if str(x) != l[-1] else "") + " // " + y) )
+				output.append( (2, "{ .p ="+format(x.p, "3")+ ", .r ="+format(x.u, "3")+ ",  .d ="+format(x.r, "3") + ", .heuristic_side_and_conflicts_count =("+format(x.heuristic_side_count, "3") + "<< 1) +"+format(x.conflicts_count, "3")+ "  }" + (", " if str(x) != l[-1] else "") + " // " + y + "  #" +str(i)) )
+				i += 1
 
 			output.append( (2 , "};") )
 			output.append( (0 , "") )
@@ -114,7 +123,7 @@ class LibArrays( external_libs.External_Libs ):
 			output.append( (0 , "t_piece pieces[] = {") )
 			x = 0
 			for p in self.puzzle.pieces:
-				output.append( (2, "{ .u = "+format(p[0], "2")+ ", .r = "+format(p[1], "2")+ ", .d = "+format(p[2], "2") +", .l = "+format(p[3], "2") + " }" + (", " if x < self.puzzle.board_wh-1 else "") + " // " + str(x)) )
+				output.append( (2, "{ .u = "+format(p[0], "2")+ ", .r = "+format(p[1], "2")+ ", .d = "+format(p[2], "2") +", .l = "+format(p[3], "2") + " }" + (", " if x < self.puzzle.board_wh-1 else "") + " // #" + str(x)) )
 				x += 1
 			output.append( (2 , "};") )
 			output.append( (0 , "") )
@@ -122,25 +131,36 @@ class LibArrays( external_libs.External_Libs ):
 
 		# ---------------------
 		if only_signature:
-			output.append( (0 , "uint8 spaces_board_sequence[WH];") )
+			output.append( (0 , "uint8 spaces_sequence[WH];") )
 		else:
 
-			output.append( (0 , "uint8 spaces_board_sequence[] = {") )
+			output.append( (0 , "uint8 spaces_sequence[] = {") )
 			for y in range(self.puzzle.board_h):
-				output.append( (2 , ",".join([format(n, '3') for n in self.puzzle.spaces_board_sequence[y*self.puzzle.board_w:(y+1)*self.puzzle.board_w]]) + ( "," if y<(self.puzzle.board_h-1) else "" )) )
+				output.append( (2 , ",".join([format(n, '3') for n in self.puzzle.scenario.spaces_sequence[y*self.puzzle.board_w:(y+1)*self.puzzle.board_w]]) + ( "," if y<(self.puzzle.board_h-1) else "" )) )
 			output.append( (2 , "};") )
 			output.append( (0 , "") )
 			
 		# ---------------------
 		if only_signature:
-			output.append( (0 , "uint8 spaces_patterns_sequence[WH];") )
+			output.append( (0 , "uint64 heuristic_patterns_count[WH];") )
 		else:
 
-			output.append( (0 , "uint8 spaces_patterns_sequence[] = {") )
+			output.append( (0 , "uint64 heuristic_patterns_count[] = {") )
 			for y in range(self.puzzle.board_h):
-				output.append( (2 , ",".join([format(n, '3') for n in self.puzzle.spaces_patterns_sequence[y*self.puzzle.board_w:(y+1)*self.puzzle.board_w]]) + ( "," if y<(self.puzzle.board_h-1) else "" )) )
+				output.append( (2 , ",".join([format(n, '3') for n in self.puzzle.scenario.heuristic_patterns_count[y*self.puzzle.board_w:(y+1)*self.puzzle.board_w]]) + ( "," if y<(self.puzzle.board_h-1) else "" )) )
 			output.append( (2 , "};") )
 			output.append( (0 , "") )
+			
+		# ---------------------
+#		if only_signature:
+#			output.append( (0 , "uint8 spaces_patterns_sequence[WH];") )
+#		else:
+#
+#			output.append( (0 , "uint8 spaces_patterns_sequence[] = {") )
+#			for y in range(self.puzzle.board_h):
+#				output.append( (2 , ",".join([format(n, '3') for n in self.puzzle.spaces_patterns_sequence[y*self.puzzle.board_w:(y+1)*self.puzzle.board_w]]) + ( "," if y<(self.puzzle.board_h-1) else "" )) )
+#			output.append( (2 , "};") )
+#			output.append( (0 , "") )
 			
 
 		# ---------------------
@@ -154,6 +174,7 @@ class LibArrays( external_libs.External_Libs ):
 			output.append( (2 , "};") )
 			output.append( (0 , "") )
 			
+
 
 		return output
 
@@ -175,9 +196,9 @@ class LibArrays( external_libs.External_Libs ):
 			( 0, "// Rotated Piece" ),
 			( 0, "struct st_rotated_piece {" ),
 			( 1,	"uint8 p;" ),
-			( 1,	"uint8 u;" ),
 			( 1,	"uint8 r;" ),
-			( 1,	"uint8 heuristic_side_and_break_count;" ),
+			( 1,	"uint8 d;" ),
+			( 1,	"uint8 heuristic_side_and_conflicts_count;" ),
 			( 0, "};" ),
 			( 0, "typedef struct st_rotated_piece t_rotated_piece;" ),
 			( 0, "typedef struct st_rotated_piece * p_rotated_piece;" ),

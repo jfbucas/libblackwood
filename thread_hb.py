@@ -27,9 +27,9 @@ class HeartBeat_Thread(threading.Thread):
 		self.stop_hb_thread = False
 
 	def run(self):
-		while not self.stop_hb_thread and not self.libblackwood.LibExt.getTTF(self.libblackwood.current_blackwood):
-			self.libblackwood.LibExt.incHB(self.libblackwood.current_blackwood)
-			self.libblackwood.LibExt.setCheckCommands(self.libblackwood.current_blackwood, 1)
+		while not self.stop_hb_thread and not self.libblackwood.LibExt.getTTF(self.libblackwood.cb):
+			self.libblackwood.LibExt.incHB(self.libblackwood.cb)
+			self.libblackwood.LibExt.setCheckCommands(self.libblackwood.cb, 1)
 			time.sleep(self.period)
 
 

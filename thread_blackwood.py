@@ -32,7 +32,7 @@ class Blackwood_Thread( threading.Thread ):
 		self.puzzle = p
 		self.number = number
 
-		self.blackwood.copy_new_arrays_to_current_blackwood()
+		self.blackwood.copy_new_arrays_to_cb()
 
 	def run(self):
 		# Start the solution thread
@@ -43,7 +43,7 @@ class Blackwood_Thread( threading.Thread ):
 		myLCA = thread_lca.Leave_CPU_Alone_Thread( self.blackwood, period=5, desktop=self.puzzle.DESKTOP )
 		myLCA.start()
 
-		current_blackwood = self.blackwood.current_blackwood
+		cb = self.blackwood.cb
 
 		thread_output_filename = ctypes.c_char_p(("generated/"+self.puzzle.HOSTNAME+"/progress_thread_"+'{:0>4d}'.format(self.number)).encode('utf-8'))
 
@@ -53,10 +53,10 @@ class Blackwood_Thread( threading.Thread ):
 		for pname in self.blackwood.getParametersNamesFromSignature(l):
 			args.append( loc[ pname ] )
 
-		while not self.blackwood.LibExt.getTTF( self.blackwood.current_blackwood ):
+		while not self.blackwood.LibExt.getTTF( self.blackwood.cb ):
 			self.blackwood.LibExtWrapper( self.blackwood.getFunctionNameFromSignature(l), args, timeit=True )
-			if not self.blackwood.LibExt.getTTF( self.blackwood.current_blackwood ):
-				self.blackwood.copy_new_arrays_to_current_blackwood()
+			if not self.blackwood.LibExt.getTTF( self.blackwood.cb ):
+				self.blackwood.copy_new_arrays_to_cb()
 
 		myLCA.stop_lca_thread = True	
 		myWFS.stop_wfs_thread = True	

@@ -52,9 +52,9 @@ class Wait_For_Solution_Thread(threading.Thread):
 	def run(self):
 
 
-		while not self.stop_wfs_thread and not self.libblackwood.LibExt.getTTF(self.libblackwood.current_blackwood):
-			if self.libblackwood.LibExt.getWFS(self.libblackwood.current_blackwood) != 0:
-				self.libblackwood.LibExt.getSolutionURL( self.libblackwood.current_blackwood, self.solution_url )
+		while not self.stop_wfs_thread and not self.libblackwood.LibExt.getTTF(self.libblackwood.cb):
+			if self.libblackwood.LibExt.getWFS(self.libblackwood.cb) != 0:
+				self.libblackwood.LibExt.getSolutionURL( self.libblackwood.cb, self.solution_url )
 				if self.puzzle.DEBUG > 3:
 					print(" Now DO SOMETHING with the solution ", self.solution_url.value.decode("utf-8")  )
 

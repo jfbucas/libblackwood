@@ -45,7 +45,7 @@ def standalone_blackwood_threads_command( commands ):
 def standalone_blackwood_threads_getTTF():
 	result = 0
 	for gt in blackwood_threads:
-		result += gt.blackwood.LibExt.getTTF( gt.blackwood.current_blackwood )
+		result += gt.blackwood.LibExt.getTTF( gt.blackwood.cb )
 	return result
 
 

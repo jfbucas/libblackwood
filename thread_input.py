@@ -42,7 +42,7 @@ class Input_Thread(threading.Thread):
 						self.callback( [ command ] )
 			else:
 
-				while not self.stop_input_thread and not self.libblackwood.LibExt.getTTF(self.libblackwood.current_blackwood):
+				while not self.stop_input_thread and not self.libblackwood.LibExt.getTTF(self.libblackwood.cb):
 					#print("Enter commands:")
 					i, o, e = select.select( [sys.stdin], [], [], self.period )
 					if (i):
