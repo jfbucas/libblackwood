@@ -425,6 +425,8 @@ class External_Libs( defs.Defs ):
 		if self.puzzle != None:
 			header.extend( [ 
 				(0, "#define WH " + str(self.puzzle.board_wh)),
+				(0, "#define W " + str(self.puzzle.board_w)),
+				(0, "#define H " + str(self.puzzle.board_h)),
 				(0, '' ),
 			])
 

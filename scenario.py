@@ -11,8 +11,8 @@ import defs
 
 HEURISTIC_SIDES = {
 		469: [ 17, 2, 18 ],
-		470: [ 13, 16, 10 ],
-		471: [ 10, 13, 16 ],
+		470: [ 9, 12, 15 ],
+		471: [ 9, 12, 15 ],
 		}
 
 HEURISTIC_SIDES_MAX_INDEX = {
@@ -24,7 +24,7 @@ HEURISTIC_SIDES_MAX_INDEX = {
 CONFLICT_INDEXES_ALLOWED = {
 		469: [ 201, 206, 211, 216, 221, 225, 229, 233, 237, 239, 241, 256 ],
 		470: [ 197, 203, 210, 216, 221, 225, 229, 233, 236, 238, 256 ],
-		471: [ 201, 206, 211, 216, 221, 225, 229, 233, 237, 239 ],
+		471: [ 206, 211, 216, 221, 225, 229, 233, 237, 239, 256 ],
 		}
 
 
@@ -46,6 +46,7 @@ class Scenario( defs.Defs ):
 		self.heuristic_patterns_max_index = 0
 		self.heuristic_patterns_count = []
 		self.conflicts_indexes_allowed = None
+		self.spaces_order = []
 		self.spaces_sequence = []
 
 
@@ -117,7 +118,7 @@ class Scenario( defs.Defs ):
 			self.info( " * Preparing sequences..." )
 
 		if self.name in [ "JB469", "JB470", "JB471", "default" ]:
-			self.spaces_sequence = [
+			self.spaces_order = [
 				  0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15,  
 				 16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,  27,  28,  29,  30,  31,  
 				 32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  
@@ -136,11 +137,14 @@ class Scenario( defs.Defs ):
 				196, 197, 198, 199, 200, 205, 210, 215, 220, 225, 230, 235, 243, 249, 254, 255,
 				]
 
+		self.spaces_sequence = []
+		for depth in range(self.puzzle.board_wh):
+			self.spaces_sequence.append( self.spaces_order.index(depth) )
 
 		if self.DEBUG_STATIC > 0:
 			tmp = [ " " ] * self.puzzle.board_wh
 			for depth in range(self.puzzle.board_wh):
-				tmp[ self.spaces_sequence ] = "X"
+				tmp[ self.spaces_sequence[ depth ] ] = "X"
 				print("---[ Sequence ",depth, "]---")
 				self.printArray(tmp, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
 			
