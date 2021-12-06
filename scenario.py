@@ -9,8 +9,6 @@ import defs
 
 # General configuration for Backtrack and JBlackwood algorithm
 
-DEFAULT_SCORE_TARGET = 470
-
 HEURISTIC_SIDES = {
 		469: [ 17, 2, 18 ],
 		470: [ 13, 16, 10 ],
@@ -34,11 +32,13 @@ CONFLICT_INDEXES_ALLOWED = {
 class Scenario( defs.Defs ):
 	"""Definitions for Scenarios"""
 
-	def __init__( self, puzzle, name="default" ):
+	def __init__( self, puzzle, name="JB470" ):
 
 		self.puzzle = puzzle
 		self.name = name
 
+		if self.name not in [ "JB469", "JB470", "JB471" ]:
+			self.name = "JB470"
 
 		self.seed = 0
 		self.score_target = 0
@@ -58,13 +58,13 @@ class Scenario( defs.Defs ):
 
 
 		if self.name in [ "JB469" ]:
-			self.score_target              = 469
-		elif self.name in [ "JB470", "default" ]:
-			self.score_target              = 470
+			self.score_target     = 469
+		elif self.name in [ "JB470" ]:
+			self.score_target     = 470
 		elif self.name in [ "JB471" ]:
-			self.score_target              = 471
+			self.score_target     = 471
 
-		if self.name in [ "JB469", "JB470", "JB471", "default" ]:
+		if self.name in [ "JB469", "JB470", "JB471" ]:
 			self.heuristic_patterns           = HEURISTIC_SIDES[ self.score_target ]
 			self.heuristic_patterns_max_index = HEURISTIC_SIDES_MAX_INDEX[ self.score_target ]
 			self.conflicts_indexes_allowed    = CONFLICT_INDEXES_ALLOWED[ self.score_target ]
@@ -179,13 +179,13 @@ class Scenario( defs.Defs ):
 			if x in [ 0, W ]:
 				master_piece_name = "corner"
 			else:
-				master_piece_name = "border_d"
+				master_piece_name = "border_u"
 
 		elif y == H:
 			if x in [ 0, W ]:
 				master_piece_name = "corner"
 			else:
-				master_piece_name = "border_u" + conflicts
+				master_piece_name = "border_d" + conflicts
 		    
 		else:
 			if x == 0:

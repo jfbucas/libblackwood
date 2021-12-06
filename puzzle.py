@@ -151,7 +151,7 @@ class Puzzle( defs.Defs ):
 		if os.environ.get('SCENARIO') != None:
 			self.scenario = scenario.Scenario(self, os.environ.get('SCENARIO'))
 		else:
-			self.scenario = scenario.Scenario(self, "default")
+			self.scenario = scenario.Scenario(self, "")
 
 		if self.DEBUG > 0:
 			self.info(" * Using scenario : "+self.scenario.name )
@@ -309,11 +309,9 @@ class Puzzle( defs.Defs ):
 
 		rotatedPieces = []
 
-		colors_border = list(self.static_colors_border_count)
+		colors_border = [0] + list(self.static_colors_border_count)
 		colors_center = list(self.static_colors_center_count)
-		colors = sorted([0] + colors_border + colors_center)
-		
-
+		colors = sorted(colors_border + colors_center)
 		
 		for left in colors:
 			for up in colors:
@@ -333,7 +331,7 @@ class Puzzle( defs.Defs ):
 						if piece.u in colors_border:
 							side_conflicts += 1
 
-					if (rotation_conflicts == 0) or \
+					if  (rotation_conflicts == 0) or \
 					   ((rotation_conflicts == 1) and allow_conflicts):
 
 						if side_conflicts == 0:
@@ -461,6 +459,7 @@ class Puzzle( defs.Defs ):
 
 
 		master_index[ "corner"             ] = self.list_rotated_pieces_to_array(corner_pieces_rotated)
+		master_index[ "border_u"           ] = self.list_rotated_pieces_to_array(border_u_pieces_rotated)
 		master_index[ "border_u_conflicts" ] = self.list_rotated_pieces_to_array(border_u_pieces_rotated_conflicts)
 		master_index[ "border_r"           ] = self.list_rotated_pieces_to_array(border_r_pieces_rotated)
 		master_index[ "border_r_conflicts" ] = self.list_rotated_pieces_to_array(border_r_pieces_rotated_conflicts)
@@ -531,9 +530,9 @@ class Puzzle( defs.Defs ):
 	# ----- Get how the patterns are relating to each other
 	def initPatternsRelations(self):
 
-		colors_border = list(self.static_colors_border_count)
+		colors_border = [0]+ list(self.static_colors_border_count)
 		colors_center = list(self.static_colors_center_count)
-		colors = sorted([0] + colors_border + colors_center)
+		colors = sorted(colors_border + colors_center)
 
 		relations = [ 0 ] * (len(colors) * len(colors))
 

@@ -930,6 +930,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			(1, "cb->max_depth_seen = 0;"),
 			(1, "cb->heartbeat_limit = heartbeat_time_bonus[ 0 ];"),
 			(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT;" if self.DEBUG > 0 else ""),
+			(1, "cb->commands = SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT;" if self.DEBUG > 3 else ""),
 			(1, "cb->commands = SHOW_HEARTBEAT;" if self.DEBUG == 0 else ""),
 			(1, 'for(i=0;i<WH;i++) cb->board[i] = NULL;' ),
 			(1, 'for(i=0;i<WH;i++) cb->depth_nodes_count[i] = 0;' ),
@@ -1037,7 +1038,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			uSide = "0" if space < W          else "board["+sspace+"-"+str(W)+"]->d";
 			rSide = "0" if (space+1) % W != 0 else "board["+sspace+"+1]->l";
 			dSide = "0" if space > WH-W       else "board["+sspace+"+"+str(W)+"]->u";
-			lSide = "0" if space % W > 0      else "board["+sspace+"-1]->r";
+			lSide = "0" if space % W == 0     else "board["+sspace+"-1]->r";
 
 			output.append( (2, "piece_index_to_try_next["+d+"] = cb->master_index_"+index_piece_name+"[ ("+lSide+" << EDGE_SHIFT_LEFT) + "+uSide+" ];" ) )
 			output.append( (2, "") )
@@ -1049,7 +1050,7 @@ class LibBlackwood( external_libs.External_Libs ):
 
 			output.append( (2, 'depth'+d+"_backtrack:" ) )
 	
-			#output.append( (2, 'DEBUG_PRINT(("'+" " * depth+' Trying index : %d\\n", piece_index_to_try_next['+d+'] ]))' ))
+			output.append( (2, 'DEBUG_PRINT(("'+" "*depth+' Space '+sspace+' - trying index : %d %d %d\\n", piece_index_to_try_next['+d+'], '+lSide+', '+uSide+' ))'  if self.DEBUG > 2 else "" ))
 			output.append( (2, "while (cb->"+master_lists_of_rotated_pieces+"[ piece_index_to_try_next["+d+"] ] != NULL) {"))
 			
 			

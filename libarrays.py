@@ -107,7 +107,7 @@ class LibArrays( external_libs.External_Libs ):
 			i = 0
 			for y in l:
 				x = self.puzzle.master_all_rotated_pieces[y]
-				output.append( (2, "{ .p ="+format(x.p, "3")+ ", .r ="+format(x.u, "3")+ ",  .d ="+format(x.r, "3") + ", .heuristic_side_and_conflicts_count =("+format(x.heuristic_side_count, "3") + "<< 1) +"+format(x.conflicts_count, "3")+ "  }" + (", " if str(x) != l[-1] else "") + " // " + y + "  #" +str(i)) )
+				output.append( (2, "{ .p ="+format(x.p, "3")+ ", .r ="+format(x.r, "3")+ ",  .d ="+format(x.d, "3") + ", .heuristic_side_and_conflicts_count =("+format(x.heuristic_side_count, "3") + "<< 1) +"+format(x.conflicts_count, "3")+ "  }" + (", " if str(x) != l[-1] else "") + " // " + y + "  #" +str(i)) )
 				i += 1
 
 			output.append( (2 , "};") )
@@ -172,6 +172,19 @@ class LibArrays( external_libs.External_Libs ):
 			for y in range(self.puzzle.board_h):
 				output.append( (2 , ",".join([format(n, '3') for n in [ int(2*pow(3, (x+y*self.puzzle.board_w)-250)*60) if (x+y*self.puzzle.board_w)>250 else 0 if x+y>0 else 60*45 for x in range(self.puzzle.board_w)]]) + ( "," if y<(self.puzzle.board_h-1) else "" )) )
 			output.append( (2 , "};") )
+			output.append( (0 , "") )
+			
+
+		# ---------------------
+		if not only_signature:
+
+			output.append( (0 , "/* Get Index Piece Name") )
+			for y in range(self.puzzle.board_h):
+				l = "// "
+				for x in range(self.puzzle.board_w):
+					l += format(self.puzzle.scenario.get_index_piece_name(x+y*self.puzzle.board_w), "18")
+				output.append( (0 , l) )
+			output.append( (0 , "*/") )
 			output.append( (0 , "") )
 			
 
