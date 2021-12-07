@@ -12,7 +12,7 @@ import signal
 # Local Libs
 import thread_hb
 import thread_lca
-import thread_wfs
+import thread_wfn
 import thread_input
 import external_libs
 
@@ -65,10 +65,12 @@ class LibBlackwood( external_libs.External_Libs ):
 			[ "Time to finish",		"time_to_finish",		"TTF" ],
 			[ "Leave CPU alone",		"leave_cpu_alone",		"LCA" ],
 			[ "Pause",			"pause",			"Pause" ],
-			[ "Wait for Solution",		"wait_for_solution",		"WFS" ],
+			[ "Wait for Notification",	"wait_for_notification",	"WFN" ],
 			[ "Time Heartbeat",		"heartbeat",			"HB" ],
+			[ "Max number of heartbeats",	"heartbeat_limit", 		"HBLimit" ],
 			[ "Check for Commands",		"check_commands",		"CheckCommands" ],
 			[ "Commands for Interactivity",	"commands",			"Commands" ],
+			[ "Max Depth Seen",		"max_depth_seen",		"MaxDepthSeen" ],
 		]
 
 	def __init__( self, puzzle, extra_name="" ):
@@ -161,17 +163,26 @@ class LibBlackwood( external_libs.External_Libs ):
 
 			elif command in [ "p", "pause", "lca" ]:
 				self.LibExt.togglePause( self.cb, 1 )
-			elif command in [ "w", "wfs" ]:
-				self.LibExt.setWFS( self.cb, 1 )
+			elif command in [ "w", "wfn" ]:
+				self.LibExt.setWFN( self.cb, 1 )
 			elif command in [ "q", "quit", "exit" ]:
 				self.LibExt.setTTF( self.cb, 1 )
 
 			elif command in [ "h", "help", "?" ]:
 				print(self.H1_OPEN+"List of commands"+self.H1_CLOSE)
-				print(" > q|quit")
-				print(" > p|pause")
-				print(" > n|next")
-				print(" > s|save")
+				print(" > 0  | reset heartbeat")
+				print(" > hb | one heartbeat")
+				print(" > c  | cls")
+				print(" > d  | nodes count")
+				print(" > z  | zero nodes count")
+				print(" > b  | show best board")
+				print(" > m  | show max depth")
+				print(" > s  | save best board")
+				print(" > n  | next")
+				print(" > q  | quit")
+				print(" > p  | pause")
+				print(" > n  | next")
+				print(" > s  | save")
 			else:
 				command_not_found = True
 
@@ -306,12 +317,6 @@ class LibBlackwood( external_libs.External_Libs ):
 				(0, "" ),
 				(1, "// Counters on each node" ),
 				(1, "uint64 depth_nodes_count[ WH ];"),
-				(0, "" ),
-				(1, "// The deepest roots of the search tree" ),
-				(1, "uint64 max_depth_seen;"),
-				(0, "" ),
-				(1, "// Maximum number of heartbeats before death of the search tree" ),
-				(1, "uint64	heartbeat_limit;"),
 				(0, "" ),
 				(0, "" ),
 				(1, "// ----- Flags -------" ),
@@ -467,7 +472,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			
 		return output
 
-	# ----- Generate the solution into a string for WFS
+	# ----- Generate the solution into a string for WFN
 	def gen_getSolutionURL_function( self, only_signature=False ):
 
 		output = [ 
@@ -684,7 +689,8 @@ class LibBlackwood( external_libs.External_Libs ):
 		pf_str = ""
 		pf_args = ""
 
-		pf_str += "?puzzle="+self.puzzle.getFileFriendlyName(self.puzzle.name)
+		pf_str += "https://e2.bucas.name/"
+		pf_str += "#puzzle="+self.puzzle.getFileFriendlyName(self.puzzle.name)
 		pf_str += "&board_w="+str(self.puzzle.board_w)
 		pf_str += "&board_h="+str(self.puzzle.board_h)
 
@@ -784,7 +790,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, prefix+'printf('), 
 				(2, "url," if prefix == "s" else ""), 
 				(2, "f," if prefix == "f" else ""), 
-				(2, '"'+pf_str+'\\n",'), 
+				(2, '"'+pf_str+('\\n' if prefix != "s" else "")+'",'), 
 				(2, pf_args), 
 				(2, ');'), 
 				(1, 'fflush(stdout);' if prefix == "" else ""), 
@@ -945,6 +951,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			(1, "cb->max_depth_seen = 0;"),
 			(1, "cb->heartbeat_limit = heartbeat_time_bonus[ 0 ];"),
 			(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT;" if self.DEBUG > 0 else ""),
+			(1, "cb->commands = 0;" if self.DEBUG > 0 else ""),
 			#(1, "cb->commands = SHOW_MAX_DEPTH_SEEN | ZERO_DEPTH_NODES_COUNT;" if self.DEBUG > 1 else ""),
 			(1, "cb->commands = SHOW_HEARTBEAT;" if self.DEBUG == 0 else ""),
 			(1, 'for(i=0;i<WH;i++) cb->board[i] = NULL;' ),
@@ -996,6 +1003,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			if depth >= 249: #252:
 			#if depth >= 252:
 				output.append( (2, 'if (cb->max_depth_seen < '+d+') {' if depth <256 else '') )
+				output.append( (3, 'setWFN(cb, 1);' ) )
 				output.append( (3, 'cb->max_depth_seen = '+d+';') )
 				output.append( (3, 'cb->commands |= SAVE_MAX_DEPTH_SEEN_ONCE;' ) )
 				output.append( (3, 'cb->commands |= SHOW_MAX_DEPTH_SEEN_ONCE;' ) )
@@ -1006,8 +1014,8 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (2, '}' if depth<256 else '') )
 			if depth == WH:
 				output.append( (2, '// We have a complete puzzle !!' ) )
-				output.append( (2, 'setWFS(cb, 1);' ) )
-				output.append( (2, 'sleep(60); // Wait for the WFS thread' ) )
+				output.append( (2, 'setWFN(cb, 1);' ) )
+				output.append( (2, 'sleep(600); // Wait for the WFN thread' ) )
 				output.append( (0, '' ) )
 				# followed immediately by depth_end
 				break
@@ -1030,7 +1038,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (0, '' ) )
 				output.append( (3, 'if (getTTF(cb)) goto depth_end;' ) )
 				output.append( (0, '' ) )
-				output.append( (3, 'if (cb->heartbeat > cb->heartbeat_limit) goto depth_end;' ) )
+				output.append( (3, 'if (cb->heartbeat > cb->heartbeat_limit) goto depth_timelimit;' ) )
 				output.append( (0, '' ) )
 				output.append( (3, 'fdo_commands(output, cb);' ), )
 				output.append( (0, '' ) )
@@ -1056,7 +1064,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			
 			if conflicts != "":
 				conflicts_array = [ x for x in self.puzzle.scenario.conflicts_indexes_allowed if x < depth ]
-				output.append( (3, "conflicts_allowed_this_turn = "+ str(len(conflicts_array))+ " - cumulative_conflicts_count["+d+"-1]; //"+str(conflicts_array)))
+				output.append( (2, "conflicts_allowed_this_turn = "+ str(len(conflicts_array))+ " - cumulative_conflicts_count["+d+"-1]; //"+str(conflicts_array)))
 
 			output.append( (2, 'depth'+d+"_backtrack:" ) )
 	
@@ -1093,9 +1101,16 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (2, "goto depth"+str(depth-1)+"_backtrack;" if depth>0 else "goto depth_end;" ))
 
 		output.extend( [
+			(1, 'depth_timelimit:' ),
+			(2, 'DEBUG_PRINT(("x-]'+self.XTermInfo+'  Time Limit Reached  '+self.XTermNormal+'[-x\\n"));' ),
+			(2, 'setWFN(cb, 1);' ),
+			(2, 'sleep(5); // Wait for the WFN thread' ),
+			] )
+
+		output.extend( [
 			(1, '// Where we find ourselves again' ),
 			(1, 'depth_end:' ),
-			(1, 'DEBUG_PRINT(("x-]'+self.XTermInfo+'  End of Solve  '+self.XTermNormal+'[-x\\n"));' ),
+			(2, 'DEBUG_PRINT(("x-]'+self.XTermInfo+'  End of Solve  '+self.XTermNormal+'[-x\\n"));' ),
 			] )
 
 
@@ -1244,8 +1259,8 @@ class LibBlackwood( external_libs.External_Libs ):
 		myInput.start()
 
 		# Start the solution thread
-		myWFS = thread_wfs.Wait_For_Solution_Thread( self, self.puzzle )
-		myWFS.start()
+		myWFN = thread_wfn.Wait_For_Notification_Thread( self, self.puzzle )
+		myWFN.start()
 
 		# Start the locking thread
 		myLCA = thread_lca.Leave_CPU_Alone_Thread( self, period=2, desktop=self.DESKTOP )
@@ -1275,7 +1290,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		self.LibExtWrapper( self.getFunctionNameFromSignature(l), args, timeit=True )
 
 		myLCA.stop_lca_thread = True	
-		myWFS.stop_wfs_thread = True	
+		myWFN.stop_wfn_thread = True	
 		myHB.stop_hb_thread = True	
 		myInput.stop_input_thread = True	
 

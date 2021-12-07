@@ -10,21 +10,21 @@ import defs
 # General configuration for Backtrack and JBlackwood algorithm
 
 HEURISTIC_SIDES = {
-		469: [ 17, 2, 18 ],
-		470: [ 9, 12, 15 ],
-		471: [ 9, 12, 15 ],
+		"JB469": [ 17, 2, 18 ],
+		"JB470": [ 9, 12, 15 ],
+		"JB471": [ 9, 12, 15 ],
 		}
 
 HEURISTIC_SIDES_MAX_INDEX = {
-		469: 156,
-		470: 160,
-		471: 162,
+		"JB469": 156,
+		"JB470": 160,
+		"JB471": 162,
 		}
 
 CONFLICT_INDEXES_ALLOWED = {
-		469: [ 201, 206, 211, 216, 221, 225, 229, 233, 237, 239, 241, 256 ],
-		470: [ 197, 203, 210, 216, 221, 225, 229, 233, 236, 238, 256 ],
-		471: [ 206, 211, 216, 221, 225, 229, 233, 237, 239, 256 ],
+		"JB469": [ 201, 206, 211, 216, 221, 225, 229, 233, 237, 239, 241, 256 ],
+		"JB470": [ 197, 203, 210, 216, 221, 225, 229, 233, 236, 238, 256 ],
+		"JB471": [ 206, 211, 216, 221, 225, 229, 233, 237, 239, 256 ],
 		}
 
 
@@ -58,17 +58,11 @@ class Scenario( defs.Defs ):
 				self.info(" * Init Scenario Env Seed : "+str(self.seed) )
 
 
-		if self.name in [ "JB469" ]:
-			self.score_target     = 469
-		elif self.name in [ "JB470" ]:
-			self.score_target     = 470
-		elif self.name in [ "JB471" ]:
-			self.score_target     = 471
-
 		if self.name in [ "JB469", "JB470", "JB471" ]:
-			self.heuristic_patterns           = HEURISTIC_SIDES[ self.score_target ]
-			self.heuristic_patterns_max_index = HEURISTIC_SIDES_MAX_INDEX[ self.score_target ]
-			self.conflicts_indexes_allowed    = CONFLICT_INDEXES_ALLOWED[ self.score_target ]
+			self.score_target     = int(self.name[2:])
+			self.heuristic_patterns           = HEURISTIC_SIDES[ self.name ]
+			self.heuristic_patterns_max_index = HEURISTIC_SIDES_MAX_INDEX[ self.name ]
+			self.conflicts_indexes_allowed    = CONFLICT_INDEXES_ALLOWED[ self.name ]
 
 		self.prepare_heuristics()
 		self.prepare_sequence()

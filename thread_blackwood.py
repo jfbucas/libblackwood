@@ -6,7 +6,7 @@ import ctypes
 # Local libs
 import libblackwood
 import thread_lca
-import thread_wfs
+import thread_wfn
 
 
 #
@@ -36,8 +36,8 @@ class Blackwood_Thread( threading.Thread ):
 
 	def run(self):
 		# Start the solution thread
-		myWFS = thread_wfs.Wait_For_Solution_Thread( self.blackwood, self.puzzle )
-		myWFS.start()
+		myWFN = thread_wfn.Wait_For_Notification_Thread( self.blackwood, self.puzzle )
+		myWFN.start()
 
 		# Start the locking thread
 		myLCA = thread_lca.Leave_CPU_Alone_Thread( self.blackwood, period=5, desktop=self.puzzle.DESKTOP )
@@ -59,6 +59,6 @@ class Blackwood_Thread( threading.Thread ):
 				self.blackwood.copy_new_arrays_to_cb()
 
 		myLCA.stop_lca_thread = True	
-		myWFS.stop_wfs_thread = True	
+		myWFN.stop_wfn_thread = True	
 
 

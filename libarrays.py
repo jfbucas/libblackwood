@@ -27,6 +27,7 @@ class LibArrays( external_libs.External_Libs ):
 
 		self.puzzle = puzzle
 
+		self.DEFAULT_TIMELIMIT = 60
 
 		# Params for External_Libs
 		self.EXTRA_NAME = extra_name
@@ -170,7 +171,7 @@ class LibArrays( external_libs.External_Libs ):
 
 			output.append( (0 , "uint64 heartbeat_time_bonus[] = {") )
 			for y in range(self.puzzle.board_h):
-				output.append( (2 , ",".join([format(n, '3') for n in [ int(2*pow(3, (x+y*self.puzzle.board_w)-250)*60) if (x+y*self.puzzle.board_w)>250 else 0 if x+y>0 else 60*45 for x in range(self.puzzle.board_w)]]) + ( "," if y<(self.puzzle.board_h-1) else "" )) )
+				output.append( (2 , ",".join([format(n, '3') for n in [ int(2*pow(3, (x+y*self.puzzle.board_w)-250)*60) if (x+y*self.puzzle.board_w)>250 else 0 if x+y>0 else 60*self.DEFAULT_TIMELIMIT for x in range(self.puzzle.board_w)]]) + ( "," if y<(self.puzzle.board_h-1) else "" )) )
 			output.append( (2 , "};") )
 			output.append( (0 , "") )
 			
