@@ -28,13 +28,16 @@ class Blackwood_Thread( threading.Thread ):
 
 	def __init__(self, p, number=0): 
 		threading.Thread.__init__(self)
-		self.blackwood = libblackwood.LibBlackwood( p, extra_name="_"+str(number).zfill(4) )
 		self.puzzle = p
 		self.number = number
 
-		self.blackwood.copy_new_arrays_to_cb()
 
 	def run(self):
+		self.blackwood = libblackwood.LibBlackwood( p, extra_name="_"+str(number).zfill(4) )
+		self.blackwood.copy_new_arrays_to_cb()
+
+		cb = self.blackwood.cb
+
 		# Start the solution thread
 		myWFN = thread_wfn.Wait_For_Notification_Thread( self.blackwood, self.puzzle )
 		myWFN.start()
@@ -43,7 +46,6 @@ class Blackwood_Thread( threading.Thread ):
 		myLCA = thread_lca.Leave_CPU_Alone_Thread( self.blackwood, period=5, desktop=self.puzzle.DESKTOP )
 		myLCA.start()
 
-		cb = self.blackwood.cb
 
 		thread_output_filename = ctypes.c_char_p(("generated/"+self.puzzle.HOSTNAME+"/progress_thread_"+'{:0>4d}'.format(self.number)).encode('utf-8'))
 
