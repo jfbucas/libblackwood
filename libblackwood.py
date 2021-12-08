@@ -1003,7 +1003,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, 'depth'+d+":  // Labels are ugly, don't do this at home" ),
 				] )
 
-			if self.DEBUG > 0 and depth >= 64:
+			if self.DEBUG > 0 and depth >= 230 and depth < 249:
 				output.append( (2, 'if (cb->max_depth_seen < '+d+') {') )
 				output.append( (3, 'cb->max_depth_seen = '+d+';') )
 				output.append( (3, 'for(i=0;i<WH;i++) cb->board[i] = board[i];') )

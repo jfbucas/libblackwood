@@ -49,7 +49,7 @@ class Scenario( defs.Defs ):
 		self.spaces_order = []
 		self.spaces_sequence = []
 
-		self.timelimit = 60 # Minutes
+		self.timelimit = 120 # Minutes
 
 		# The Seed for the Generator
 		self.seed = random.randint(0, sys.maxsize)
