@@ -142,6 +142,8 @@ class Puzzle( defs.Defs ):
 		defs.Defs.__init__( self )
 
 		self.board_wh = self.board_w * self.board_h
+	
+		self.TITLE_STR += self.name
 
 		self.normalizePieces()		# Make sure the pieces are how we expect them to be
 

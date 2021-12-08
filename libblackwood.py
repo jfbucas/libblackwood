@@ -937,7 +937,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			(1, 'uint16 piece_index_to_try_next[WH];' ),
 			(1, 'uint64 depth_nodes_count[WH];' ),
 			(1, 'uint64 piece_candidates;' ),
-			(1, 'uint8 conflicts_allowed_this_turn;' ),
+			#(1, 'uint8 conflicts_allowed_this_turn;' ),
 			(1, 't_rotated_piece * current_rotated_piece;' ),
 			(1, 't_rotated_piece * board['+str(WH)+'];' ),
 			(1, '' ),
@@ -1075,10 +1075,10 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (2, "") )
 
 			
-			if conflicts != "":
-				conflicts_array = [ x for x in self.puzzle.scenario.conflicts_indexes_allowed if x < depth ]
-				output.append( (2, "if (cumulative_heuristic_conflicts_count["+d+"-1] > "+ str(len(conflicts_array))+ ") {printf(\"Conflicts count overflow "+d+"\\n\"); goto depth_end;} //"+str(conflicts_array)))
-				output.append( (2, "conflicts_allowed_this_turn = "+ str(len(conflicts_array))+ " - cumulative_heuristic_conflicts_count["+d+"-1]; //"+str(conflicts_array)))
+			#if conflicts != "":
+			#	conflicts_array = [ x for x in self.puzzle.scenario.conflicts_indexes_allowed if x < depth ]
+			#	output.append( (2, "if (cumulative_heuristic_conflicts_count["+d+"-1] > "+ str(len(conflicts_array))+ ") {printf(\"Conflicts count overflow "+d+"\\n\"); goto depth_end;} //"+str(conflicts_array)))
+			#	output.append( (2, "conflicts_allowed_this_turn = "+ str(len(conflicts_array))+ " - cumulative_heuristic_conflicts_count["+d+"-1]; //"+str(conflicts_array)))
 
 			output.append( (2, 'depth'+d+"_backtrack:" ) )
 	
@@ -1089,8 +1089,10 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (3, "current_rotated_piece = cb->"+master_lists_of_rotated_pieces+"[ piece_index_to_try_next["+d+"] ];" ))
 			#output.append( (3, 'DEBUG_PRINT(("'+" " * depth+' Trying piece : %d\\n", current_rotated_piece->p))' ))
 			if conflicts != "":
+				conflicts_array = [ x for x in self.puzzle.scenario.conflicts_indexes_allowed if x < depth ]
 				#output.append( (3, "if ((current_rotated_piece->heuristic_side_and_conflicts_count & 1) > conflicts_allowed_this_turn) break;"))
-				output.append( (3, "if (current_rotated_piece->heuristic_conflicts > conflicts_allowed_this_turn) break;"))
+				#output.append( (3, "if (current_rotated_piece->heuristic_conflicts > conflicts_allowed_this_turn) break; // "+str(conflicts_array)))
+				output.append( (3, "if (current_rotated_piece->heuristic_conflicts + cumulative_heuristic_conflicts_count["+d+"-1] > "+str(len(conflicts_array))+ ") break; // "+str(conflicts_array)))
 			
 			output.append( (3, "piece_index_to_try_next["+d+"] ++;"))
 			output.append( (3, "if (pieces_used[ current_rotated_piece->p ] != 0) continue;"))

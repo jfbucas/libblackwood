@@ -20,7 +20,6 @@ if (sys.version_info[0] < 3) or (sys.version_info[1] < 6):
 
 # Local libs
 import data
-import defs
 import libblackwood
 import thread_input
 import thread_blackwood
@@ -34,9 +33,6 @@ if puzzle == None:
 
 # Threads
 blackwood_threads = []
-
-# Simple defs
-mydefs = defs.Defs()
 
 # ----- dispatch the command to all threads
 def standalone_blackwood_threads_command( commands ):
@@ -82,7 +78,7 @@ def standalone():
 	myInput.start()
 
 	# Start the threads
-	print("x-]"+mydefs.XTermInfo+"  Starting "+str(CORES)+" thread"+ ("s" if CORES > 1 else "")+"  "+mydefs.XTermNormal+"[-x")
+	print("x-]"+puzzle.XTermInfo+"  Starting "+str(CORES)+" thread"+ ("s" if CORES > 1 else "")+"  "+puzzle.XTermNormal+"[-x")
 	for gt in blackwood_threads:
 		print(".", end="", flush=True)
 		gt.start()

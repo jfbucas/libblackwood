@@ -95,7 +95,7 @@ class Defs():
 	XTermClearScr   = "\033[2J\033[H" 
         #XTermCursorMoveBack( x )  "\033["x"D" 
 
-	TITLE_STR	= rougeoie + 'Eternity ' + jaunoie + 'II ' + bleuoie + 'Solver ' + orangeoie + '- ' + verdoie  + 'JBlackwood'
+	TITLE_STR	= rougeoie + 'Eternity ' + jaunoie + 'II ' + bleuoie + 'Solver ' + orangeoie + '- ' + verdoie
 	H1_OPEN		= 'x-]'+XTermInfo+'  '
 	H1_CLOSE	= '  '+XTermNormal+'[-x'
 
