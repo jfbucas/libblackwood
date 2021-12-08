@@ -1077,6 +1077,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			
 			if conflicts != "":
 				conflicts_array = [ x for x in self.puzzle.scenario.conflicts_indexes_allowed if x < depth ]
+				output.append( (2, "if (cumulative_heuristic_conflicts_count["+d+"-1] > "+ str(len(conflicts_array))+ ") {printf(\"Conflicts count overflow\\n\"); goto depth_end;} //"+str(conflicts_array)))
 				output.append( (2, "conflicts_allowed_this_turn = "+ str(len(conflicts_array))+ " - cumulative_heuristic_conflicts_count["+d+"-1]; //"+str(conflicts_array)))
 
 			output.append( (2, 'depth'+d+"_backtrack:" ) )

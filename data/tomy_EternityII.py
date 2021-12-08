@@ -7,6 +7,7 @@ class Tomy_EternityII( puzzle.Puzzle ):
 	def __init__( self, with_clues=True  ):
 
 		self.name = "EternityII"
+		self.motifs_order = "jef"
 
 		self.board_w = 16
 		self.board_h = 16

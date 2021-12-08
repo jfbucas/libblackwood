@@ -169,10 +169,14 @@ class LibArrays( external_libs.External_Libs ):
 		if not only_signature:
 
 			output.append( (0 , "/* Get Index Piece Name") )
+			array = [ "" ] * self.puzzle.board_wh
 			for y in range(self.puzzle.board_h):
 				l = "// "
 				for x in range(self.puzzle.board_w):
-					l += format(self.puzzle.scenario.get_index_piece_name(x+y*self.puzzle.board_w), "18")
+					d = x+y*self.puzzle.board_w
+					array[ self.puzzle.scenario.spaces_sequence[d] ] += format(self.puzzle.scenario.get_index_piece_name(x+y*self.puzzle.board_w), "19")
+			for y in range(self.puzzle.board_h):
+				l = "// "+" ".join(array[y*self.puzzle.board_w:(y+1)*self.puzzle.board_w])
 				output.append( (0 , l) )
 			output.append( (0 , "*/") )
 			output.append( (0 , "") )

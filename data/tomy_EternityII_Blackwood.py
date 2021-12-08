@@ -7,6 +7,7 @@ class Tomy_EternityII_Blackwood( puzzle.Puzzle ):
 	def __init__( self ):
 
 		self.name = "tomy/pieces.txt.EternityII_blackwood.js"
+		self.motifs_order = "jblackwood"
 
 		self.board_w = 16
 		self.board_h = 16

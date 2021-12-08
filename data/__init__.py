@@ -15,7 +15,7 @@ from . import tomy_EternityII
 from . import tomy_EternityII_Blackwood
 
 
-def loadPuzzle( puzzlename = "JB" ):
+def loadPuzzle( puzzlename = "E2" ):
 	import os
 
 	if os.environ.get('PUZZLE') != None:

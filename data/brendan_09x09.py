@@ -6,6 +6,7 @@ class Brendan_09x09( puzzle.Puzzle ):
 	def __init__( self ):
 
 		self.name = "brendan/pieces_09x09.txt.js"
+		self.motifs_order = "jef"
 
 		self.board_w = 9
 		self.board_h = 9
