@@ -351,6 +351,10 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (0 , "") )
 
 			output.append( (0 , "// A global pointer") )
+			output.append( (0 , "extern p_blackwood global_blackwood;") )
+			output.append( (0 , "") )
+		else:
+			output.append( (0 , "// A global pointer") )
 			output.append( (0 , "p_blackwood global_blackwood;") )
 			output.append( (0 , "") )
 
