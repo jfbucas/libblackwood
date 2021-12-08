@@ -72,10 +72,10 @@ def standalone():
 		CORES=1
 
 
-	print("x-]"+mydefs.XTermInfo+"  Preparing "+str(CORES)+" thread"+ ("s" if CORES > 1 else "")+"  "+mydefs.XTermNormal+"[-x\\n")
+	print("x-]"+mydefs.XTermInfo+"  Preparing "+str(CORES)+" thread"+ ("s" if CORES > 1 else "")+"  "+mydefs.XTermNormal+"[-x")
 	for c in range(CORES):
 		blackwood_threads.append( thread_blackwood.Blackwood_Thread( puzzle, c ) )
-		print(".", end="")
+		print(".", end="", flush=True)
 	print()
 
 	# Start the input thread
@@ -83,10 +83,10 @@ def standalone():
 	myInput.start()
 
 	# Start the threads
-	print("x-]"+mydefs.XTermInfo+"  Starting thread"+ ("s" if CORES > 1 else "")+"  "+mydefs.XTermNormal+"[-x\\n")
+	print("x-]"+mydefs.XTermInfo+"  Starting thread"+ ("s" if CORES > 1 else "")+"  "+mydefs.XTermNormal+"[-x")
 	for gt in blackwood_threads:
 		#print( "Starting thread ", gt.number )
-		print(".", end="")
+		print(".", end="", flush=True)
 		gt.start()
 	print()
 
