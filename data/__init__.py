@@ -15,7 +15,7 @@ from . import tomy_EternityII
 from . import tomy_EternityII_Blackwood
 
 
-def loadPuzzle( puzzlename = "E2" ):
+def loadPuzzle( puzzlename = "E2nc" ):
 	import os
 
 	if os.environ.get('PUZZLE') != None:
@@ -26,7 +26,7 @@ def loadPuzzle( puzzlename = "E2" ):
 
 	if puzzlename in [ "Tomy_EternityII", "EternityII", "E2" ]:
 		p = tomy_EternityII.Tomy_EternityII()
-	elif puzzlename in [ "E2clueless", "E2noclue", "E2noclues" ]:
+	elif puzzlename in [ "E2nc", "E2clueless", "E2noclue", "E2noclues" ]:
 		p = tomy_EternityII.Tomy_EternityII(with_clues=False)
 	elif puzzlename in [ "JB", "jb", "blackwood", "b" ]:
 		p = tomy_EternityII_Blackwood.Tomy_EternityII_Blackwood()
