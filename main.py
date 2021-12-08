@@ -41,13 +41,15 @@ mydefs = defs.Defs()
 # ----- dispatch the command to all threads
 def standalone_blackwood_threads_command( commands ):
 	for gt in blackwood_threads:
-		gt.blackwood.command_handler( commands )
+		if gt.ready:
+			gt.blackwood.command_handler( commands )
 
 # ----- get the time to finish flags from all threads
 def standalone_blackwood_threads_getTTF():
 	result = 0
 	for gt in blackwood_threads:
-		result += gt.blackwood.LibExt.getTTF( gt.blackwood.cb )
+		if gt.ready:
+			result += gt.blackwood.LibExt.getTTF( gt.blackwood.cb )
 	return result
 
 
@@ -80,9 +82,8 @@ def standalone():
 	myInput.start()
 
 	# Start the threads
-	print("x-]"+mydefs.XTermInfo+"  Starting thread"+ ("s" if CORES > 1 else "")+"  "+mydefs.XTermNormal+"[-x")
+	print("x-]"+mydefs.XTermInfo+"  Starting "+str(CORES)+" thread"+ ("s" if CORES > 1 else "")+"  "+mydefs.XTermNormal+"[-x")
 	for gt in blackwood_threads:
-		#print( "Starting thread ", gt.number )
 		print(".", end="", flush=True)
 		gt.start()
 	print()

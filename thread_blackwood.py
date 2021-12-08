@@ -25,11 +25,13 @@ class Blackwood_Thread( threading.Thread ):
 	blackwood = None
 	puzzle = None
 	number = 0
+	ready = False
 
 	def __init__(self, puzzle, number=0): 
 		threading.Thread.__init__(self)
 		self.puzzle = puzzle
 		self.number = number
+		self.ready = False
 
 
 	def run(self):
@@ -37,6 +39,8 @@ class Blackwood_Thread( threading.Thread ):
 		self.blackwood.copy_new_arrays_to_cb()
 
 		cb = self.blackwood.cb
+		
+		self.ready = True
 
 		# Start the solution thread
 		myWFN = thread_wfn.Wait_For_Notification_Thread( self.blackwood, self.puzzle )
