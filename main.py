@@ -77,6 +77,8 @@ def standalone():
 	myInput = thread_input.Input_Thread( standalone_blackwood_threads_command, blackwood, 0.1 )
 	myInput.start()
 
+	print("x-]"+self.XTermInfo+"  Starting Solve with "+str(CORES)+" core"+ ("s" if CORES > 1 else "")+"  "+self.XTermNormal+"[-x\\n")
+
 	# Start the threads
 	for gt in blackwood_threads:
 		#print( "Starting thread ", gt.number )

@@ -721,7 +721,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		pf_str += "&seed=%llu"
 		pf_args += "b->seed,"
 
-		pf_str += "&motifs_order=jef"
+		pf_str += "&motifs_order="+self.puzzle.motifs_order
 
 		pf_args = pf_args.rstrip(',')
 		return (pf_str, pf_args)
