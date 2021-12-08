@@ -26,14 +26,14 @@ class Blackwood_Thread( threading.Thread ):
 	puzzle = None
 	number = 0
 
-	def __init__(self, p, number=0): 
+	def __init__(self, puzzle, number=0): 
 		threading.Thread.__init__(self)
-		self.puzzle = p
+		self.puzzle = puzzle
 		self.number = number
 
 
 	def run(self):
-		self.blackwood = libblackwood.LibBlackwood( p, extra_name="_"+str(number).zfill(4) )
+		self.blackwood = libblackwood.LibBlackwood( self.puzzle, extra_name="_"+str(self.number).zfill(4) )
 		self.blackwood.copy_new_arrays_to_cb()
 
 		cb = self.blackwood.cb
