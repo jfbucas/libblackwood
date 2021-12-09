@@ -47,7 +47,7 @@ class Wait_For_Notification_Thread(threading.Thread):
 			self.puzzle.error(" * Make sure you have defined URL_HOOK to get notifications when a notification is found" )
 
 
-	def transmit(self, payload):
+	def transmit(self, channel, payload):
 		# Submit the notification up to 5 times
 		good = 0
 		retry = 20
@@ -67,7 +67,7 @@ class Wait_For_Notification_Thread(threading.Thread):
 
 		if good:
 			print()
-			print(' Notification transmitted @', str(datetime.datetime.now()), 'to', self.URL )
+			print(' Notification to '+channel+' transmitted @', str(datetime.datetime.now()), 'to', self.URL )
 			print()
 			if self.puzzle.DEBUG > 3:
 				print( payload )
@@ -104,7 +104,7 @@ class Wait_For_Notification_Thread(threading.Thread):
 				payload+=" "+str(self.libblackwood.LibExt.getMaxDepthSeen(self.libblackwood.cb))
 				payload+="\"}"
 
-				self.transmit(payload)
+				self.transmit(channel, payload)
 
 				self.libblackwood.LibExt.setWFN(self.libblackwood.cb, 0)
 

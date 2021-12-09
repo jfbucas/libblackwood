@@ -1007,14 +1007,13 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, 'depth'+d+":  // Labels are ugly, don't do this at home" ),
 				] )
 
-			if self.DEBUG > 0 and depth >= 230 and depth < 249:
+			if self.DEBUG > 0 and depth >= 245 and depth < 252:
 				output.append( (2, 'if (cb->max_depth_seen < '+d+') {') )
 				output.append( (3, 'cb->max_depth_seen = '+d+';') )
 				output.append( (3, 'for(i=0;i<WH;i++) cb->board[i] = board[i];') )
 				output.append( (2, '}' ))
 
-			if depth >= 249: #252:
-			#if depth >= 252:
+			if depth >= 252:
 				output.append( (2, 'if (cb->max_depth_seen < '+d+') {' if depth <256 else '') )
 				output.append( (3, 'setWFN(cb, 1);' ) )
 				output.append( (3, 'cb->max_depth_seen = '+d+';') )
@@ -1088,6 +1087,10 @@ class LibBlackwood( external_libs.External_Libs ):
 			
 			output.append( (3, "current_rotated_piece = cb->"+master_lists_of_rotated_pieces+"[ piece_index_to_try_next["+d+"] ];" ))
 			#output.append( (3, 'DEBUG_PRINT(("'+" " * depth+' Trying piece : %d\\n", current_rotated_piece->p))' ))
+			if depth > 0 and depth <= self.puzzle.scenario.heuristic_patterns_max_index and self.puzzle.scenario.heuristic_patterns_count[depth] > 0: 
+				#output.append( (3, "if ((cumulative_heuristic_side_count["+d+"-1] + (current_rotated_piece->heuristic_side_and_conflicts_count >> 1)) < "+str(self.puzzle.scenario.heuristic_patterns_count[depth])+" ) break;"))
+				output.append( (3, "if ((cumulative_heuristic_side_count["+d+"-1] + current_rotated_piece->heuristic_side) < "+str(self.puzzle.scenario.heuristic_patterns_count[depth])+" ) break;"))
+
 			if conflicts != "":
 				conflicts_array = [ x for x in self.puzzle.scenario.conflicts_indexes_allowed if x < depth ]
 				#output.append( (3, "if ((current_rotated_piece->heuristic_side_and_conflicts_count & 1) > conflicts_allowed_this_turn) break;"))
@@ -1096,22 +1099,19 @@ class LibBlackwood( external_libs.External_Libs ):
 			
 			output.append( (3, "piece_index_to_try_next["+d+"] ++;"))
 			output.append( (3, "if (pieces_used[ current_rotated_piece->p ] != 0) continue;"))
-			if depth > 0 and depth <= self.puzzle.scenario.heuristic_patterns_max_index and self.puzzle.scenario.heuristic_patterns_count[depth] > 0: 
-				#output.append( (3, "if ((cumulative_heuristic_side_count["+d+"-1] + (current_rotated_piece->heuristic_side_and_conflicts_count >> 1)) < "+str(self.puzzle.scenario.heuristic_patterns_count[depth])+" ) break;"))
-				output.append( (3, "if ((cumulative_heuristic_side_count["+d+"-1] + current_rotated_piece->heuristic_side) < "+str(self.puzzle.scenario.heuristic_patterns_count[depth])+" ) break;"))
 			
 			output.append( (3, "board["+sspace+"] = current_rotated_piece;"))
 			#output.append( (3, 'DEBUG_PRINT(("'+" "*depth+' Space '+sspace+' - inserting piece : %d \\n", board['+sspace+']->p ))'  if self.DEBUG > 1 else "" ))
 			output.append( (3, 'pieces_used[current_rotated_piece->p] = 1;' ) )
-			if conflicts != "":
-				#output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = cumulative_heuristic_conflicts_count["+d+"-1] + (current_rotated_piece->heuristic_side_and_conflicts_count & 1);"))
-				output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = cumulative_heuristic_conflicts_count["+d+"-1] + current_rotated_piece->heuristic_conflicts;"))
 			if depth == 0: 
 				#output.append( (3, "cumulative_heuristic_side_count["+d+"] = (current_rotated_piece->heuristic_side_and_conflicts_count >> 1);"))
 				output.append( (3, "cumulative_heuristic_side_count["+d+"] = current_rotated_piece->heuristic_side;"))
 			elif depth <= self.puzzle.scenario.heuristic_patterns_max_index: 
 				#output.append( (3, "cumulative_heuristic_side_count["+d+"] = cumulative_heuristic_side_count["+d+"-1] + (current_rotated_piece->heuristic_side_and_conflicts_count >> 1);"))
 				output.append( (3, "cumulative_heuristic_side_count["+d+"] = cumulative_heuristic_side_count["+d+"-1] + current_rotated_piece->heuristic_side;"))
+			if conflicts != "":
+				#output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = cumulative_heuristic_conflicts_count["+d+"-1] + (current_rotated_piece->heuristic_side_and_conflicts_count & 1);"))
+				output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = cumulative_heuristic_conflicts_count["+d+"-1] + current_rotated_piece->heuristic_conflicts;"))
 			
 			output.append( (3, "goto depth"+str(depth+1)+";"))
 			output.append( (2, "}"))
