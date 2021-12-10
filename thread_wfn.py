@@ -97,11 +97,19 @@ class Wait_For_Notification_Thread(threading.Thread):
 						if self.libblackwood.LibExt.getMaxDepthSeen(self.libblackwood.cb) >= 252:
 							channel = str(self.libblackwood.LibExt.getMaxDepthSeen(self.libblackwood.cb))
 
+				max_depth_seen_hb="["
+				for i in range(246, self.puzzle.board_wh):
+					t = self.libblackwood.LibExt.getMaxDepthSeenHeartbeat(self.libblackwood.cb, i)
+					if t > 0:
+						max_depth_seen_hb+=str(i)+":"+str(t)+" | "
+				max_depth_seen_hb+="]"
+
 				payload="{\"username\":\""+self.puzzle.HOSTNAME+"\","
 				payload+="\"icon_emoji\":\":puzzle:\","
 				payload+="\"channel\":\""+channel+"\","
 				payload+="\"text\":\"@channel [View]("+self.notification_url.value.decode("utf-8")+") "+self.puzzle.scenario.name
 				payload+=" "+str(self.libblackwood.LibExt.getMaxDepthSeen(self.libblackwood.cb))
+				payload+=" "+max_depth_seen_hb
 				payload+="\"}"
 
 				self.transmit(channel, payload)

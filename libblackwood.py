@@ -114,6 +114,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		signatures.extend( self.gen_getter_setter_function( only_signature=True ) )
 		signatures.extend( self.gen_allocate_blackwood_function( only_signature=True ) )
 		signatures.extend( self.gen_getSolutionURL_function( only_signature=True ) )
+		signatures.extend( self.gen_getMaxDepthSeenHeartbeat_function( only_signature=True ) )
 		signatures.extend( self.gen_solve_function(only_signature=True) )
 		signatures.extend( self.gen_do_commands(only_signature=True ) )
 		signatures.extend( self.gen_set_blackwood_arrays_function(only_signature=True ) )
@@ -327,6 +328,10 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, "// Counters on each node" ),
 				(1, "uint64 depth_nodes_count[ WH ];"),
 				(0, "" ),
+				(1, "// Records at what heartbeat the max_depth_seen have been found" ),
+				(1, "uint64 max_depth_seen_heartbeat[ WH ];"),
+				(0, "" ),
+
 				(0, "" ),
 				(1, "// ----- Flags -------" ),
 				] )
@@ -502,6 +507,27 @@ class LibBlackwood( external_libs.External_Libs ):
 			(1, ") {"),
 			(1, "// If we have a solution we return the url string"),
 			(2, 'sprintBoardURL(url, b);' ),
+			(0, "}"),
+			])
+
+		return output
+
+	# ----- Generate the solution into a string for WFN
+	def gen_getMaxDepthSeenHeartbeat_function( self, only_signature=False ):
+
+		output = [ 
+			(0, "uint64 getMaxDepthSeenHeartbeat("),
+			(1, "voidp b,"),
+			(1, "uint64 index"),
+			]
+
+		if only_signature:
+			output.extend( [ (1, ');'), ])
+			return output
+
+		output.extend( [
+			(1, ") {"),
+			(2, 'return ((p_blackwood)b)->max_depth_seen_heartbeat[index];' ),
 			(0, "}"),
 			])
 
@@ -969,6 +995,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			(1, "cb->commands = SHOW_HEARTBEAT;" if self.DEBUG == 0 else ""),
 			(1, 'for(i=0;i<WH;i++) cb->board[i] = NULL;' ),
 			(1, 'for(i=0;i<WH;i++) cb->depth_nodes_count[i] = 0;' ),
+			(1, 'for(i=0;i<WH;i++) cb->max_depth_seen_heartbeat[i] = 0;' ),
 			(2, ""),
 
 			(1, '// Output' ),
@@ -1007,29 +1034,32 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, 'depth'+d+":  // Labels are ugly, don't do this at home" ),
 				] )
 
-			if self.DEBUG > 0 and depth >= 245 and depth < 252:
+			if depth > 245 and depth < 252:
 				output.append( (2, 'if (cb->max_depth_seen < '+d+') {') )
 				output.append( (3, 'cb->max_depth_seen = '+d+';') )
-				output.append( (3, 'for(i=0;i<WH;i++) cb->board[i] = board[i];') )
+				output.append( (3, 'cb->max_depth_seen_heartbeat['+d+'] = cb->heartbeat;') )
+				if self.DEBUG > 0:
+					output.append( (3, 'for(i=0;i<WH;i++) cb->board[i] = board[i];') )
 				output.append( (2, '}' ))
 
 			if depth >= 252:
-				output.append( (2, 'if (cb->max_depth_seen < '+d+') {' if depth <256 else '') )
-				output.append( (3, 'setWFN(cb, 1);' ) )
+				output.append( (2, 'if (cb->max_depth_seen < '+d+') {' if depth <WH else '') )
 				output.append( (3, 'cb->max_depth_seen = '+d+';') )
+				output.append( (3, 'cb->max_depth_seen_heartbeat['+d+'] = cb->heartbeat;' if depth < WH else '') )
+				output.append( (3, 'cb->heartbeat_limit += heartbeat_time_bonus[ '+d+' ];') )
+				output.append( (3, 'for(i=0;i<WH;i++) cb->board[i] = board[i];') )
+				output.append( (3, 'setWFN(cb, 1);' ) )
 				output.append( (3, 'cb->commands |= SAVE_MAX_DEPTH_SEEN_ONCE;' ) )
 				output.append( (3, 'cb->commands |= SHOW_MAX_DEPTH_SEEN_ONCE;' ) )
 				output.append( (3, 'cb->commands |= SHOW_BEST_BOARD_URL_ONCE;' if depth>=254 else '' ) )
-				output.append( (3, 'cb->heartbeat_limit += heartbeat_time_bonus[ '+d+' ];') )
-				output.append( (3, 'for(i=0;i<WH;i++) cb->board[i] = board[i];') )
 				output.append( (3, 'fdo_commands(output, cb);' ) )
-				output.append( (2, '}' if depth<256 else '') )
+				output.append( (2, '}' if depth<WH else '') )
 			if depth == WH:
 				output.append( (2, '// We have a complete puzzle !!' ) )
 				output.append( (2, 'setWFN(cb, 1);' ) )
 				output.append( (2, 'sleep(600); // Wait for the WFN thread' ) )
 				output.append( (0, '' ) )
-				# followed immediately by depth_end
+				output.append( (2, "goto depth_end;"))
 				break
 
 
@@ -1074,11 +1104,6 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (2, "") )
 
 			
-			#if conflicts != "":
-			#	conflicts_array = [ x for x in self.puzzle.scenario.conflicts_indexes_allowed if x < depth ]
-			#	output.append( (2, "if (cumulative_heuristic_conflicts_count["+d+"-1] > "+ str(len(conflicts_array))+ ") {printf(\"Conflicts count overflow "+d+"\\n\"); goto depth_end;} //"+str(conflicts_array)))
-			#	output.append( (2, "conflicts_allowed_this_turn = "+ str(len(conflicts_array))+ " - cumulative_heuristic_conflicts_count["+d+"-1]; //"+str(conflicts_array)))
-
 			output.append( (2, 'depth'+d+"_backtrack:" ) )
 	
 			#output.append( (2, 'DEBUG_PRINT(("'+" "*depth+' Space '+sspace+' - trying index : %d %d %d\\n", piece_index_to_try_next['+d+'], '+lSide+', '+uSide+' ))'  if self.DEBUG > 0 else "" ))
@@ -1088,13 +1113,10 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (3, "current_rotated_piece = cb->"+master_lists_of_rotated_pieces+"[ piece_index_to_try_next["+d+"] ];" ))
 			#output.append( (3, 'DEBUG_PRINT(("'+" " * depth+' Trying piece : %d\\n", current_rotated_piece->p))' ))
 			if depth > 0 and depth <= self.puzzle.scenario.heuristic_patterns_max_index and self.puzzle.scenario.heuristic_patterns_count[depth] > 0: 
-				#output.append( (3, "if ((cumulative_heuristic_side_count["+d+"-1] + (current_rotated_piece->heuristic_side_and_conflicts_count >> 1)) < "+str(self.puzzle.scenario.heuristic_patterns_count[depth])+" ) break;"))
 				output.append( (3, "if ((cumulative_heuristic_side_count["+d+"-1] + current_rotated_piece->heuristic_side) < "+str(self.puzzle.scenario.heuristic_patterns_count[depth])+" ) break;"))
 
 			if conflicts != "":
 				conflicts_array = [ x for x in self.puzzle.scenario.conflicts_indexes_allowed if x < depth ]
-				#output.append( (3, "if ((current_rotated_piece->heuristic_side_and_conflicts_count & 1) > conflicts_allowed_this_turn) break;"))
-				#output.append( (3, "if (current_rotated_piece->heuristic_conflicts > conflicts_allowed_this_turn) break; // "+str(conflicts_array)))
 				output.append( (3, "if (current_rotated_piece->heuristic_conflicts + cumulative_heuristic_conflicts_count["+d+"-1] > "+str(len(conflicts_array))+ ") break; // "+str(conflicts_array)))
 			
 			output.append( (3, "piece_index_to_try_next["+d+"] ++;"))
@@ -1104,13 +1126,10 @@ class LibBlackwood( external_libs.External_Libs ):
 			#output.append( (3, 'DEBUG_PRINT(("'+" "*depth+' Space '+sspace+' - inserting piece : %d \\n", board['+sspace+']->p ))'  if self.DEBUG > 1 else "" ))
 			output.append( (3, 'pieces_used[current_rotated_piece->p] = 1;' ) )
 			if depth == 0: 
-				#output.append( (3, "cumulative_heuristic_side_count["+d+"] = (current_rotated_piece->heuristic_side_and_conflicts_count >> 1);"))
 				output.append( (3, "cumulative_heuristic_side_count["+d+"] = current_rotated_piece->heuristic_side;"))
 			elif depth <= self.puzzle.scenario.heuristic_patterns_max_index: 
-				#output.append( (3, "cumulative_heuristic_side_count["+d+"] = cumulative_heuristic_side_count["+d+"-1] + (current_rotated_piece->heuristic_side_and_conflicts_count >> 1);"))
 				output.append( (3, "cumulative_heuristic_side_count["+d+"] = cumulative_heuristic_side_count["+d+"-1] + current_rotated_piece->heuristic_side;"))
 			if conflicts != "":
-				#output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = cumulative_heuristic_conflicts_count["+d+"-1] + (current_rotated_piece->heuristic_side_and_conflicts_count & 1);"))
 				output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = cumulative_heuristic_conflicts_count["+d+"-1] + current_rotated_piece->heuristic_conflicts;"))
 			
 			output.append( (3, "goto depth"+str(depth+1)+";"))
@@ -1210,6 +1229,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		self.writeGen( gen, self.gen_set_blackwood_arrays_function( only_signature=True ) )
 		self.writeGen( gen, self.gen_save_max_depth_seen_function( only_signature=True ) )
 		self.writeGen( gen, self.gen_getSolutionURL_function( only_signature=True ) )
+		self.writeGen( gen, self.gen_getMaxDepthSeenHeartbeat_function( only_signature=True ) )
 
 		self.writeGen( gen, self.gen_print_url_functions(only_signature=True) )
 
@@ -1249,6 +1269,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			self.writeGen( gen, self.gen_set_blackwood_arrays_function( only_signature=False ) )
 			self.writeGen( gen, self.gen_save_max_depth_seen_function( only_signature=False) )
 			self.writeGen( gen, self.gen_getSolutionURL_function( only_signature=False ) )
+			self.writeGen( gen, self.gen_getMaxDepthSeenHeartbeat_function( only_signature=False ) )
 			self.writeGen( gen, self.gen_print_url_functions(only_signature=False) )
 			self.writeGen( gen, self.gen_print_functions(only_signature=False) )
 			self.writeGen( gen, self.gen_do_commands(only_signature=False ) )
