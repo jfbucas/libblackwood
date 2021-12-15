@@ -132,6 +132,8 @@ class Puzzle( defs.Defs ):
 	static_colors_border_count = {}
 	static_colors_center_count = {}
 
+	# Precomputed statistics
+	stats = None
 
 	# ----- Init the puzzle
 	def __init__( self ):
@@ -149,6 +151,8 @@ class Puzzle( defs.Defs ):
 
 		self.initStaticColorsCount()
 
+		self.readStatistics()
+
 		self.scenario = None
 		if os.environ.get('SCENARIO') != None:
 			self.scenario = scenario.Scenario(self, os.environ.get('SCENARIO'))
@@ -165,6 +169,7 @@ class Puzzle( defs.Defs ):
 			self.seed = int(os.environ.get('SEED'))
 			if self.DEBUG > 0:
 				self.info(" * Init Puzzle Env Seed : "+str(self.seed) )
+	
 
 
 		# Prepare the list of lists of pieces
@@ -262,6 +267,67 @@ class Puzzle( defs.Defs ):
 		self.EDGE_DOMAIN_1_PIECE = max( [ max(self.static_colors_center_count), max(self.static_colors_border_count) ] ) + 1
 		self.EDGE_DOMAIN_2_PIECE = (self.EDGE_DOMAIN_1_PIECE << self.EDGE_SHIFT_LEFT) | self.EDGE_DOMAIN_1_PIECE
 		self.EDGE_DOMAIN_2_PIECE = self.EDGE_DOMAIN_1_PIECE * (1 << self.EDGE_SHIFT_LEFT)
+
+	# ----- read pre-computed data
+	def readStatistics( self ):
+
+		def keySort(e):
+			return e[1]
+
+		filename= "data/" + self.getFileFriendlyName( self.name ) + ".stats"
+		
+		self.stats = {}
+
+		if os.path.exists(filename):
+			f = open(filename, 'r')
+			for line in f:
+				if not line.startswith('#'):
+					line = line.strip('\n').strip(' ')
+					line = list( map(int, line.split(' ')) )
+
+					#print(line)
+					space = line[0]
+					total = line[1]
+
+					data = {}
+					data[ "space" ] = space
+					data[ "total" ] = total
+
+
+					# Normalize
+					tmp = [ int(x*1000000/total) for x in line[2:] ]
+					# Numberize
+					numbers = range(0, self.board_wh)
+					tmp = [ (n, x) for (n,x) in zip(numbers, tmp) if x > 0 ]
+					# Sort
+					tmp.sort(key=keySort)
+
+					pieces = [ n for (n,x) in tmp if x > 0 ]
+					stats  = [ x for (n,x) in tmp if x > 0 ]
+
+					data[ "pieces" ] = pieces
+					data[ "stats"  ] = stats
+					data[ "pieces_stats"  ] = tmp
+
+					if self.DEBUG_STATIC > 1:
+						# Normalize
+						#non_zero = [ x for x in line[2:] if x > 0 ]
+						#local_min = min(non_zero)
+						#tmp = [ int(x-local_min+1) for x in non_zero ]
+						print( tmp )
+						#self.printArray( line[2:], array_w=self.board_w, array_h=self.board_h )
+						#print(data)
+
+					self.stats[ space ] = data
+			f.close()
+		else:
+			#if self.DEBUG_STATIC > 0:
+			self.info( " * Statistics not found: " + filename )
+			exit()
+				
+			self.stats = None
+
+		return self.stats
 
 
 
@@ -544,40 +610,35 @@ class Puzzle( defs.Defs ):
 					for e in p:
 						relations[ c*len(colors) + e ] += 1
 			
-		print( "".rjust(3, " "), end="   " )
-		for x in range(len(colors)):
-			print( str(x).rjust(3, " "), end="   " )
-		print()
-		print("    "+ ("|-----" * len(colors))+"|")
-
-		for y in range(len(colors)):
-			print( str(y).rjust(3, " "), end=" | " )
+		for m in range(max(relations)):
+			print("##################################", m, "########################")
+			print()
+			print( "".rjust(3, " "), end="   " )
 			for x in range(len(colors)):
-				v = relations[x+y*len(colors)]
-				"""
-				if v == 0:
-					v = ""
-				elif v == 1:
-					v = "."
-				elif v == 2:
-					v = "o"
-				elif v == 3:
-					v = "#"
-				else:
-					v = str(v)
-				"""
-				if x == y:
-					v = " ~ "
-
-				elif v < 10:
-					v = " "
-				else:
-					v = str(v)
-					#v = "###"
-
-				print( v.rjust(3, " "), end=" | " )
+				print( str(x).rjust(3, " "), end="   " )
 			print()
 			print("    "+ ("|-----" * len(colors))+"|")
+
+			for y in range(len(colors)):
+				print( str(y).rjust(3, " "), end=" | " )
+				for x in range(len(colors)):
+					v = relations[x+y*len(colors)]
+					if x == y:
+						v = " ~ "
+					elif v < m:
+						v = " "
+					elif v == 0:
+						v = " "
+					elif v == 1:
+						v = "."
+					else:
+						v = str(v)
+
+					print( v.rjust(3, " "), end=" | " )
+				print()
+				print("    "+ ("|-----" * len(colors))+"|")
+			print()
+			print()
 
 
 

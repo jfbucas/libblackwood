@@ -34,11 +34,16 @@ class Scenario( defs.Defs ):
 
 	def __init__( self, puzzle, name="JB470" ):
 
+		defs.Defs.__init__( self )
+
 		self.puzzle = puzzle
 		self.name = name
 
-		if self.name not in [ "JB469", "JB470", "JB471" ]:
+		if self.name[0:5] not in [ "JB469", "JB470", "JB471" ]:
 			self.name = "JB470"
+
+		if self.DEBUG > 0:
+			self.info(" * Using Scenario : "+str(self.name) )
 
 		self.seed = 0
 		self.score_target = 0
@@ -59,11 +64,11 @@ class Scenario( defs.Defs ):
 				self.info(" * Init Scenario Env Seed : "+str(self.seed) )
 
 
-		if self.name in [ "JB469", "JB470", "JB471" ]:
-			self.score_target     = int(self.name[2:])
-			self.heuristic_patterns           = HEURISTIC_SIDES[ self.name ]
-			self.heuristic_patterns_max_index = HEURISTIC_SIDES_MAX_INDEX[ self.name ]
-			self.conflicts_indexes_allowed    = CONFLICT_INDEXES_ALLOWED[ self.name ]
+		if self.name[0:5] in [ "JB469", "JB470", "JB471" ]:
+			self.score_target     = int(self.name[2:5])
+			self.heuristic_patterns           = HEURISTIC_SIDES[ self.name[0:5] ]
+			self.heuristic_patterns_max_index = HEURISTIC_SIDES_MAX_INDEX[ self.name[0:5] ]
+			self.conflicts_indexes_allowed    = CONFLICT_INDEXES_ALLOWED[ self.name[0:5] ]
 
 		self.prepare_heuristics()
 		self.prepare_sequence()
@@ -75,7 +80,7 @@ class Scenario( defs.Defs ):
 			self.info( " * Preparing heuristics..." )
 
 		self.heuristic_patterns_count = [0] * self.puzzle.board_wh
-		if self.name in [ "JB469" ]:
+		if self.name[0:5] in [ "JB469" ]:
 			for i in range(self.puzzle.board_wh):
 				if i <= 16:
 					self.heuristic_patterns_count[i] = 0
@@ -88,7 +93,7 @@ class Scenario( defs.Defs ):
 				elif i <= self.heuristic_patterns_max_index:
 					self.heuristic_patterns_count[i] = int(((float(i) - 96) / 3.75) + 100)
 
-		elif self.name in [ "JB470", "JB471", "default" ]:
+		elif self.name[0:5] in [ "JB470", "JB471" ]:
 			for i in range(self.puzzle.board_wh):
 				if i <= 16:
 					self.heuristic_patterns_count[i] = 0
@@ -112,7 +117,7 @@ class Scenario( defs.Defs ):
 		if self.DEBUG > 2:
 			self.info( " * Preparing sequences..." )
 
-		if self.name in [ "JB469", "JB470", "JB471", "default" ]:
+		if self.name in [ "JB469", "JB470", "JB471" ]:
 			self.spaces_order = [
 				  0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15,  
 				 16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,  27,  28,  29,  30,  31,  
@@ -131,6 +136,37 @@ class Scenario( defs.Defs ):
 				191, 192, 193, 194, 195, 204, 209, 214, 219, 224, 229, 234, 242, 248, 252, 253, 
 				196, 197, 198, 199, 200, 205, 210, 215, 220, 225, 230, 235, 243, 249, 254, 255,
 				]
+				
+		elif self.name in [ "JB469diag", "JB470diag", "JB471diag" ]:
+			self.spaces_order = [ None ] * self.puzzle.board_wh
+			used = [ False ] * self.puzzle.board_wh
+			for depth in range( self.puzzle.board_wh ):
+				WH = self.puzzle.board_wh
+				d_selected = WH*WH + WH*WH
+				s_selected = WH
+				for y in range(self.puzzle.board_h):
+					for x in range(self.puzzle.board_w):
+						s = x+y*self.puzzle.board_w
+						if used[ s ]:
+							continue
+						
+						# distance to top left corner
+						d = x*x + y*y
+						if d_selected > d:
+							x_selected = x
+							y_selected = y
+							d_selected = d
+							s_selected = s
+
+				used[ s_selected ] = True
+				self.spaces_order[ s_selected ] = depth 
+			print(self.spaces_order)
+
+
+
+					
+				
+			
 
 		self.spaces_sequence = []
 		for depth in range(self.puzzle.board_wh):
@@ -217,8 +253,5 @@ if __name__ == "__main__":
 	import data
 
 	p = data.loadPuzzle()
-
-	s = Scenario(p, target_score)
-	p.initPatternsRelations()
 
 

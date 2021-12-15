@@ -108,6 +108,11 @@ class Defs():
 			if self.DEBUG > 3:
 				print(self.XTermEnv+'[ Debug mode enabled :', self.DEBUG, ']', self.XTermNormal)
 
+		if os.environ.get('DEBUG_STATIC') != None:
+			self.DEBUG_STATIC = int(os.environ.get('DEBUG_STATIC'))
+			if self.DEBUG_STATIC > 0:
+				print(self.XTermEnv+'[ Debug Static Data:', self.DEBUG_STATIC, ']', self.XTermNormal)
+
 		if os.environ.get('HOSTNAME') != None:
 			self.HOSTNAME = os.environ.get('HOSTNAME')
 		else:

@@ -84,7 +84,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		self.xffff = format(len(self.puzzle.master_lists_of_rotated_pieces)-1, '6')
 
 		#self.DEPTH_COLORS[0]= "" 
-		for i in [249, 250, 251, 252]:
+		for i in range(140,253):
 			self.DEPTH_COLORS[i] = self.rougeoie
 
 		self.DEPTH_COLORS[253] = self.orangeoie 
@@ -145,7 +145,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			elif command in [ "b", "best", "show_best_board", "url" ]:
 				self.LibExt.xorCommands( self.cb, self.COMMANDS[ 'SHOW_BEST_BOARD_URL_ONCE' ] )
 			elif command in [ "m", "max", "show_max_depth_seen" ]:
-				self.LibExt.xorCommands( self.cb, self.COMMANDS[ 'SHOW_MAX_DEPTH_SEEN_ONCE' ] )
+				self.LibExt.xorCommands( self.cb, self.COMMANDS[ 'SHOW_MAX_DEPTH_SEEN' ] )
 			elif command in [ "s", "save", "save_max_depth_seen" ]:
 				self.LibExt.xorCommands( self.cb, self.COMMANDS[ 'SAVE_MAX_DEPTH_SEEN_ONCE' ] )
 
@@ -1034,7 +1034,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, 'depth'+d+":  // Labels are ugly, don't do this at home" ),
 				] )
 
-			if depth > 245 and depth < 252:
+			if (self.DEBUG > 0 and depth > 140) or (depth > 245 and depth < 252):
 				output.append( (2, 'if (cb->max_depth_seen < '+d+') {') )
 				output.append( (3, 'cb->max_depth_seen = '+d+';') )
 				output.append( (3, 'cb->max_depth_seen_heartbeat['+d+'] = cb->heartbeat;') )
