@@ -58,7 +58,7 @@ class External_Libs( defs.Defs ):
 
 
 		# Lib folder
-		self.LIBFOLDER_PUZZLE       = "generated"+"/"+self.HOSTNAME+"/"+self.getFileFriendlyName(self.puzzle.name)+self.EXTRA_NAME
+		self.LIBFOLDER_PUZZLE       = "generated"+"/"+self.HOSTNAME+"/"+self.getFileFriendlyName(self.puzzle.name)+"_"+self.puzzle.scenario.name+self.EXTRA_NAME
 
 
 		if not os.path.exists( self.LIBFOLDER_PUZZLE ):

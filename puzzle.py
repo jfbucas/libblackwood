@@ -10,7 +10,7 @@ import ctypes
 
 # Local Libs
 import defs
-import scenario
+import scenarios
 
 
 #
@@ -153,15 +153,7 @@ class Puzzle( defs.Defs ):
 
 		self.readStatistics()
 
-		self.scenario = None
-		if os.environ.get('SCENARIO') != None:
-			self.scenario = scenario.Scenario(self, os.environ.get('SCENARIO'))
-		else:
-			self.scenario = scenario.Scenario(self, "")
-
-		if self.DEBUG > 0:
-			self.info(" * Using scenario : "+self.scenario.name )
-
+		self.scenario = scenarios.loadScenario(self)
 
 		# The Seed for the Generator
 		self.seed = random.randint(0, sys.maxsize)

@@ -84,7 +84,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		self.xffff = format(len(self.puzzle.master_lists_of_rotated_pieces)-1, '6')
 
 		#self.DEPTH_COLORS[0]= "" 
-		for i in range(140,253):
+		for i in range(190,253):
 			self.DEPTH_COLORS[i] = self.rougeoie
 
 		self.DEPTH_COLORS[253] = self.orangeoie 
@@ -1057,7 +1057,10 @@ class LibBlackwood( external_libs.External_Libs ):
 			if depth == WH:
 				output.append( (2, '// We have a complete puzzle !!' ) )
 				output.append( (2, 'setWFN(cb, 1);' ) )
-				output.append( (2, 'sleep(600); // Wait for the WFN thread' ) )
+				output.append( (2, 'for(i=0;(i<300) && (!getTTF(cb));i++) {') )
+				output.append( (3, 'fdo_commands(output, cb);' ) )
+				output.append( (3, 'sleep(1); // Wait for the WFN thread' ) )
+				output.append( (2, '}' ) )
 				output.append( (0, '' ) )
 				output.append( (2, "goto depth_end;"))
 				break
@@ -1093,7 +1096,9 @@ class LibBlackwood( external_libs.External_Libs ):
 
 
 			index_piece_name = self.puzzle.scenario.get_index_piece_name(depth)
-			conflicts = "_conflicts" if index_piece_name.endswith("_conflicts") else ""
+			conflicts_array = [ x for x in self.puzzle.scenario.conflicts_indexes_allowed if x <= depth ]
+			#conflicts = "_conflicts" if index_piece_name.endswith("_conflicts") else ""
+			conflicts = "_conflicts" if len(conflicts_array) > 0 else ""
 			
 			uSide = "0" if space < W          else "board["+sspace+"-W]->d";
 			rSide = "0" if (space+1) % W != 0 else "board["+sspace+"+1]->l";
@@ -1106,7 +1111,8 @@ class LibBlackwood( external_libs.External_Libs ):
 			
 			output.append( (2, 'depth'+d+"_backtrack:" ) )
 	
-			#output.append( (2, 'DEBUG_PRINT(("'+" "*depth+' Space '+sspace+' - trying index : %d %d %d\\n", piece_index_to_try_next['+d+'], '+lSide+', '+uSide+' ))'  if self.DEBUG > 0 else "" ))
+			#if conflicts != "":
+			#	output.append( (2, 'DEBUG_PRINT(("'+" "*depth+' Space '+sspace+' - trying index : %d %d %d\\n", piece_index_to_try_next['+d+'], '+lSide+', '+uSide+' ))'  if self.DEBUG > 0 else "" ))
 			output.append( (2, "while (cb->"+master_lists_of_rotated_pieces+"[ piece_index_to_try_next["+d+"] ] != NULL) {"))
 			
 			
@@ -1115,9 +1121,11 @@ class LibBlackwood( external_libs.External_Libs ):
 			if depth > 0 and depth <= self.puzzle.scenario.heuristic_patterns_max_index and self.puzzle.scenario.heuristic_patterns_count[depth] > 0: 
 				output.append( (3, "if ((cumulative_heuristic_side_count["+d+"-1] + current_rotated_piece->heuristic_side) < "+str(self.puzzle.scenario.heuristic_patterns_count[depth])+" ) break;"))
 
-			if conflicts != "":
-				conflicts_array = [ x for x in self.puzzle.scenario.conflicts_indexes_allowed if x < depth ]
-				output.append( (3, "if (current_rotated_piece->heuristic_conflicts + cumulative_heuristic_conflicts_count["+d+"-1] > "+str(len(conflicts_array))+ ") break; // "+str(conflicts_array)))
+			if len(conflicts_array) > 0:
+				if depth == conflicts_array[0]:
+					output.append( (3, "if (current_rotated_piece->heuristic_conflicts > "+str(len(conflicts_array))+ ") break; // "+str(conflicts_array)))
+				else:
+					output.append( (3, "if (current_rotated_piece->heuristic_conflicts + cumulative_heuristic_conflicts_count["+d+"-1] > "+str(len(conflicts_array))+ ") break; // "+str(conflicts_array)))
 			
 			output.append( (3, "piece_index_to_try_next["+d+"] ++;"))
 			output.append( (3, "if (pieces_used[ current_rotated_piece->p ] != 0) continue;"))
@@ -1129,8 +1137,11 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (3, "cumulative_heuristic_side_count["+d+"] = current_rotated_piece->heuristic_side;"))
 			elif depth <= self.puzzle.scenario.heuristic_patterns_max_index: 
 				output.append( (3, "cumulative_heuristic_side_count["+d+"] = cumulative_heuristic_side_count["+d+"-1] + current_rotated_piece->heuristic_side;"))
-			if conflicts != "":
-				output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = cumulative_heuristic_conflicts_count["+d+"-1] + current_rotated_piece->heuristic_conflicts;"))
+			if len(conflicts_array) > 0:
+				if depth == conflicts_array[0]:
+					output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = current_rotated_piece->heuristic_conflicts;"))
+				else:
+					output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = cumulative_heuristic_conflicts_count["+d+"-1] + current_rotated_piece->heuristic_conflicts;"))
 			
 			output.append( (3, "goto depth"+str(depth+1)+";"))
 			output.append( (2, "}"))
