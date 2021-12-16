@@ -8,6 +8,7 @@ from . import jb470rowscan
 from . import jb470tiles64
 from . import jb470tiles64diag
 
+from . import rowscan
 
 
 def loadScenario( puzzle, name = "JB470" ):
@@ -37,6 +38,9 @@ def loadScenario( puzzle, name = "JB470" ):
 		s = jb470tiles64.JB470Tiles64(puzzle)
 	elif name in [ "JB470tiles64diag" ]:
 		s = jb470tiles64diag.JB470Tiles64Diag(puzzle)
+
+	elif name in [ "rowscan" ]:
+		s = rowscan.RowScan(puzzle)
 
 	if s == None:
 		print( "ERROR: Unknown scenario: ", name)
