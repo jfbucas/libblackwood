@@ -81,7 +81,7 @@ class RotatedPiece():
 	d = 0
 	l = 0
 	conflicts_count = 0
-	heuristic_side_count = 0
+	heuristic_patterns_count = [0,0,0,0,0] # up to 5 heuristics on patterns count
 
 	def __init__(self, p, rotation, u, r, d, l, b, h):
 		self.p = p
@@ -91,27 +91,27 @@ class RotatedPiece():
 		self.d = d
 		self.l = l
 		self.conflicts_count = b
-		self.heuristic_side_count = h
+		self.heuristic_patterns_count = h
 
 	def __str__(self):
-		return str(self.p).zfill(3)+"["+str(self.conflicts_count)+"/"+str(self.heuristic_side_count)+":"+chr(ord('a')+self.r)+chr(ord('a')+self.d)+"]"
+		return str(self.p).zfill(3)+"["+str(self.conflicts_count)+"/"+str(self.heuristic_patterns_count)+":"+chr(ord('a')+self.r)+chr(ord('a')+self.d)+"]"
 	def __repr__(self):
-		return str(self.p).zfill(3)+"["+str(self.conflicts_count)+"/"+str(self.heuristic_side_count)+":"+chr(ord('a')+self.r)+chr(ord('a')+self.d)+"]"
+		return str(self.p).zfill(3)+"["+str(self.conflicts_count)+"/"+str(self.heuristic_patterns_count)+":"+chr(ord('a')+self.r)+chr(ord('a')+self.d)+"]"
 
-class RotatedPieceWithDownLeft():
-	l_u = 0
+class RotatedPieceWithRef():
+	ref = 0
 	score = 0
 	rotated_piece = None
 
-	def __init__(self, l_u, score, rotated_piece):
-		self.l_u = l_u
+	def __init__(self, ref, score, rotated_piece):
+		self.ref = ref
 		self.score = score
 		self.rotated_piece = rotated_piece
 
 	def __str__(self):
-		return str(self.l_u)+":"+str(self.rotated_piece.p+1)+"("+str(self.score)+")"
+		return str(self.ref)+":"+str(self.rotated_piece.p+1)+"("+str(self.score)+")"
 	def __repr__(self):
-		return str(self.l_u)+":"+str(self.rotated_piece.p+1)+"("+str(self.score)+")"
+		return str(self.ref)+":"+str(self.rotated_piece.p+1)+"("+str(self.score)+")"
 
 
 class Puzzle( defs.Defs ):
@@ -358,13 +358,16 @@ class Puzzle( defs.Defs ):
 	def getRotatedPieces( self, piece, allow_conflicts=False ):
 		
 		score = 0
-		heuristic_side_count = 0
+		heuristic_patterns_count = [ 0, 0, 0, 0, 0 ]
 
-		for side in self.scenario.heuristic_patterns:
-			for e in piece.getEdges():
-				if e == side:
-					score += 100
-					heuristic_side_count += 1
+		i = 0
+		for hp in self.scenario.heuristic_patterns:
+			for pattern in hp:
+				for e in piece.getEdges():
+					if e == pattern:
+						score += 100
+						heuristic_patterns_count[i] += 1
+			i += 1
 
 
 		rotatedPieces = []
@@ -379,26 +382,26 @@ class Puzzle( defs.Defs ):
 				for rotation in [ 0, 1, 2, 3 ]:
 
 					rotation_conflicts = 0
-					side_conflicts = 0
+					pattern_conflicts = 0
 
 					if left != piece.l:
 						rotation_conflicts += 1
 						if piece.l in colors_border:
-							side_conflicts += 1
+							pattern_conflicts += 1
 
 					if up != piece.u:
 						rotation_conflicts += 1
 						if piece.u in colors_border:
-							side_conflicts += 1
+							pattern_conflicts += 1
 
 					if  (rotation_conflicts == 0) or \
 					   ((rotation_conflicts == 1) and allow_conflicts):
 
-						if side_conflicts == 0:
+						if pattern_conflicts == 0:
 							
 							rotatedPieces.append(
-								RotatedPieceWithDownLeft(
-									l_u = (left << self.EDGE_SHIFT_LEFT) + up,
+								RotatedPieceWithRef(
+									ref = (left << self.EDGE_SHIFT_LEFT) + up,
 
 									score = score - 100000 * rotation_conflicts,
 									rotated_piece = RotatedPiece(
@@ -409,7 +412,7 @@ class Puzzle( defs.Defs ):
 										d = piece.d,
 										l = piece.l,
 										b = rotation_conflicts,
-										h = heuristic_side_count
+										h = heuristic_patterns_count
 										)
 									)
 								)
@@ -446,10 +449,10 @@ class Puzzle( defs.Defs ):
 				if p.rotated_piece.rotation != rotation:
 					continue
 
-			if p.l_u in list_pieces_rotated.keys():
-				list_pieces_rotated[p.l_u].append(p)
+			if p.ref in list_pieces_rotated.keys():
+				list_pieces_rotated[p.ref].append(p)
 			else:
-				list_pieces_rotated[p.l_u] = [ p ]
+				list_pieces_rotated[p.ref] = [ p ]
 
 		return list_pieces_rotated
 
@@ -459,12 +462,12 @@ class Puzzle( defs.Defs ):
 		rand_entropy = 99
 
 		array = [ None ] * self.EDGE_DOMAIN_2_PIECE
-		for l_u in list_pieces.keys():
+		for ref in list_pieces.keys():
 			tmp = []
-			for p in sorted(list_pieces[ l_u ], reverse=True, key=lambda x : x.score+random.randint(0,rand_entropy)):
+			for p in sorted(list_pieces[ ref ], reverse=True, key=lambda x : x.score+random.randint(0,rand_entropy)):
 				tmp.append(p.rotated_piece)
 				
-			array[ l_u ] = tmp
+			array[ ref ] = tmp
 		return array
 
 

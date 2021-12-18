@@ -214,6 +214,9 @@ class Defs():
 		if max_len != None:
 			max_a = max_b = max_c = max_d = max_e = max_len
 		else:
+			if array_wh == 0:
+				array_wh = array_w * array_h
+
 			for s in range( array_wh ):
 				if max_a < len(get_str(a[ s ])):
 					max_a = len(get_str(a[ s ]))

@@ -20,7 +20,9 @@ class Scenario( defs.Defs ):
 			self.info(" * Using scenario : "+self.name )
 
 		self.seed = 0
-		self.heuristic_patterns_count = [0] * self.puzzle.board_wh
+		self.heuristic_patterns_count = []
+		for i in range(5):
+			self.heuristic_patterns_count.append( [0] * self.puzzle.board_wh )
 		self.spaces_order = [None] * self.puzzle.board_wh
 		self.spaces_sequence = [None] * self.puzzle.board_wh
 
@@ -32,27 +34,27 @@ class Scenario( defs.Defs ):
 				self.info(" * Init Scenario Env Seed : "+str(self.seed) )
 
 		# Init the pattern heuristic
-		if self.puzzle.DEBUG > 2:
-			self.puzzle.info( " * Preparing patterns count heuristics" )
-		
 		self.prepare_patterns_count_heuristics()
 		
-		if self.puzzle.DEBUG_STATIC > 2:
-			self.printArray(self.heuristic_patterns_count, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
-
+		if self.puzzle.DEBUG_STATIC > 0:
+			self.puzzle.info( " * Patterns count heuristics" )
+			for i in range(5):
+				if sum(self.heuristic_patterns_count[i]) > 0:
+					self.printArray(self.heuristic_patterns_count[i], array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
 		
 		# Init the space order
-		if self.DEBUG > 2:
-			self.info( " * Preparing spaces order" )
-
 		self.prepare_spaces_order()
 
+		if self.DEBUG_STATIC > 2:
+			self.info( " * Spaces order" )
+			self.printArray(self.spaces_order, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
 
 		# Init the space sequence
-		if self.DEBUG > 2:
-			self.info( " * Preparing spaces sequences" )
-
 		self.prepare_spaces_sequence()
+
+		if self.DEBUG_STATIC > 2:
+			self.info( " * Spaces sequences" )
+			self.printArray(self.spaces_sequence, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
 
 	# ----- Prepare spaces sequences
 	def prepare_spaces_sequence( self ):
@@ -67,6 +69,14 @@ class Scenario( defs.Defs ):
 				print("---[ Sequence ",depth, "]---")
 				self.printArray(tmp, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
 			
+	# ----- Return the index of the last number before the zeros
+	def max_index( self, array ):
+
+		index = len(array)-1
+		while array[index] == 0:
+			index -= 1
+
+		return index
 
 	# ----- Provide the index name for the space
 	def get_index_piece_name(self, depth):

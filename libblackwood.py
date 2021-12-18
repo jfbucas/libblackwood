@@ -216,7 +216,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(0, '' ),
 
 				(1, 'if (b->commands & SHOW_TITLE)' ),
-				(2, prefix+'printf( '+out+' "\\n' + self.H1_OPEN + self.TITLE_STR + self.H1_CLOSE + '\\n\\n" );' ),
+				(2, prefix+'printf( '+out+' "\\n' + self.H1_OPEN + self.TITLE_STR + self.puzzle.name +"("+ self.puzzle.scenario.name +")"+ self.H1_CLOSE + '\\n\\n" );' ),
 				(0, '' ),
 
 				(1, 'if (b->commands & SHOW_HEARTBEAT)' ),
@@ -958,7 +958,13 @@ class LibBlackwood( external_libs.External_Libs ):
 
 			(1, 'uint8 was_allocated;' ),
 			(1, 'uint8 pieces_used[WH];' ),
-			(1, 'uint8 cumulative_heuristic_side_count[WH];' ),
+			] )
+
+		for i in range(5):
+			if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+				output.append( (1, 'uint8 cumulative_heuristic_patterns_count_'+str(i)+'[WH];' ) )
+
+		output.extend( [
 			(1, 'uint8 cumulative_heuristic_conflicts_count[WH];' ),
 			(1, 'uint16 piece_index_to_try_next[WH];' ),
 			(1, 'uint64 depth_nodes_count[WH];' ),
@@ -1008,7 +1014,11 @@ class LibBlackwood( external_libs.External_Libs ):
 			(1, '// Local variables' ),
 			(1, 'for(i=0;i<WH;i++){' ),
 			(2, 'pieces_used[i] = 0;' ),
-			(2, 'cumulative_heuristic_side_count[i] = 0;' ),
+			] )
+		for i in range(5):
+			if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+				output.append( (2, 'cumulative_heuristic_patterns_count_'+str(i)+'[i] = 0;' ) )
+		output.extend( [
 			(2, 'cumulative_heuristic_conflicts_count[i] = 0;' ),
 			(2, 'piece_index_to_try_next[i] = '+self.xffff+';' ),
 			(2, 'depth_nodes_count[i] = 0;' ),
@@ -1118,8 +1128,11 @@ class LibBlackwood( external_libs.External_Libs ):
 			
 			output.append( (3, "current_rotated_piece = cb->"+master_lists_of_rotated_pieces+"[ piece_index_to_try_next["+d+"] ];" ))
 			#output.append( (3, 'DEBUG_PRINT(("'+" " * depth+' Trying piece : %d\\n", current_rotated_piece->p))' ))
-			if depth > 0 and depth <= self.puzzle.scenario.heuristic_patterns_max_index and self.puzzle.scenario.heuristic_patterns_count[depth] > 0: 
-				output.append( (3, "if ((cumulative_heuristic_side_count["+d+"-1] + current_rotated_piece->heuristic_side) < "+str(self.puzzle.scenario.heuristic_patterns_count[depth])+" ) break;"))
+			if depth > 0:
+				for i in range(5):
+					if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+						if self.puzzle.scenario.heuristic_patterns_count[i][depth] > 0: 
+							output.append( (3, "if ((cumulative_heuristic_patterns_count_"+str(i)+"["+d+"-1] + current_rotated_piece->heuristic_patterns_"+str(i)+") < "+str(self.puzzle.scenario.heuristic_patterns_count[i][depth])+" ) break;"))
 
 			if len(conflicts_array) > 0:
 				if depth == conflicts_array[0]:
@@ -1133,10 +1146,12 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (3, "board["+sspace+"] = current_rotated_piece;"))
 			#output.append( (3, 'DEBUG_PRINT(("'+" "*depth+' Space '+sspace+' - inserting piece : %d \\n", board['+sspace+']->p ))'  if self.DEBUG > 1 else "" ))
 			output.append( (3, 'pieces_used[current_rotated_piece->p] = 1;' ) )
-			if depth == 0: 
-				output.append( (3, "cumulative_heuristic_side_count["+d+"] = current_rotated_piece->heuristic_side;"))
-			elif depth <= self.puzzle.scenario.heuristic_patterns_max_index: 
-				output.append( (3, "cumulative_heuristic_side_count["+d+"] = cumulative_heuristic_side_count["+d+"-1] + current_rotated_piece->heuristic_side;"))
+			for i in range(5):
+				if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+					if depth == 0: 
+						output.append( (3, "cumulative_heuristic_patterns_count_"+str(i)+"["+d+"] = current_rotated_piece->heuristic_patterns_"+str(i)+";"))
+					elif depth <= self.puzzle.scenario.max_index(self.puzzle.scenario.heuristic_patterns_count[i]): 
+						output.append( (3, "cumulative_heuristic_patterns_count_"+str(i)+"["+d+"] = cumulative_heuristic_patterns_count_"+str(i)+"["+d+"-1] + current_rotated_piece->heuristic_patterns_"+str(i)+";"))
 			if len(conflicts_array) > 0:
 				if depth == conflicts_array[0]:
 					output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = current_rotated_piece->heuristic_conflicts;"))

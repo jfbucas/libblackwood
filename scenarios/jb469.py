@@ -9,8 +9,8 @@ class JB469( scenario.Scenario ):
 		self.name = "JB469"
 
 		self.score_target = 469
-		self.heuristic_patterns = [ 17, 2, 18 ]
-		self.heuristic_patterns_max_index = 156
+		self.heuristic_patterns = [ [ 9, 12, 15 ] ]
+		#self.heuristic_patterns = [ [ 17, 2, 18 ] ]
 		self.conflicts_indexes_allowed = [ 201, 206, 211, 216, 221, 225, 229, 233, 237, 239, 241, 256 ]
 
 		self.timelimit = 180 # Minutes
@@ -20,16 +20,14 @@ class JB469( scenario.Scenario ):
 	def prepare_patterns_count_heuristics( self ):
 
 		for i in range(self.puzzle.board_wh):
-			if i <= 16:
-				self.heuristic_patterns_count[i] = 0
-			elif i <= 26:
-				self.heuristic_patterns_count[i] = int((float(i) - 16) * float(3.1))
-			elif i <= 56:
-				self.heuristic_patterns_count[i] = int(((float(i) - 26) * float(1.43333)) + 31)
-			elif i <= 96:
-				self.heuristic_patterns_count[i] = int(((float(i) - 56) * float(0.65)) + 74)
-			elif i <= self.heuristic_patterns_max_index:
-				self.heuristic_patterns_count[i] = int(((float(i) - 96) / 3.75) + 100)
+			if i in range(17, 27):
+				self.heuristic_patterns_count[0][i] = int((i - 16) * 3.1)
+			elif i in range(27, 57):
+				self.heuristic_patterns_count[0][i] = int((i - 26) * 1.43333) + 31
+			elif i in range(57, 97):
+				self.heuristic_patterns_count[0][i] = int((i - 56) * 0.65) + 74
+			elif i in range(97, 157):
+				self.heuristic_patterns_count[0][i] = int((i - 96) / 3.75) + 100
 
 
 	def prepare_spaces_order( self ):

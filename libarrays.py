@@ -107,8 +107,13 @@ class LibArrays( external_libs.External_Libs ):
 			i = 0
 			for y in l:
 				x = self.puzzle.master_all_rotated_pieces[y]
-				##output.append( (2, "{ .p ="+format(x.p, "3")+ ", .r ="+format(x.r, "3")+ ",  .d ="+format(x.d, "3") + ", .heuristic_side_and_conflicts_count =("+format(x.heuristic_side_count, "3") + "<< 1) +"+format(x.conflicts_count, "3")+ "  }" + (", " if str(x) != l[-1] else "") + " // " + y + "  #" +str(i)) )
-				output.append( (2, "{ .p ="+format(x.p, "3")+ ", .r ="+format(x.r, "3")+ ",  .d ="+format(x.d, "3") + ", .heuristic_side ="+format(x.heuristic_side_count, "3") + ", .heuristic_conflicts ="+format(x.conflicts_count, "3")+ ", .padding0=0, .padding1=0, .padding2=0  }" + (", " if str(x) != l[-1] else "") + " // " + y + "  #" +str(i)) )
+				output.append( (2, "{ .p ="+format(x.p, "3")+ ", .u ="+format(x.u, "3")+ ", .r ="+format(x.r, "3")+ ", .d ="+format(x.d, "3")+ ",  .l ="+format(x.l, "3") + \
+					", .heuristic_patterns_0 ="+format(x.heuristic_patterns_count[0], "3") + \
+					", .heuristic_patterns_1 ="+format(x.heuristic_patterns_count[1], "3") + \
+					", .heuristic_patterns_2 ="+format(x.heuristic_patterns_count[2], "3") + \
+					", .heuristic_patterns_3 ="+format(x.heuristic_patterns_count[3], "3") + \
+					", .heuristic_patterns_4 ="+format(x.heuristic_patterns_count[4], "3") + \
+					", .heuristic_conflicts ="+format(x.conflicts_count, "3")+ " }" + (", " if str(x) != l[-1] else "") + " // " + y + "  #" +str(i)) )
 				i += 1
 
 			output.append( (2 , "};") )
@@ -143,14 +148,18 @@ class LibArrays( external_libs.External_Libs ):
 			
 		# ---------------------
 		if only_signature:
-			output.append( (0 , "extern uint64 heuristic_patterns_count[WH];") )
+			for i in range(5):
+				if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+					output.append( (0 , "extern uint64 heuristic_patterns_count_"+str(i)+"[WH];") )
 		else:
 
-			output.append( (0 , "uint64 heuristic_patterns_count[] = {") )
-			for y in range(self.puzzle.board_h):
-				output.append( (2 , ",".join([format(n, '3') for n in self.puzzle.scenario.heuristic_patterns_count[y*self.puzzle.board_w:(y+1)*self.puzzle.board_w]]) + ( "," if y<(self.puzzle.board_h-1) else "" )) )
-			output.append( (2 , "};") )
-			output.append( (0 , "") )
+			for i in range(5):
+				if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+					output.append( (0 , "uint64 heuristic_patterns_count_"+str(i)+"[] = {") )
+					for y in range(self.puzzle.board_h):
+						output.append( (2 , ",".join([format(n, '3') for n in self.puzzle.scenario.heuristic_patterns_count[i][y*self.puzzle.board_w:(y+1)*self.puzzle.board_w]]) + ( "," if y<(self.puzzle.board_h-1) else "" )) )
+					output.append( (2 , "};") )
+					output.append( (0 , "") )
 			
 
 		# ---------------------
@@ -203,14 +212,16 @@ class LibArrays( external_libs.External_Libs ):
 			( 0, "// Rotated Piece" ),
 			( 0, "struct st_rotated_piece {" ),
 			( 1,	"uint8 p;" ),
+			( 1,	"uint8 u;" ),
 			( 1,	"uint8 r;" ),
 			( 1,	"uint8 d;" ),
-			#( 1,	"uint8 heuristic_side_and_conflicts_count;" ),
-			( 1,	"uint8 heuristic_side;" ),
+			( 1,	"uint8 l;" ),
+			( 1,	"uint8 heuristic_patterns_0;" ),
+			( 1,	"uint8 heuristic_patterns_1;" ),
+			( 1,	"uint8 heuristic_patterns_2;" ),
+			( 1,	"uint8 heuristic_patterns_3;" ),
+			( 1,	"uint8 heuristic_patterns_4;" ),
 			( 1,	"uint8 heuristic_conflicts;" ),
-			( 1,	"uint8 padding0;" ),
-			( 1,	"uint8 padding1;" ),
-			( 1,	"uint8 padding2;" ),
 			( 0, "};" ),
 			( 0, "typedef struct st_rotated_piece t_rotated_piece;" ),
 			( 0, "typedef struct st_rotated_piece * p_rotated_piece;" ),
