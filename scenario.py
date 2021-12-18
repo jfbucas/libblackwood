@@ -7,6 +7,8 @@ import random
 # Local Libs
 import defs
 
+global_list = []
+
 # General scenario for Backtracker
 
 class Scenario( defs.Defs ):

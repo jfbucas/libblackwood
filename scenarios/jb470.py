@@ -6,7 +6,7 @@ class JB470( scenario.Scenario ):
 	def __init__( self, puzzle ):
 
 		self.puzzle = puzzle
-		self.name = "JB470"
+		self.name = __name__.split(".")[1]
 
 		self.score_target = 470
 		self.heuristic_patterns = [ [ 9, 12, 15 ] ]
@@ -51,3 +51,4 @@ class JB470( scenario.Scenario ):
 			196, 197, 198, 199, 200, 205, 210, 215, 220, 225, 230, 235, 243, 249, 254, 255,
 			]
 
+scenario.global_list.append(JB470)

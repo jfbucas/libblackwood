@@ -1,6 +1,6 @@
 import scenario
 
-class JB470Tiles64Diag( scenario.Scenario ):
+class JB470Tiles64Diag3( scenario.Scenario ):
 	"""The Joshua Blackwood 470 with a sequence by tiles64, but last tiles64 in diagonal Scenario"""
 
 	def __init__( self, puzzle ):
@@ -30,13 +30,12 @@ class JB470Tiles64Diag( scenario.Scenario ):
 			elif i in range(103, 161):
 				self.heuristic_patterns_count[0][i] = int((i - 102) / 4.4615) + 106
 
+
 	def prepare_spaces_order( self ):
 
 		depth=0
 		for (ys, ye, xs, xe) in [
-			(0, self.puzzle.board_h//2, 0,self.puzzle.board_w//2),
-			(0, self.puzzle.board_h//2, self.puzzle.board_w//2, self.puzzle.board_w),
-			(self.puzzle.board_h//2, self.puzzle.board_h, 0,self.puzzle.board_w//2),
+			(0, self.puzzle.board_h//2+5, 0,self.puzzle.board_w),
 			]:
 		      
 			for y in range(ys, ye):
@@ -47,14 +46,26 @@ class JB470Tiles64Diag( scenario.Scenario ):
 
 		for y in range(0, self.puzzle.board_h//2):
 			for x in range(y+1):
-				s = self.puzzle.board_w//2 + x + (y+(self.puzzle.board_h//2)-x)*self.puzzle.board_w
+				s = x + (y+(self.puzzle.board_h//2)-x)*self.puzzle.board_w
+				if self.spaces_order[s] != None:
+					continue
+				self.spaces_order[ s ] = depth 
+				depth+=1
+
+		for x in range(1, self.puzzle.board_w//2+1):
+			for y in range(self.puzzle.board_h//2):
+				s = x+y+(self.puzzle.board_h-1-y)*self.puzzle.board_w
+				if self.spaces_order[s] != None:
+					continue
 				self.spaces_order[ s ] = depth 
 				depth+=1
 
 		for x in range(self.puzzle.board_w//2+1, self.puzzle.board_w):
 			for y in range(self.puzzle.board_w-x):
 				s = x+y+(self.puzzle.board_h-1-y)*self.puzzle.board_w
+				if self.spaces_order[s] != None:
+					continue
 				self.spaces_order[ s ] = depth 
 				depth+=1
 
-scenario.global_list.append(JB470Tiles64Diag)
+scenario.global_list.append(JB470Tiles64Diag3)

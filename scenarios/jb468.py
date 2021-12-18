@@ -1,16 +1,16 @@
 import scenario
 
-class JB471( scenario.Scenario ):
-	"""The Joshua Blackwood 471 Scenario"""
+class JB468( scenario.Scenario ):
+	"""The Joshua Blackwood 468 Scenario"""
 
 	def __init__( self, puzzle ):
 
 		self.puzzle = puzzle
 		self.name = __name__.split(".")[1]
 
-		self.score_target = 471
+		self.score_target = 468
 		self.heuristic_patterns = [ [ 9, 12, 15 ] ]
-		self.conflicts_indexes_allowed = [ 206, 211, 216, 221, 225, 229, 233, 237, 239, 256 ]
+		self.conflicts_indexes_allowed = [ 201, 206, 211, 216, 221, 225, 229, 233, 237, 239, 241, 243, 256 ]
 
 		self.timelimit = 180 # Minutes
 
@@ -20,15 +20,14 @@ class JB471( scenario.Scenario ):
 
 		for i in range(self.puzzle.board_wh):
 			if i in range(17, 27):
-				self.heuristic_patterns_count[0][i] = int((i - 16) * 2.8)
+				self.heuristic_patterns_count[0][i] = int((i - 16) * 3.1)
 			elif i in range(27, 57):
-				self.heuristic_patterns_count[0][i] = int((i - 26) * 1.43333) + 28
-			elif i in range(57, 77):
-				self.heuristic_patterns_count[0][i] = int((i - 56) * 0.9) + 71
-			elif i in range(77, 103):
-				self.heuristic_patterns_count[0][i] = int((i - 76) * 0.6538) + 89
-			elif i in range(103, 161):
-				self.heuristic_patterns_count[0][i] = int((i - 102) / 4.4615) + 106
+				self.heuristic_patterns_count[0][i] = int((i - 26) * 1.43333) + 31
+			elif i in range(57, 97):
+				self.heuristic_patterns_count[0][i] = int((i - 56) * 0.65) + 74
+			elif i in range(97, 157):
+				self.heuristic_patterns_count[0][i] = int((i - 96) / 3.75) + 100
+
 
 	def prepare_spaces_order( self ):
 
@@ -51,4 +50,5 @@ class JB471( scenario.Scenario ):
 			196, 197, 198, 199, 200, 205, 210, 215, 220, 225, 230, 235, 243, 249, 254, 255,
 			]
 
-scenario.global_list.append(JB471)
+
+scenario.global_list.append(JB468)

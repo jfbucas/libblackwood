@@ -6,7 +6,7 @@ class RowScan( scenario.Scenario ):
 	def __init__( self, puzzle ):
 
 		self.puzzle = puzzle
-		self.name = "rowscan"
+		self.name = __name__.split(".")[1]
 
 		self.score_target = 480
 		self.heuristic_patterns = [ [ 9, 12, 15 ] ]
@@ -39,3 +39,4 @@ class RowScan( scenario.Scenario ):
 				self.spaces_order[ s ] = depth 
 				depth+=1
 
+scenario.global_list.append(RowScan)

@@ -1,7 +1,7 @@
 import scenario
 
-class JB470Circle( scenario.Scenario ):
-	"""The Joshua Blackwood 470 with a growing circle from the top-left corner Scenario"""
+class JB470Tiles64Diag4( scenario.Scenario ):
+	"""The Joshua Blackwood 470 with a sequence by tiles64, but last tiles64 in diagonal Scenario"""
 
 	def __init__( self, puzzle ):
 
@@ -32,26 +32,31 @@ class JB470Circle( scenario.Scenario ):
 
 	def prepare_spaces_order( self ):
 
-		used = [ False ] * self.puzzle.board_wh
-		for depth in range( self.puzzle.board_wh ):
-			WH = self.puzzle.board_wh
-			d_selected = WH*WH + WH*WH
-			s_selected = WH
-			for y in range(self.puzzle.board_h):
-				for x in range(self.puzzle.board_w):
+		depth=0
+		for (ys, ye, xs, xe) in [
+			(0, self.puzzle.board_h-4, 0,self.puzzle.board_w-4),
+			]:
+		      
+			for y in range(ys, ye):
+				for x in range(xs, xe):
 					s = x+y*self.puzzle.board_w
-					if used[ s ]:
-						continue
-					
-					# distance to top left corner
-					d = x*x + y*y
-					if d_selected > d:
-						x_selected = x
-						y_selected = y
-						d_selected = d
-						s_selected = s
+					self.spaces_order[ s ] = depth 
+					depth+=1
 
-			used[ s_selected ] = True
-			self.spaces_order[ s_selected ] = depth 
+		for y in range(self.puzzle.board_h):
+			for x in range(y+1):
+				s = x+(y-x)*self.puzzle.board_w
+				if self.spaces_order[s] != None:
+					continue
+				self.spaces_order[ s ] = depth 
+				depth+=1
+				
+		for x in range(1,self.puzzle.board_w):
+			for y in range(self.puzzle.board_w-x):
+				s = x+y+(self.puzzle.board_h-1-y)*self.puzzle.board_w
+				if self.spaces_order[s] != None:
+					continue
+				self.spaces_order[ s ] = depth 
+				depth+=1
 
-scenario.global_list.append(JB470Circle)
+scenario.global_list.append(JB470Tiles64Diag4)
