@@ -24,6 +24,7 @@ class Piece():
 	d = 0
 	l = 0
 	fixed = False
+	weight = 0
 
 	def __init__(self, p, u,r,d,l, fixed=False):
 		self.p = p
@@ -82,8 +83,9 @@ class RotatedPiece():
 	l = 0
 	conflicts_count = 0
 	heuristic_patterns_count = [0,0,0,0,0] # up to 5 heuristics on patterns count
+	heuristic_stats16_count = 0
 
-	def __init__(self, p, rotation, u, r, d, l, b, h):
+	def __init__(self, p, rotation, u, r, d, l, b, h, w):
 		self.p = p
 		self.rotation = rotation
 		self.u = u
@@ -92,6 +94,7 @@ class RotatedPiece():
 		self.l = l
 		self.conflicts_count = b
 		self.heuristic_patterns_count = h
+		self.heuristic_stats16_count = w
 
 	def __str__(self):
 		return str(self.p).zfill(3)+"["+str(self.conflicts_count)+"/"+str(self.heuristic_patterns_count)+":"+chr(ord('a')+self.r)+chr(ord('a')+self.d)+"]"
@@ -147,8 +150,6 @@ class Puzzle( defs.Defs ):
 
 		self.board_wh = self.board_w * self.board_h
 	
-		self.TITLE_STR += self.name
-
 		self.normalizePieces()		# Make sure the pieces are how we expect them to be
 
 		self.initStaticColorsCount()
@@ -156,6 +157,8 @@ class Puzzle( defs.Defs ):
 		self.readStatistics()
 
 		self.scenario = scenarios.loadScenario(self)
+
+		self.TITLE_STR += self.name+"("+ self.scenario.name +")"
 
 		# The Seed for the Generator
 		self.seed = random.randint(0, sys.maxsize)
@@ -353,17 +356,20 @@ class Puzzle( defs.Defs ):
 				self.pieces_stats16_weight[n] += w
 
 
-		self.printArray( self.pieces_stats16_count, array_w=self.board_w, array_h=self.board_h, replacezero=True )
-		self.printArray( self.pieces_stats16_weight, array_w=self.board_w, array_h=self.board_h, replacezero=True )
+		if self.DEBUG_STATIC > 1:
+			self.info( " * Preparing stats16 weights..." )
+			self.printArray( self.pieces_stats16_count, array_w=self.board_w, array_h=self.board_h, replacezero=True )
+			self.printArray( self.pieces_stats16_weight, array_w=self.board_w, array_h=self.board_h, replacezero=True )
 
 		for p in range(self.board_wh):
 			if self.pieces_stats16_count[p] > 0:
 				self.pieces_stats16_weight[p] = self.pieces_stats16_weight[p] // self.pieces_stats16_count[p]
 		
-		self.printArray( self.pieces_stats16_weight, array_w=self.board_w, array_h=self.board_h, replacezero=True )
+		if self.DEBUG_STATIC > 1:
+			self.printArray( self.pieces_stats16_weight, array_w=self.board_w, array_h=self.board_h, replacezero=True )
 
-		print(sum(self.pieces_stats16_weight))
-		print(sum([ (w>0) for w in self.pieces_stats16_weight]))
+			print(sum(self.pieces_stats16_weight))
+			print(sum([ (w>0) for w in self.pieces_stats16_weight]))
 
 	# ----- Get all the pieces
 	def getPieces( self, only_corner=False, only_border=False, only_center=False, only_fixed=False ):
@@ -454,7 +460,8 @@ class Puzzle( defs.Defs ):
 										d = piece.d,
 										l = piece.l,
 										b = rotation_conflicts,
-										h = heuristic_patterns_count
+										h = heuristic_patterns_count,
+										w = self.pieces_stats16_weight[ piece.p ]
 										)
 									)
 								)

@@ -216,7 +216,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(0, '' ),
 
 				(1, 'if (b->commands & SHOW_TITLE)' ),
-				(2, prefix+'printf( '+out+' "\\n' + self.H1_OPEN + self.TITLE_STR + self.puzzle.name +"("+ self.puzzle.scenario.name +")"+ self.H1_CLOSE + '\\n\\n" );' ),
+				(2, prefix+'printf( '+out+' "\\n' + self.H1_OPEN + self.puzzle.TITLE_STR + self.H1_CLOSE + '\\n\\n" );' ),
 				(0, '' ),
 
 				(1, 'if (b->commands & SHOW_HEARTBEAT)' ),
@@ -964,6 +964,9 @@ class LibBlackwood( external_libs.External_Libs ):
 			if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
 				output.append( (1, 'uint8 cumulative_heuristic_patterns_count_'+str(i)+'[WH];' ) )
 
+		if self.puzzle.scenario.heuristic_stats16:
+			output.append( (1, 'uint8 cumulative_heuristic_stats16_count[WH];' ) )
+
 		output.extend( [
 			(1, 'uint8 cumulative_heuristic_conflicts_count[WH];' ),
 			(1, 'uint16 piece_index_to_try_next[WH];' ),
@@ -1015,9 +1018,14 @@ class LibBlackwood( external_libs.External_Libs ):
 			(1, 'for(i=0;i<WH;i++){' ),
 			(2, 'pieces_used[i] = 0;' ),
 			] )
+
 		for i in range(5):
 			if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
 				output.append( (2, 'cumulative_heuristic_patterns_count_'+str(i)+'[i] = 0;' ) )
+
+		if self.puzzle.scenario.heuristic_stats16:
+			output.append( (2, 'cumulative_heuristic_stats16_count[i] = 0;' ) )
+
 		output.extend( [
 			(2, 'cumulative_heuristic_conflicts_count[i] = 0;' ),
 			(2, 'piece_index_to_try_next[i] = '+self.xffff+';' ),
@@ -1133,6 +1141,8 @@ class LibBlackwood( external_libs.External_Libs ):
 					if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
 						if self.puzzle.scenario.heuristic_patterns_count[i][depth] > 0: 
 							output.append( (3, "if ((cumulative_heuristic_patterns_count_"+str(i)+"["+d+"-1] + current_rotated_piece->heuristic_patterns_"+str(i)+") < "+str(self.puzzle.scenario.heuristic_patterns_count[i][depth])+" ) break;"))
+				if self.puzzle.scenario.heuristic_stats16:
+					output.append( (3, "if ((cumulative_heuristic_stats16_count["+d+"-1] + current_rotated_piece->heuristic_stats16_count) < "+str(self.puzzle.scenario.heuristic_stats16_count[depth])+" ) break;"))
 
 			if len(conflicts_array) > 0:
 				if depth == conflicts_array[0]:
@@ -1152,6 +1162,11 @@ class LibBlackwood( external_libs.External_Libs ):
 						output.append( (3, "cumulative_heuristic_patterns_count_"+str(i)+"["+d+"] = current_rotated_piece->heuristic_patterns_"+str(i)+";"))
 					elif depth <= self.puzzle.scenario.max_index(self.puzzle.scenario.heuristic_patterns_count[i]): 
 						output.append( (3, "cumulative_heuristic_patterns_count_"+str(i)+"["+d+"] = cumulative_heuristic_patterns_count_"+str(i)+"["+d+"-1] + current_rotated_piece->heuristic_patterns_"+str(i)+";"))
+			if self.puzzle.scenario.heuristic_stats16:
+				if depth == 0: 
+					output.append( (3, "cumulative_heuristic_stats16_count["+d+"] = current_rotated_piece->heuristic_stats16_count;"))
+				elif depth <= self.puzzle.scenario.max_index(self.puzzle.scenario.heuristic_stats16_count): 
+					output.append( (3, "cumulative_heuristic_stats16_count["+d+"] = cumulative_heuristic_stats16_count["+d+"-1] + current_rotated_piece->heuristic_stats16_count;"))
 			if len(conflicts_array) > 0:
 				if depth == conflicts_array[0]:
 					output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = current_rotated_piece->heuristic_conflicts;"))

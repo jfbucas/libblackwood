@@ -103,7 +103,7 @@ def run( role_id = "" ):
 	startTime = time.time()
 
 	print( )
-	print( puzzle.H1_OPEN + puzzle.TITLE_STR + puzzle.name +"("+ puzzle.scenario.name +")"+ puzzle.H1_CLOSE )
+	print( puzzle.H1_OPEN + puzzle.TITLE_STR + puzzle.H1_CLOSE )
 	print( )
 
 	# -------------------------------------------

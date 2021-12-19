@@ -71,6 +71,7 @@ class Scenario( defs.Defs ):
 			if self.DEBUG_STATIC > 0:
 				self.info( " * Heuristics for stats16" )
 				self.printArray(self.heuristic_stats16_count, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
+				#exit()
 
 	# ----- Prepare spaces sequences
 	def prepare_spaces_sequence( self ):

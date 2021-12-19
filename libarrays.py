@@ -108,13 +108,21 @@ class LibArrays( external_libs.External_Libs ):
 			for y in l:
 				x = self.puzzle.master_all_rotated_pieces[y]
 
+				edges = ", .u ="+format(x.u, "3")+ ", .r ="+format(x.r, "3")+ ", .d ="+format(x.d, "3")+ ",  .l ="+format(x.l, "3")
+
 				heuristic_patterns = ""
 				for i in range(5):
 					if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
 						heuristic_patterns += ", .heuristic_patterns_"+str(i)+" ="+format(x.heuristic_patterns_count[i], "3")
 
-				output.append( (2, "{ .p ="+format(x.p, "3")+ ", .u ="+format(x.u, "3")+ ", .r ="+format(x.r, "3")+ ", .d ="+format(x.d, "3")+ ",  .l ="+format(x.l, "3") + \
+				heuristic_stats16 = ""
+				if self.puzzle.scenario.heuristic_stats16:
+					heuristic_stats16 = ", .heuristic_stats16_count ="+format(x.heuristic_stats16_count, "3")
+
+				output.append( (2, "{ .p ="+format(x.p, "3")+ \
+					edges + \
 					heuristic_patterns + \
+					heuristic_stats16 + \
 					", .heuristic_conflicts ="+format(x.conflicts_count, "3")+ " }" + (", " if str(x) != l[-1] else "") + " // " + y + "  #" +str(i)) )
 				i += 1
 
@@ -207,6 +215,10 @@ class LibArrays( external_libs.External_Libs ):
 
 		
 		output = []
+		
+		heuristic_stats16 = ""
+		if self.puzzle.scenario.heuristic_stats16:
+			heuristic_stats16 = "uint8 heuristic_stats16_count;"
 
 		heuristic_patterns = ""
 		for i in range(5):
@@ -221,6 +233,7 @@ class LibArrays( external_libs.External_Libs ):
 			( 1,	"uint8 r;" ),
 			( 1,	"uint8 d;" ),
 			( 1,	"uint8 l;" ),
+			( 1,	heuristic_stats16 ),
 			( 1,	heuristic_patterns ),
 			( 1,	"uint8 heuristic_conflicts;" ),
 			( 0, "};" ),
