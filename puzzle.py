@@ -155,6 +155,7 @@ class Puzzle( defs.Defs ):
 		self.initStaticColorsCount()
 
 		self.readStatistics()
+		self.pieces_stats16_weight = [0] * self.board_wh
 
 		self.scenario = scenarios.loadScenario(self)
 
