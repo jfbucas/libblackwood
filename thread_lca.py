@@ -97,15 +97,24 @@ class Leave_CPU_Alone_Thread(threading.Thread):
 		#while not self.stop_lca_thread and not self.libblackwood.LibExt.getTTF(self.libblackwood.cb):
 		#	time.sleep(self.period)
 
+		if os.environ.get('NOLCA') != None:
+			return
 		
 		while not self.stop_lca_thread and not self.libblackwood.LibExt.getTTF(self.libblackwood.cb):
 
+			# 0 means it is not paused
+			# 1 means it has been activated
 			# 2 means it has been activated/forced manually
+
 			if self.libblackwood.LibExt.getPause(self.libblackwood.cb) == 0:
-				if ( self.lca.is_one_process_running() or
-				     self.lca.is_during_working_hours() ):
-					#print( self.lca.is_one_process_running() )
-					#print( self.lca.is_during_working_hours() )
+				one_process = self.lca.is_one_process_running()
+				working_hours = self.lca.is_during_working_hours()
+				if one_process or working_hours:
+					if self.libblackwood.DEBUG > 1:
+						if one_process:
+							print( "LCA: There one process running" )
+						if working_hours:
+							print( "LCA: Working hours" )
 					self.libblackwood.LibExt.setLCA(self.libblackwood.cb, 1)
 				else:
 					self.libblackwood.LibExt.clearLCA(self.libblackwood.cb)
