@@ -11,6 +11,8 @@ class RowScan( scenario.Scenario ):
 		self.score_target = 480
 		self.heuristic_patterns = [ [ 9, 12, 15 ] ]
 		self.conflicts_indexes_allowed = [256]
+		self.heuristic_stats16 = False
+		self.depth_first_notification = 252
 
 		self.timelimit = 180 # Minutes
 

@@ -11,6 +11,8 @@ class JB470Tiles64( scenario.Scenario ):
 		self.score_target = 470
 		self.heuristic_patterns = [ [ 9, 12, 15 ] ]
 		self.conflicts_indexes_allowed = [ 197, 203, 210, 216, 221, 225, 229, 233, 236, 238, 256 ]
+		self.heuristic_stats16 = False
+		self.depth_first_notification = 252
 
 		self.timelimit = 180 # Minutes
 

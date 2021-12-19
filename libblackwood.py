@@ -1044,7 +1044,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, 'depth'+d+":  // Labels are ugly, don't do this at home" ),
 				] )
 
-			if (self.DEBUG > 0 and depth > 140) or (depth > 245 and depth < 252):
+			if (self.DEBUG > 0 and depth > 140) or (depth > 245 and depth < self.puzzle.scenario.depth_first_notification):
 				output.append( (2, 'if (cb->max_depth_seen < '+d+') {') )
 				output.append( (3, 'cb->max_depth_seen = '+d+';') )
 				output.append( (3, 'cb->max_depth_seen_heartbeat['+d+'] = cb->heartbeat;') )
@@ -1052,7 +1052,7 @@ class LibBlackwood( external_libs.External_Libs ):
 					output.append( (3, 'for(i=0;i<WH;i++) cb->board[i] = board[i];') )
 				output.append( (2, '}' ))
 
-			if depth >= 252:
+			if depth >= self.puzzle.scenario.depth_first_notification:
 				output.append( (2, 'if (cb->max_depth_seen < '+d+') {' if depth <WH else '') )
 				output.append( (3, 'cb->max_depth_seen = '+d+';') )
 				output.append( (3, 'cb->max_depth_seen_heartbeat['+d+'] = cb->heartbeat;' if depth < WH else '') )
@@ -1061,7 +1061,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (3, 'setWFN(cb, 1);' ) )
 				output.append( (3, 'cb->commands |= SAVE_MAX_DEPTH_SEEN_ONCE;' ) )
 				output.append( (3, 'cb->commands |= SHOW_MAX_DEPTH_SEEN_ONCE;' ) )
-				output.append( (3, 'cb->commands |= SHOW_BEST_BOARD_URL_ONCE;' if depth>=254 else '' ) )
+				output.append( (3, 'cb->commands |= SHOW_BEST_BOARD_URL_ONCE;' if depth>=WH-2 else '' ) )
 				output.append( (3, 'fdo_commands(output, cb);' ) )
 				output.append( (2, '}' if depth<WH else '') )
 			if depth == WH:

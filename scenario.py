@@ -25,6 +25,7 @@ class Scenario( defs.Defs ):
 		self.heuristic_patterns_count = []
 		for i in range(5):
 			self.heuristic_patterns_count.append( [0] * self.puzzle.board_wh )
+		self.heuristic_stats16_count = [0] * self.puzzle.board_wh
 		self.spaces_order = [None] * self.puzzle.board_wh
 		self.spaces_sequence = [None] * self.puzzle.board_wh
 
@@ -58,6 +59,19 @@ class Scenario( defs.Defs ):
 			self.info( " * Spaces sequences" )
 			self.printArray(self.spaces_sequence, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
 
+		
+		# Once we have the sequence, we can determine the pieces Weights, based on stats
+		if self.heuristic_stats16:
+			self.puzzle.prepare_stats16_from_sequence(self.spaces_sequence)
+		
+		# Init the stats16 heuristics
+		if self.heuristic_stats16:
+			self.prepare_stats16_count_heuristics()
+
+			if self.DEBUG_STATIC > 0:
+				self.info( " * Heuristics for stats16" )
+				self.printArray(self.heuristic_stats16_count, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
+
 	# ----- Prepare spaces sequences
 	def prepare_spaces_sequence( self ):
 
@@ -65,11 +79,14 @@ class Scenario( defs.Defs ):
 			self.spaces_sequence[ depth ] = self.spaces_order.index(depth)
 
 		if self.DEBUG_STATIC > 0:
+			filename= "generated/" + self.name + ".sequence"
+			f = open(filename, 'w')
 			tmp = [ " " ] * self.puzzle.board_wh
 			for depth in range(self.puzzle.board_wh):
 				tmp[ self.spaces_sequence[ depth ] ] = "X"
-				print("---[ Sequence ",depth, "]---")
-				self.printArray(tmp, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
+				output = self.printArray(tmp, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h, noprint=True)
+				f.write("---[ Sequence " + str(depth) + " ]---\n" + output)
+			f.close()
 			
 	# ----- Return the index of the last number before the zeros
 	def max_index( self, array ):

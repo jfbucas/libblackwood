@@ -132,6 +132,8 @@ class Puzzle( defs.Defs ):
 	static_colors_border_count = {}
 	static_colors_center_count = {}
 
+	pieces_stats16_weight = []
+
 	# Precomputed statistics
 	stats = None
 
@@ -162,7 +164,6 @@ class Puzzle( defs.Defs ):
 			if self.DEBUG > 0:
 				self.info(" * Init Puzzle Env Seed : "+str(self.seed) )
 	
-
 
 		# Prepare the list of lists of pieces
 		( self.master_index, self.master_lists_of_rotated_pieces, self.master_all_rotated_pieces ) = self.prepare_pieces()
@@ -271,46 +272,40 @@ class Puzzle( defs.Defs ):
 		self.stats = {}
 
 		if os.path.exists(filename):
+			numbers = range(0, self.board_wh)
+
 			f = open(filename, 'r')
 			for line in f:
-				if not line.startswith('#'):
-					line = line.strip('\n').strip(' ')
-					line = list( map(int, line.split(' ')) )
+				if line.startswith('#'):
+					continue
+				line = line.strip('\n').strip(' ')
+				line = list( map(int, line.split(' ')) )
 
-					#print(line)
-					space = line[0]
-					total = line[1]
+				space = line[0]
+				total = line[1]
 
-					data = {}
-					data[ "space" ] = space
-					data[ "total" ] = total
+				data = {}
+				data[ "space" ] = space
+				data[ "total" ] = total
 
+				# Numberize
+				tmp = [ (n, x) for (n,x) in zip(numbers, line[2:]) if x >= 0 ]
+				# Normalize
+				tmp = [ (n, int(x*1000000/total)) for (n,x) in tmp ]
+				# Sort
+				tmp.sort(key=keySort)
 
-					# Normalize
-					tmp = [ int(x*1000000/total) for x in line[2:] ]
-					# Numberize
-					numbers = range(0, self.board_wh)
-					tmp = [ (n, x) for (n,x) in zip(numbers, tmp) if x > 0 ]
-					# Sort
-					tmp.sort(key=keySort)
+				pieces = [ n for (n,x) in tmp if x > 0 ]
+				stats  = [ x for (n,x) in tmp if x > 0 ]
 
-					pieces = [ n for (n,x) in tmp if x > 0 ]
-					stats  = [ x for (n,x) in tmp if x > 0 ]
+				data[ "pieces" ] = pieces
+				data[ "stats"  ] = stats
+				data[ "pieces_stats"  ] = tmp
 
-					data[ "pieces" ] = pieces
-					data[ "stats"  ] = stats
-					data[ "pieces_stats"  ] = tmp
+				if self.DEBUG_STATIC > 1:
+					print(data)
 
-					if self.DEBUG_STATIC > 1:
-						# Normalize
-						#non_zero = [ x for x in line[2:] if x > 0 ]
-						#local_min = min(non_zero)
-						#tmp = [ int(x-local_min+1) for x in non_zero ]
-						print( tmp )
-						#self.printArray( line[2:], array_w=self.board_w, array_h=self.board_h )
-						#print(data)
-
-					self.stats[ space ] = data
+				self.stats[ space ] = data
 			f.close()
 		else:
 			#if self.DEBUG_STATIC > 0:
@@ -322,6 +317,53 @@ class Puzzle( defs.Defs ):
 		return self.stats
 
 
+	# ----- Prepare stats for the last 16 pieces to insert, according to the sequence
+	def prepare_stats16_from_sequence( self, sequence ):
+		self.pieces_stats16_count  = [0] * self.board_wh
+		self.pieces_stats16_weight = [0] * self.board_wh
+		
+		for s in sequence[-16:]:
+
+			# Pieces that should have been there, but are not, get a huge weight
+			index = 0
+			for (p, stats16) in self.stats[ s ]["pieces_stats"]:
+				if stats16 != 0:
+					break
+				self.pieces_stats16_count[p] += 1
+				self.pieces_stats16_weight[p] += 5
+				index += 1
+				
+			#print(s)
+			
+			# Pieces that have been seen during the stats16
+			seen = self.stats[ s ]["pieces_stats"][index:]
+			seen_avg = sum([ x for (n,x) in seen])//len(seen)
+			seen_min = min([ x for (n,x) in seen])
+			seen_max = max([ x for (n,x) in seen])
+			#print(seen_min, seen_avg, seen_max, " =>  ", seen_avg-seen_min, "<", seen_avg, ">", seen_max-seen_avg)
+
+			# The weight is proportionnal to the distance to the average
+			for (n, x) in seen:
+				if x >= seen_avg:
+					break
+
+				w = int(4 * ((seen_avg-x) / (seen_avg-seen_min))) # Can be 3,4,5,6
+
+				self.pieces_stats16_count[n] += 1
+				self.pieces_stats16_weight[n] += w
+
+
+		self.printArray( self.pieces_stats16_count, array_w=self.board_w, array_h=self.board_h, replacezero=True )
+		self.printArray( self.pieces_stats16_weight, array_w=self.board_w, array_h=self.board_h, replacezero=True )
+
+		for p in range(self.board_wh):
+			if self.pieces_stats16_count[p] > 0:
+				self.pieces_stats16_weight[p] = self.pieces_stats16_weight[p] // self.pieces_stats16_count[p]
+		
+		self.printArray( self.pieces_stats16_weight, array_w=self.board_w, array_h=self.board_h, replacezero=True )
+
+		print(sum(self.pieces_stats16_weight))
+		print(sum([ (w>0) for w in self.pieces_stats16_weight]))
 
 	# ----- Get all the pieces
 	def getPieces( self, only_corner=False, only_border=False, only_center=False, only_fixed=False ):

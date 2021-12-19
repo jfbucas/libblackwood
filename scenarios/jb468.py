@@ -11,8 +11,10 @@ class JB468( scenario.Scenario ):
 		self.score_target = 468
 		self.heuristic_patterns = [ [ 9, 12, 15 ] ]
 		self.conflicts_indexes_allowed = [ 201, 206, 211, 216, 221, 225, 229, 233, 237, 239, 241, 243, 256 ]
+		self.heuristic_stats16 = False
+		self.depth_first_notification = 254
 
-		self.timelimit = 180 # Minutes
+		self.timelimit = 80 # Minutes
 
 		scenario.Scenario.__init__(self)
 
