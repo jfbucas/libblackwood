@@ -53,7 +53,7 @@ def standalone_blackwood_threads_getTTF():
 def standalone():
 
 	# Compile the library - this one is not actually executed
-	blackwood = libblackwood.LibBlackwood( puzzle )
+	blackwood = libblackwood.LibBlackwood( puzzle, skipcompile=False )
 
 	# Create the threads
 	CORES=os.cpu_count()
