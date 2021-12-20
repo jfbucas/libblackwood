@@ -1052,7 +1052,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, 'depth'+d+":  // Labels are ugly, don't do this at home" ),
 				] )
 
-			if (self.DEBUG > 0 and depth > 140) or (depth > 245 and depth < self.puzzle.scenario.depth_first_notification):
+			if (self.DEBUG > 0 and depth > 140) or (depth > self.puzzle.scenario.depth_first_notification-7 and depth < self.puzzle.scenario.depth_first_notification):
 				output.append( (2, 'if (cb->max_depth_seen < '+d+') {') )
 				output.append( (3, 'cb->max_depth_seen = '+d+';') )
 				output.append( (3, 'cb->max_depth_seen_heartbeat['+d+'] = cb->heartbeat;') )
