@@ -101,7 +101,7 @@ class Wait_For_Notification_Thread(threading.Thread):
 							channel = str(self.libblackwood.LibExt.getMaxDepthSeen(self.libblackwood.cb))
 
 				max_depth_seen_hb="["
-				for i in range(246, self.puzzle.board_wh):
+				for i in range(0, self.puzzle.board_wh):
 					t = self.libblackwood.LibExt.getMaxDepthSeenHeartbeat(self.libblackwood.cb, i)
 					if t > 0:
 						max_depth_seen_hb+=str(i)+":"+str(t)+" | "

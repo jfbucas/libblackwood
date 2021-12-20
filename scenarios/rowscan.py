@@ -14,7 +14,7 @@ class RowScan( scenario.Scenario ):
 		self.heuristic_stats16 = False
 		self.depth_first_notification = 225
 
-		self.timelimit = 180 # Minutes
+		self.timelimit = 800 # Minutes
 
 		scenario.Scenario.__init__(self)
 
