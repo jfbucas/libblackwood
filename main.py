@@ -12,8 +12,9 @@ import os
 import time
 import sys
 import ctypes
-import threading
 import socket
+import threading
+from multiprocessing import Queue
 
 if (sys.version_info[0] < 3) or (sys.version_info[1] < 6):
     raise Exception("Python 3.6 or a more recent version is required.")
@@ -23,6 +24,7 @@ import data
 import libblackwood
 import thread_input
 import thread_blackwood
+import process_blackwood
 
 
 # Puzzle
@@ -31,23 +33,31 @@ if puzzle == None:
 	print( "Error with loading puzzle" )
 	exit()
 
-# Threads
-blackwood_threads = []
+# Processes
+blackwood_processes = []
 
-# ----- dispatch the command to all threads
-def standalone_blackwood_threads_command( commands ):
-	for gt in blackwood_threads:
-		if gt.ready:
-			gt.blackwood.command_handler( commands )
+# ----- dispatch the command to all processes
+def standalone_blackwood_processes_command( commands ):
+	for gt in blackwood_processes:
+		if gt.status == "running":
+			#print("Send command ", commands)
+			gt.queue_parent_child.put( commands )
+		#else:
+		#	print("Process not ready for ", commands)
 
-# ----- get the time to finish flags from all threads
-def standalone_blackwood_threads_getTTF():
-	result = 0
-	for gt in blackwood_threads:
-		if gt.ready:
-			result += gt.blackwood.LibExt.getTTF( gt.blackwood.cb )
-	return result
+# ----- get the process status
+def standalone_blackwood_processes_status():
+	for gt in blackwood_processes:
+		while not gt.queue_child_parent.empty():
+			gt.status = gt.queue_child_parent.get()
+			#print("Process status is now  : ", gt.status)
 
+# ----- get the TTF
+def getTTF():
+	for gt in blackwood_processes:
+		if gt.status == "exit":
+			return True
+	return False
 
 # ----- Standalone machine
 def standalone():
@@ -71,29 +81,35 @@ def standalone():
 
 
 	for c in range(CORES):
-		blackwood_threads.append( thread_blackwood.Blackwood_Thread( puzzle, c ) )
+		q_p_c = Queue() # Queue Parent-Child
+		q_c_p = Queue() # Queue Child-Parent
+		gt = process_blackwood.Blackwood_Process( puzzle, c, q_p_c, q_c_p )
+		gt.status = "init"
+		blackwood_processes.append( gt )
 
 	# Start the input thread
-	myInput = thread_input.Input_Thread( standalone_blackwood_threads_command, blackwood, 0.1 )
+	myInput = thread_input.Input_Thread( standalone_blackwood_processes_command, blackwood, 0.1, stdin_fn=sys.stdin.fileno() )
 	myInput.start()
 
-	# Start the threads
+
+	# Start the parallel jobs
 	print("x-]"+puzzle.XTermInfo+"  Starting "+str(CORES)+" thread"+ ("s" if CORES > 1 else "")+"  "+puzzle.XTermNormal+"[-x")
-	for gt in blackwood_threads:
+	for gt in blackwood_processes:
 		print(".", end="", flush=True)
 		gt.start()
 	print()
 
 	# Wait for Time To Finish flag
 	count = 0
-	while not standalone_blackwood_threads_getTTF():
-		standalone_blackwood_threads_command( [ "heartbeat", "check_commands" ] )
+	while not getTTF():
+		standalone_blackwood_processes_status()
+		standalone_blackwood_processes_command( [ "heartbeat", "check_commands" ] )
 		time.sleep(1)
 	
 	myInput.stop_input_thread = True	
 
-	# Tell all threads to finish
-	standalone_blackwood_threads_command( "exit" )
+	# Tell all processes to finish
+	standalone_blackwood_processes_command( "exit" )
 
 
 # ----- Parameters

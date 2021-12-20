@@ -20,13 +20,18 @@ class Input_Thread(threading.Thread):
 	libblackwood = None
 	period = 1
 	stop_input_thread = False
+	stdin = None
 
-	def __init__(self, callback, libblackwood=None, period=1): 
+	def __init__(self, callback, libblackwood=None, period=1, stdin_fn=None): 
 		threading.Thread.__init__(self)
 		self.libblackwood = libblackwood
 		self.callback = callback
 		self.period = period
 		self.stop_input_thread = False
+		if stdin_fn == None:
+			self.stdin = sys.stdin
+		else:
+			self.stdin = os.fdopen(stdin_fn)
 
 	def run(self):
 
@@ -35,18 +40,20 @@ class Input_Thread(threading.Thread):
 			if self.libblackwood == None:
 
 				while not self.stop_input_thread:
-					#print("Enter commands:")
-					i, o, e = select.select( [sys.stdin], [], [], self.period )
+					#print("Enter commands :")
+					i, o, e = select.select( [self.stdin], [], [], self.period )
 					if (i):
-						command = sys.stdin.readline().strip()
+						command = self.stdin.readline().strip()
 						self.callback( [ command ] )
 			else:
 
 				while not self.stop_input_thread and not self.libblackwood.LibExt.getTTF(self.libblackwood.cb):
 					#print("Enter commands:")
-					i, o, e = select.select( [sys.stdin], [], [], self.period )
+					i, o, e = select.select( [self.stdin], [], [], self.period )
 					if (i):
-						command = sys.stdin.readline().strip()
+						command = self.stdin.readline().strip()
 						self.callback( [ command ] )
+		else:
+			print("Thread input cannot grab the STDIN")
 
 
