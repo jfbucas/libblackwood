@@ -21,7 +21,7 @@ class LibArrays( external_libs.External_Libs ):
 	static_references = {}
 
 
-	def __init__( self, puzzle, extra_name="" ):
+	def __init__( self, puzzle, extra_name="", skipcompile=False ):
 
 		self.name = "libarrays"
 
@@ -37,7 +37,7 @@ class LibArrays( external_libs.External_Libs ):
 		# We always want to generate new random lists of pieces
 		#self.force_compile = True
 
-		external_libs.External_Libs.__init__( self )
+		external_libs.External_Libs.__init__( self, skipcompile )
 
 
 

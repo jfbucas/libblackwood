@@ -524,8 +524,9 @@ class Puzzle( defs.Defs ):
 	# ----- Prepare pieces and heuristics
 	def prepare_pieces( self, local_seed=None ):
 
-		if self.DEBUG > 2:
-			self.info( " * Preparing pieces..." )
+		if self.DEBUG > 0:
+			self.top("prepare pieces")
+			self.info( " * Preparing pieces" )
 
 		master_index = {}
 		master_lists_of_rotated_pieces = []
@@ -635,6 +636,8 @@ class Puzzle( defs.Defs ):
 			# - all the rotated pieces
 			print(sorted(master_all_rotated_pieces))
 
+		if self.DEBUG > 0:
+			self.info( " * Preparing pieces took "+ self.top("prepare pieces"))
 
 		return ( master_index, master_lists_of_rotated_pieces, master_all_rotated_pieces )
 

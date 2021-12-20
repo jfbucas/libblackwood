@@ -5,7 +5,6 @@ import ctypes
 import random
 import multiprocessing
 import itertools
-import time
 import math
 import signal
 
@@ -75,7 +74,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			[ "Max Depth Seen",		"max_depth_seen",		"MaxDepthSeen" ],
 		]
 
-	def __init__( self, puzzle, extra_name="" ):
+	def __init__( self, puzzle, extra_name="", skipcompile=False ):
 
 		self.name = "libblackwood"
 
@@ -99,7 +98,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		self.dependencies = [ "defs", "arrays" ]
 		self.modules_names = self.MACROS_NAMES_A + self.MACROS_NAMES_B
 
-		external_libs.External_Libs.__init__( self )
+		external_libs.External_Libs.__init__( self, skipcompile )
 
 		# Allocate memory for current_blackwood
 		self.cb = self.LibExt.allocate_blackwood()
@@ -1335,7 +1334,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		
 
 		# Start the chrono
-		startTime = time.time()
+		self.top("selftest")
 
 		# Start the input thread
 		myInput = thread_input.Input_Thread( self.command_handler, self, 0.1 )
@@ -1378,7 +1377,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		myInput.stop_input_thread = True	
 
 		print()
-		print( "Execution time: ", time.time() - startTime )
+		print( "Self-Test execution time: ", self.top("selftest") )
 
 		return False
 

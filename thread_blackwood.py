@@ -35,7 +35,7 @@ class Blackwood_Thread( threading.Thread ):
 
 
 	def run(self):
-		self.blackwood = libblackwood.LibBlackwood( self.puzzle, extra_name="_"+str(self.number).zfill(4) )
+		self.blackwood = libblackwood.LibBlackwood( self.puzzle, extra_name="_"+str(self.number).zfill(4), skipcompile=True )
 		self.blackwood.copy_new_arrays_to_cb()
 
 		cb = self.blackwood.cb

@@ -97,7 +97,7 @@ class Wait_For_Notification_Thread(threading.Thread):
 					else:
 						# Only a partial solution
 						channel = "partial"
-						if self.libblackwood.LibExt.getMaxDepthSeen(self.libblackwood.cb) >= 252:
+						if self.libblackwood.LibExt.getMaxDepthSeen(self.libblackwood.cb) >= self.puzzle.scenario.depth_first_notification:
 							channel = str(self.libblackwood.LibExt.getMaxDepthSeen(self.libblackwood.cb))
 
 				max_depth_seen_hb="["

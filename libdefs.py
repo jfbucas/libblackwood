@@ -14,7 +14,7 @@ import external_libs
 class LibDefs( external_libs.External_Libs ):
 	"""Definitions for External Libraries"""
 
-	def __init__( self, puzzle, extra_name="" ):
+	def __init__( self, puzzle, extra_name="", skipcompile=False ):
 
 		self.name = "libdefs"
 		
@@ -25,7 +25,7 @@ class LibDefs( external_libs.External_Libs ):
 		self.dependencies = [ ]
 		self.GCC_EXTRA_PARAMS = ""
 
-		external_libs.External_Libs.__init__( self )
+		external_libs.External_Libs.__init__( self, skipcompile )
 
 	# ----- Load the C library
 	def load( self ):

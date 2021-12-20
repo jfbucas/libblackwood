@@ -46,7 +46,7 @@ class External_Libs( defs.Defs ):
 
 	functions_used_list = None
 
-	def __init__( self ):
+	def __init__( self, skipcompile=False ):
 		defs.Defs.__init__( self )
 		
 		# For each module
@@ -73,37 +73,38 @@ class External_Libs( defs.Defs ):
 			for d in self.dependencies:
 				module = __import__("lib"+d)
 				myclass = getattr(module, "Lib"+d.capitalize())
-				self.LibDep[ d ] = myclass( self.puzzle, self.EXTRA_NAME )
+				self.LibDep[ d ] = myclass( self.puzzle, self.EXTRA_NAME, skipcompile )
 		
-		# Force recompile
-		if os.environ.get('FORCE_COMPILE') != None:
-			self.force_compile = True
+		if not skipcompile:
+			# Force recompile
+			if os.environ.get('FORCE_COMPILE') != None:
+				self.force_compile = True
 
-		if self.force_compile:
-			if os.path.exists(self.getNameSO(arch=self.ARCH)):
-				os.remove(self.getNameSO(arch=self.ARCH))
+			if self.force_compile:
+				if os.path.exists(self.getNameSO(arch=self.ARCH)):
+					os.remove(self.getNameSO(arch=self.ARCH))
 
-		# If .so file is missing we make sure we regenerate
-		if not os.path.exists( self.getNameSO(arch=self.ARCH) ):
-			for f in [ self.getNameH() ] + self.getNamesC() + self.getNamesPrepro() + self.getNamesASM():
-				if os.path.exists(f):
-					os.remove(f)
+			# If .so file is missing we make sure we regenerate
+			if not os.path.exists( self.getNameSO(arch=self.ARCH) ):
+				for f in [ self.getNameH() ] + self.getNamesC() + self.getNamesPrepro() + self.getNamesASM():
+					if os.path.exists(f):
+						os.remove(f)
 
-			self.GenerateH_parent()
-			for m in self.modules_names:
-				if self.DEBUG > 2:
-					print("Generating ", m)
-				self.GenerateC_parent( m )
-			self.Compile()
+				self.GenerateH_parent()
+				for m in self.modules_names:
+					if self.DEBUG > 2:
+						print("Generating ", m)
+					self.GenerateC_parent( m )
+				self.Compile()
 
-		# We compile if we detect a change
-		elif os.path.getmtime(self.getNamePY()) > os.path.getmtime(self.getNameSO(arch=self.ARCH)):
-			self.GenerateH_parent()
-			for m in self.modules_names:
-				if self.DEBUG > 2:
-					print("Updating ", m)
-				self.GenerateC_parent( m )
-			self.Compile()
+			# We compile if we detect a change
+			elif os.path.getmtime(self.getNamePY()) > os.path.getmtime(self.getNameSO(arch=self.ARCH)):
+				self.GenerateH_parent()
+				for m in self.modules_names:
+					if self.DEBUG > 2:
+						print("Updating ", m)
+					self.GenerateC_parent( m )
+				self.Compile()
 
 
 		# Do not load the library
