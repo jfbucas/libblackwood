@@ -49,6 +49,11 @@ class Defs():
 	EDGES_STR	= [ "up", "right", "down", "left", "middle" ]
 	EDGES_OPP_STR	= [ "down", "left", "up", "right" ]
 
+	REF_NONE	= 0
+	REF_UP		= 1
+	REF_RIGHT	= 2
+	REF_DOWN	= 4
+	REF_LEFT	= 8
 
 	# Terminal Display colors & co.
 	noire =   '0'

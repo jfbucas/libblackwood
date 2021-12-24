@@ -1,7 +1,7 @@
 import scenario
 
 class JBRowScan2Colors( scenario.Scenario ):
-	"""The Heuristics with a simple rowscan Scenario"""
+	"""Joshua Blackwood Heuristics for a simple rowscan Scenario"""
 
 	def __init__( self, puzzle ):
 

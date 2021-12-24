@@ -28,6 +28,7 @@ class Scenario( defs.Defs ):
 		self.heuristic_stats16_count = [0] * self.puzzle.board_wh
 		self.spaces_order = [None] * self.puzzle.board_wh
 		self.spaces_sequence = [None] * self.puzzle.board_wh
+		self.spaces_references = [None] * self.puzzle.board_wh
 
 		# The Seed for the Generator
 		self.seed = random.randint(0, sys.maxsize)
@@ -52,8 +53,8 @@ class Scenario( defs.Defs ):
 			self.info( " * Spaces order" )
 			self.printArray(self.spaces_order, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
 
-		# Init the space sequence
-		self.prepare_spaces_sequence()
+		# Init the space sequence and references
+		self.prepare_spaces_sequence_and_references()
 
 		if self.DEBUG_STATIC > 2:
 			self.info( " * Spaces sequences" )
@@ -73,21 +74,33 @@ class Scenario( defs.Defs ):
 				self.printArray(self.heuristic_stats16_count, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
 				#exit()
 
-	# ----- Prepare spaces sequences
-	def prepare_spaces_sequence( self ):
+	# ----- Prepare spaces sequences and references
+	def prepare_spaces_sequence_and_references( self ):
+		W=self.puzzle.board_w
+		H=self.puzzle.board_h
+		WH=self.puzzle.board_wh
 
-		for depth in range(self.puzzle.board_wh):
+		for depth in range(WH):
 			self.spaces_sequence[ depth ] = self.spaces_order.index(depth)
 
+		for depth in range(WH):
+			space = self.spaces_sequence[ depth ]
+			ref = ""
+			ref += "u" if space < W          else ( "u" if self.spaces_order[ space - W ] < depth else "" );
+			ref += "r" if (space+1) % W == 0 else ( "r" if self.spaces_order[ space + 1 ] < depth else "" )
+			ref += "d" if space >= WH-W      else ( "d" if self.spaces_order[ space + W ] < depth else "" );
+			ref += "l" if space % W == 0     else ( "l" if self.spaces_order[ space - 1 ] < depth else "" );
+
+			# Make sure we have the first 2 refs in the correct order
+			if len(ref) > 1:
+				while ref[0:2] not in [ "ur", "rd", "dl", "lu" ]:
+					ref = ref[1:]+ref[0:1]
+					# TODO: what if u+d or l+r ?
+
+			self.spaces_references[ space ] = ref
+
 		if self.DEBUG_STATIC > 0:
-			filename= "generated/" + self.name + ".sequence"
-			f = open(filename, 'w')
-			tmp = [ " " ] * self.puzzle.board_wh
-			for depth in range(self.puzzle.board_wh):
-				tmp[ self.spaces_sequence[ depth ] ] = "X"
-				output = self.printArray(tmp, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h, noprint=True)
-				f.write("---[ Sequence " + str(depth) + " ]---\n" + output)
-			f.close()
+			self.printArray(self.spaces_references, array_w=W, array_h=H)
 			
 	# ----- Return the index of the last number before the zeros
 	def max_index( self, array ):
@@ -108,13 +121,10 @@ class Scenario( defs.Defs ):
 		W=self.puzzle.board_w-1
 		H=self.puzzle.board_h-1
 
+		# From a certain depth, we authorize conflicts (or breaks)
 		conflicts = "" 
 		if depth >= min(self.conflicts_indexes_allowed):
 			conflicts = "_conflicts"
-		#else:
-		#	if y == H and x != W and x != 0:
-		#		conflicts = "_conflicts"
-
 
 		master_piece_name = ""
 		# Is it a corner/border?

@@ -55,6 +55,9 @@ class LibArrays( external_libs.External_Libs ):
 	# ----- generate arrays
 	def getDefineArrays( self, only_signature=False ):
 		output = []
+		W=self.puzzle.board_w
+		H=self.puzzle.board_h
+		WH=self.puzzle.board_wh
 
 		# ---------------------------------
 		if not only_signature:
@@ -139,7 +142,7 @@ class LibArrays( external_libs.External_Libs ):
 			output.append( (0 , "t_piece pieces[] = {") )
 			x = 0
 			for p in self.puzzle.pieces:
-				output.append( (2, "{ .u = "+format(p[0], "2")+ ", .r = "+format(p[1], "2")+ ", .d = "+format(p[2], "2") +", .l = "+format(p[3], "2") + " }" + (", " if x < self.puzzle.board_wh-1 else "") + " // #" + str(x)) )
+				output.append( (2, "{ .u = "+format(p[0], "2")+ ", .r = "+format(p[1], "2")+ ", .d = "+format(p[2], "2") +", .l = "+format(p[3], "2") + " }" + (", " if x < WH-1 else "") + " // #" + str(x)) )
 				x += 1
 			output.append( (2 , "};") )
 			output.append( (0 , "") )
@@ -151,8 +154,8 @@ class LibArrays( external_libs.External_Libs ):
 		else:
 
 			output.append( (0 , "uint8 spaces_sequence[] = {") )
-			for y in range(self.puzzle.board_h):
-				output.append( (2 , ",".join([format(n, '3') for n in self.puzzle.scenario.spaces_sequence[y*self.puzzle.board_w:(y+1)*self.puzzle.board_w]]) + ( "," if y<(self.puzzle.board_h-1) else "" )) )
+			for y in range(H):
+				output.append( (2 , ",".join([format(n, '3') for n in self.puzzle.scenario.spaces_sequence[y*W:(y+1)*W]]) + ( "," if y<(H-1) else "" )) )
 			output.append( (2 , "};") )
 			output.append( (0 , "") )
 			
@@ -166,8 +169,8 @@ class LibArrays( external_libs.External_Libs ):
 			for i in range(5):
 				if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
 					output.append( (0 , "uint64 heuristic_patterns_count_"+str(i)+"[] = {") )
-					for y in range(self.puzzle.board_h):
-						output.append( (2 , ",".join([format(n, '3') for n in self.puzzle.scenario.heuristic_patterns_count[i][y*self.puzzle.board_w:(y+1)*self.puzzle.board_w]]) + ( "," if y<(self.puzzle.board_h-1) else "" )) )
+					for y in range(H):
+						output.append( (2 , ",".join([format(n, '3') for n in self.puzzle.scenario.heuristic_patterns_count[i][y*W:(y+1)*W]]) + ( "," if y<(H-1) else "" )) )
 					output.append( (2 , "};") )
 					output.append( (0 , "") )
 			
@@ -178,8 +181,8 @@ class LibArrays( external_libs.External_Libs ):
 		else:
 
 			output.append( (0 , "uint64 heartbeat_time_bonus[] = {") )
-			for y in range(self.puzzle.board_h):
-				output.append( (2 , ",".join([format(n, '3') for n in [ int(2*pow(3, (x+y*self.puzzle.board_w)-250)*60) if (x+y*self.puzzle.board_w)>250 else 0 if x+y>0 else 60*self.puzzle.scenario.timelimit for x in range(self.puzzle.board_w)]]) + ( "," if y<(self.puzzle.board_h-1) else "" )) )
+			for y in range(H):
+				output.append( (2 , ",".join([format(n, '3') for n in [ int(2*pow(3, (x+y*W)-250)*60) if (x+y*W)>250 else 0 if x+y>0 else 60*self.puzzle.scenario.timelimit for x in range(W)]]) + ( "," if y<(H-1) else "" )) )
 			output.append( (2 , "};") )
 			output.append( (0 , "") )
 			
@@ -188,18 +191,38 @@ class LibArrays( external_libs.External_Libs ):
 		if not only_signature:
 
 			output.append( (0 , "/* Get Index Piece Name") )
-			array = [ "" ] * self.puzzle.board_wh
-			for y in range(self.puzzle.board_h):
+			array = [ "" ] * WH
+			for y in range(H):
 				l = "// "
-				for x in range(self.puzzle.board_w):
-					d = x+y*self.puzzle.board_w
-					array[ self.puzzle.scenario.spaces_sequence[d] ] += format(self.puzzle.scenario.get_index_piece_name(x+y*self.puzzle.board_w), "19")
-			for y in range(self.puzzle.board_h):
-				l = "// "+" ".join(array[y*self.puzzle.board_w:(y+1)*self.puzzle.board_w])
+				for x in range(W):
+					d = x+y*W
+					array[ self.puzzle.scenario.spaces_sequence[d] ] += format(self.puzzle.scenario.get_index_piece_name(x+y*W), "19")
+			for y in range(H):
+				l = "// "+" ".join(array[y*W:(y+1)*W])
 				output.append( (0 , l) )
 			output.append( (0 , "*/") )
 			output.append( (0 , "") )
 			
+
+		# ---------------------
+		if not only_signature:
+
+			output.append( (0 , "/* Get References") )
+			o = self.printArray(self.puzzle.scenario.spaces_references, array_w=W, array_h=H, noprint=True)
+			output.append( (0 , o) )
+			output.append( (0 , "*/") )
+			output.append( (0 , "") )
+			
+		# ---------------------
+		if not only_signature:
+			output.append( (0 , "/* Get Sequence") )
+			tmp = [ " " ] * WH
+			for depth in range(WH):
+				tmp[ self.puzzle.scenario.spaces_sequence[ depth ] ] = "X"
+				o = self.printArray(tmp, array_w=W, array_h=H, noprint=True)
+				output.append((0, "---[ Sequence " + str(depth) + " ]---\n" + o))
+			output.append( (0 , "*/") )
+			output.append( (0 , "") )
 
 
 		return output

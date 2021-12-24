@@ -6,6 +6,7 @@ import datetime
 import select
 import random
 import multiprocessing
+import itertools
 import ctypes
 
 # Local Libs
@@ -135,6 +136,10 @@ class Puzzle( defs.Defs ):
 	static_colors_border_count = {}
 	static_colors_center_count = {}
 
+	static_spaces_corners = []
+	static_spaces_borders = []
+	static_spaces_centers = []
+
 	pieces_stats16_weight = []
 
 	# Precomputed statistics
@@ -153,6 +158,7 @@ class Puzzle( defs.Defs ):
 		self.normalizePieces()		# Make sure the pieces are how we expect them to be
 
 		self.initStaticColorsCount()
+		self.initStaticSpacesList()
 
 		self.readStatistics()
 		self.pieces_stats16_weight = [0] * self.board_wh
@@ -261,9 +267,46 @@ class Puzzle( defs.Defs ):
 			self.info( " * Colors Border : " + str(self.static_colors_border_count) )
 			self.info( " * Colors Center : " + str(self.static_colors_center_count) )
 
+
 		self.EDGE_DOMAIN_1_PIECE = max( [ max(self.static_colors_center_count), max(self.static_colors_border_count) ] ) + 1
 		self.EDGE_DOMAIN_2_PIECE = (self.EDGE_DOMAIN_1_PIECE << self.EDGE_SHIFT_LEFT) | self.EDGE_DOMAIN_1_PIECE
 		self.EDGE_DOMAIN_2_PIECE = self.EDGE_DOMAIN_1_PIECE * (1 << self.EDGE_SHIFT_LEFT)
+
+		# Duo colors
+		self.colors_border = [0] + list(self.static_colors_border_count)
+		self.colors_center = list(self.static_colors_center_count)
+		self.colors = sorted(self.colors_border + self.colors_center)
+
+
+	# ----- Init Static Spaces Lists
+	def initStaticSpacesList( self ):
+		W=self.board_w
+		H=self.board_h
+		WH=self.board_wh
+
+		self.static_spaces_corners = []
+		self.static_spaces_borders = []
+		self.static_spaces_centers = []
+
+		self.static_spaces_corners = [0, W-1, WH-W, WH-1 ]
+		
+		for space in range(WH):
+			if space not in self.static_spaces_corners:
+
+				if  (space < W) or \
+				    (space % W == W-1) or \
+				    (space >= WH-W) or \
+				    (space % W == 0):
+					self.static_spaces_borders.append(space)
+
+		for space in range(WH):
+			if space not in self.static_spaces_corners+self.static_spaces_borders:
+				self.static_spaces_centers.append(space)
+
+		if self.DEBUG_STATIC == 0:
+			self.info( " * Spaces Corners : " + str(len(self.static_spaces_corners))+" "+str(self.static_spaces_corners) )
+			self.info( " * Spaces Borders : " + str(len(self.static_spaces_borders))+" "+str(self.static_spaces_borders) )
+			self.info( " * Spaces Centers : " + str(len(self.static_spaces_centers))+" "+str(self.static_spaces_centers) )
 
 	# ----- read pre-computed data
 	def readStatistics( self ):
@@ -404,7 +447,7 @@ class Puzzle( defs.Defs ):
 
 
 	# ----- Get all the pieces
-	def getRotatedPieces( self, piece, allow_conflicts=False ):
+	def getRotatedPieces( self, piece, allow_conflicts=False, for_ref="" ):
 		
 		score = 0
 		heuristic_patterns_count = [ 0, 0, 0, 0, 0 ]
@@ -421,62 +464,87 @@ class Puzzle( defs.Defs ):
 
 		rotatedPieces = []
 
-		colors_border = [0] + list(self.static_colors_border_count)
-		colors_center = list(self.static_colors_center_count)
-		colors = sorted(colors_border + colors_center)
+		for rotation in [ 0, 1, 2, 3 ]:
+
+			if   for_ref in [ "", "lu", "dlu", "url", "urdl" ]:
+				pe0 = piece.l
+				pe1 = piece.u
+			elif for_ref in [ "ur", "urd" ]:
+				pe0 = piece.u
+				pe1 = piece.r
+			elif for_ref in [ "rd" ]:
+				pe0 = piece.r
+				pe1 = piece.d
+			elif for_ref in [ "dl" ]:
+				pe0 = piece.d
+				pe1 = piece.l
+			else:
+				print("for_ref:", for_ref)
+
+			it0 = list(itertools.product([pe0],self.colors))
+			it1 = list(itertools.product(self.colors,[pe1]))
 		
-		for left in colors:
-			for up in colors:
+			for (e0, e1) in it0 + it1:
 
-				for rotation in [ 0, 1, 2, 3 ]:
+				conflict_u = conflict_r = conflict_d = conflict_l = False
 
-					rotation_conflicts = 0
-					pattern_conflicts = 0
+				if   for_ref in [ "", "lu", "dlu", "url", "urdl" ]:
+					conflict_l = (e0 != piece.l)
+					conflict_u = (e1 != piece.u)
+				elif for_ref in [ "ur", "urd" ]:
+					conflict_u = (e0 != piece.u)
+					conflict_r = (e1 != piece.r)
+				elif for_ref in [ "rd" ]:
+					conflict_r = (e0 != piece.r)
+					conflict_d = (e1 != piece.d)
+				elif for_ref in [ "dl" ]:
+					conflict_d = (e0 != piece.d)
+					conflict_l = (e1 != piece.l)
 
-					if left != piece.l:
-						rotation_conflicts += 1
-						if piece.l in colors_border:
-							pattern_conflicts += 1
-
-					if up != piece.u:
-						rotation_conflicts += 1
-						if piece.u in colors_border:
-							pattern_conflicts += 1
-
-					if  (rotation_conflicts == 0) or \
-					   ((rotation_conflicts == 1) and allow_conflicts):
-
-						if pattern_conflicts == 0:
-							
-							rotatedPieces.append(
-								RotatedPieceWithRef(
-									ref = (left << self.EDGE_SHIFT_LEFT) + up,
-
-									score = score - 100000 * rotation_conflicts,
-									rotated_piece = RotatedPiece(
-										p = piece.p,
-										rotation = rotation,
-										u = piece.u,
-										r = piece.r,
-										d = piece.d,
-										l = piece.l,
-										b = rotation_conflicts,
-										h = heuristic_patterns_count,
-										w = self.pieces_stats16_weight[ piece.p ]
-										)
-									)
-								)
+				if (conflict_u and (piece.u in self.colors_border)) or \
+				   (conflict_r and (piece.r in self.colors_border)) or \
+				   (conflict_d and (piece.d in self.colors_border)) or \
+				   (conflict_l and (piece.l in self.colors_border)):
 					piece.turnCW()
+					continue
+
+				conflicts = int(conflict_u) + int(conflict_r) + int(conflict_d) + int(conflict_l)
+				print(conflicts, end="")
+
+
+				if  (conflicts == 0) or \
+				   ((conflicts == 1) and allow_conflicts):
+
+					rotatedPieces.append(
+						RotatedPieceWithRef(
+							ref = (e0 << self.EDGE_SHIFT_LEFT) + e1,
+
+							score = score - 100000 * conflicts,
+							rotated_piece = RotatedPiece(
+								p = piece.p,
+								rotation = rotation,
+								u = piece.u,
+								r = piece.r,
+								d = piece.d,
+								l = piece.l,
+								b = conflicts,
+								h = heuristic_patterns_count,
+								w = self.pieces_stats16_weight[ piece.p ]
+								)
+							)
+						)
+			piece.turnCW()
 
 
 
 		return rotatedPieces
 
 	# 
-	def list_rotated_pieces_to_dict(self, list_pieces, allow_conflicts=False, u=None, r=None, d=None, l=None, n=None, rotation=None):
+	def list_rotated_pieces_to_dict(self, list_pieces, allow_conflicts=False, reference="", u=None, r=None, d=None, l=None, n=None, rotation=None):
+		self.top("list rotated pieces to dict")
 		tmp = []
 		for p in list_pieces:
-			tmp.extend(self.getRotatedPieces( p, allow_conflicts ))
+			tmp.extend(self.getRotatedPieces( p, allow_conflicts, reference ))
 			
 		list_pieces_rotated = {}
 		for p in tmp:
@@ -504,10 +572,13 @@ class Puzzle( defs.Defs ):
 			else:
 				list_pieces_rotated[p.ref] = [ p ]
 
+		if self.DEBUG > 0:
+			self.info( " * List pieces rotated to dict took "+ self.top("list rotated pieces to dict"))
 		return list_pieces_rotated
 
 
 	def list_rotated_pieces_to_array(self, list_pieces):
+		self.top("list rotated pieces to array")
 		# Randomize the search
 		rand_entropy = 99
 
@@ -518,11 +589,17 @@ class Puzzle( defs.Defs ):
 				tmp.append(p.rotated_piece)
 				
 			array[ ref ] = tmp
+
+		if self.DEBUG > 0:
+			self.info( " * List rotated pieces to array took "+ self.top("list rotated pieces to array"))
 		return array
 
 
 	# ----- Prepare pieces and heuristics
 	def prepare_pieces( self, local_seed=None ):
+		W=self.board_w
+		H=self.board_h
+		WH=self.board_wh
 
 		if self.DEBUG > 0:
 			self.top("prepare pieces")
@@ -538,58 +615,59 @@ class Puzzle( defs.Defs ):
 		else:
 			random.seed( self.seed )
 
+		possible_references_corner = list(dict.fromkeys([ self.scenario.spaces_references[s] for s in self.static_spaces_corners]))
+		possible_references_border = list(dict.fromkeys([ self.scenario.spaces_references[s] for s in self.static_spaces_borders]))
+		possible_references_center = list(dict.fromkeys([ self.scenario.spaces_references[s] for s in self.static_spaces_centers]))
+
 		corner_pieces = self.getPieces(only_corner=True) 
 		border_pieces = self.getPieces(only_border=True) 
 		center_pieces = self.getPieces(only_center=True) 
 		fixed_pieces  = self.getPieces(only_fixed=True) 
 		
 		# Corner
-		corner_pieces_rotated = self.list_rotated_pieces_to_dict(corner_pieces)
+		for reference in possible_references_corner:
+			tmp = self.list_rotated_pieces_to_dict(corner_pieces, reference=reference)
+			master_index[ "corner_"+reference ] = self.list_rotated_pieces_to_array(tmp)
 
 		# Border
-		border_u_pieces_rotated           = self.list_rotated_pieces_to_dict(border_pieces, rotation=0)
-		border_u_pieces_rotated_conflicts = self.list_rotated_pieces_to_dict(border_pieces, rotation=0, allow_conflicts=True)
-		border_r_pieces_rotated           = self.list_rotated_pieces_to_dict(border_pieces, rotation=1)
-		border_r_pieces_rotated_conflicts = self.list_rotated_pieces_to_dict(border_pieces, rotation=1, allow_conflicts=True)
-		border_d_pieces_rotated           = self.list_rotated_pieces_to_dict(border_pieces, rotation=2)
-		border_d_pieces_rotated_conflicts = self.list_rotated_pieces_to_dict(border_pieces, rotation=2, allow_conflicts=True)
-		border_l_pieces_rotated           = self.list_rotated_pieces_to_dict(border_pieces, rotation=3)
-		border_l_pieces_rotated_conflicts = self.list_rotated_pieces_to_dict(border_pieces, rotation=3, allow_conflicts=True)
-		
+		for (reference, (direction,rotation), conflicts) in itertools.product(possible_references_border, [("u",0),("r",1),("d",2),("l",3)], [False,True]):
+			tmp = self.list_rotated_pieces_to_dict(border_pieces, rotation=rotation, allow_conflicts=conflicts, reference=reference)
+			master_index[ "border_"+direction+("_conflicts" if conflicts else "")+"_"+reference ] = self.list_rotated_pieces_to_array(tmp)
+
 		# Center
-		center_pieces_rotated             = self.list_rotated_pieces_to_dict(center_pieces)
-		center_pieces_rotated_conflicts   = self.list_rotated_pieces_to_dict(center_pieces, allow_conflicts=True)
+		for (reference, conflicts) in itertools.product(possible_references_center, [False,True]):
+			tmp = self.list_rotated_pieces_to_dict(center_pieces, allow_conflicts="+str(conflicts)+", reference=reference)
+			master_index[ "center"+("_conflicts" if conflicts else "")+"_"+reference ] = self.list_rotated_pieces_to_array(tmp)
 
 		# Fixed
 		for [ fp, fs, fr ] in self.fixed:
 			p = Piece( fp, self.pieces[fp][0], self.pieces[fp][1], self.pieces[fp][2], self.pieces[fp][3] )
 			for i in range(fr):
 				p.turnCW()
-			exec("fixed"+str(fp)+"_pieces_rotated = self.list_rotated_pieces_to_dict(fixed_pieces, n="+str(fp)+", rotation="+str(fr)+")")
-			exec("fixed"+str(fp)+"_pieces_rotated_s = self.list_rotated_pieces_to_dict(center_pieces, u="+str(p.d)+")")
-			exec("fixed"+str(fp)+"_pieces_rotated_w = self.list_rotated_pieces_to_dict(center_pieces, r="+str(p.l)+")")
-			exec("fixed"+str(fp)+"_pieces_rotated_n = self.list_rotated_pieces_to_dict(center_pieces, d="+str(p.u)+")")
-			exec("fixed"+str(fp)+"_pieces_rotated_e = self.list_rotated_pieces_to_dict(center_pieces, l="+str(p.r)+")")
+			reference = self.scenario.spaces_references[fs]
+			exec("tmp = self.list_rotated_pieces_to_dict(fixed_pieces, n="+str(fp)+", rotation="+str(fr)+", reference=reference)")
+			exec("master_index[ \"fixed"+str(fp)+"\"   ] = self.list_rotated_pieces_to_array(tmp)")
+
+			# Assuming neighbors of fixed pieces are always center_pieces
+			reference = self.scenario.spaces_references[fs+W]
+			exec("tmp = self.list_rotated_pieces_to_dict(center_pieces, u="+str(p.d)+", reference=reference)")
+			exec("master_index[ \"fixed"+str(fp)+"_s\" ] = self.list_rotated_pieces_to_array(tmp)")
+
+			reference = self.scenario.spaces_references[fs-1]
+			exec("tmp = self.list_rotated_pieces_to_dict(center_pieces, r="+str(p.l)+", reference=reference)")
+			exec("master_index[ \"fixed"+str(fp)+"_w\" ] = self.list_rotated_pieces_to_array(tmp)")
+
+			reference = self.scenario.spaces_references[fs-W]
+			exec("tmp = self.list_rotated_pieces_to_dict(center_pieces, d="+str(p.u)+", reference=reference)")
+			exec("master_index[ \"fixed"+str(fp)+"_n\" ] = self.list_rotated_pieces_to_array(tmp)")
+
+			reference = self.scenario.spaces_references[fs+1]
+			exec("tmp = self.list_rotated_pieces_to_dict(center_pieces, l="+str(p.r)+", reference=reference)")
+			exec("master_index[ \"fixed"+str(fp)+"_e\" ] = self.list_rotated_pieces_to_array(tmp)")
 
 
-		master_index[ "corner"             ] = self.list_rotated_pieces_to_array(corner_pieces_rotated)
-		master_index[ "border_u"           ] = self.list_rotated_pieces_to_array(border_u_pieces_rotated)
-		master_index[ "border_u_conflicts" ] = self.list_rotated_pieces_to_array(border_u_pieces_rotated_conflicts)
-		master_index[ "border_r"           ] = self.list_rotated_pieces_to_array(border_r_pieces_rotated)
-		master_index[ "border_r_conflicts" ] = self.list_rotated_pieces_to_array(border_r_pieces_rotated_conflicts)
-		master_index[ "border_d"           ] = self.list_rotated_pieces_to_array(border_d_pieces_rotated)
-		master_index[ "border_d_conflicts" ] = self.list_rotated_pieces_to_array(border_d_pieces_rotated_conflicts)
-		master_index[ "border_l"           ] = self.list_rotated_pieces_to_array(border_l_pieces_rotated)
-		master_index[ "border_l_conflicts" ] = self.list_rotated_pieces_to_array(border_l_pieces_rotated_conflicts)
-		master_index[ "center"             ] = self.list_rotated_pieces_to_array(center_pieces_rotated)
-		master_index[ "center_conflicts"   ] = self.list_rotated_pieces_to_array(center_pieces_rotated_conflicts)
-		for [ fp, fs, fr ] in self.fixed:
-			exec("master_index[ \"fixed"+str(fp)+"_s\" ] = self.list_rotated_pieces_to_array(fixed"+str(fp)+"_pieces_rotated_s)")
-			exec("master_index[ \"fixed"+str(fp)+"_w\" ] = self.list_rotated_pieces_to_array(fixed"+str(fp)+"_pieces_rotated_w)")
-			exec("master_index[ \"fixed"+str(fp)+"_n\" ] = self.list_rotated_pieces_to_array(fixed"+str(fp)+"_pieces_rotated_n)")
-			exec("master_index[ \"fixed"+str(fp)+"_e\" ] = self.list_rotated_pieces_to_array(fixed"+str(fp)+"_pieces_rotated_e)")
-			exec("master_index[ \"fixed"+str(fp)+"\"   ] = self.list_rotated_pieces_to_array(fixed"+str(fp)+"_pieces_rotated)")
-
+		for k,v in master_index.items():
+			print(k)
 
 		# Create a list of all the RotatedPiece
 		for k,v in master_index.items():

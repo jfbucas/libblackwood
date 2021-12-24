@@ -22,8 +22,8 @@ import external_libs
 #
 
 
-if (sys.version_info[0] < 3) or (sys.version_info[1] < 6):
-    raise Exception("Python 3.6 or a more recent version is required.")
+#if (sys.version_info[0] < 3) or (sys.version_info[1] < 6):
+#    raise Exception("Python 3.6 or a more recent version is required.")
 
 
 class LibBlackwood( external_libs.External_Libs ):
@@ -968,7 +968,7 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		output.extend( [
 			(1, 'uint8 cumulative_heuristic_conflicts_count[WH];' ),
-			(1, 'uint16 piece_index_to_try_next[WH];' ),
+			(1, 'uint64 piece_index_to_try_next[WH];' ),
 			(1, 'uint64 depth_nodes_count[WH];' ),
 			(1, 'uint64 piece_candidates;' ),
 			#(1, 'uint8 conflicts_allowed_this_turn;' ),
