@@ -164,6 +164,8 @@ class Scenario( defs.Defs ):
 		if master_piece_name == "":
 			master_piece_name = "center" + conflicts
 
+		master_piece_name += "_"+self.spaces_references[ space ]
+
 		return master_piece_name		
 
 

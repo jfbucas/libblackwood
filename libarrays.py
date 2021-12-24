@@ -107,7 +107,7 @@ class LibArrays( external_libs.External_Libs ):
 		else:
 			output.append( (0 , "t_rotated_piece master_all_rotated_pieces[] = {") )
 			l = sorted(self.puzzle.master_all_rotated_pieces.keys())
-			i = 0
+			n = 0
 			for y in l:
 				x = self.puzzle.master_all_rotated_pieces[y]
 
@@ -126,8 +126,8 @@ class LibArrays( external_libs.External_Libs ):
 					edges + \
 					heuristic_patterns + \
 					heuristic_stats16 + \
-					", .heuristic_conflicts ="+format(x.conflicts_count, "3")+ " }" + (", " if str(x) != l[-1] else "") + " // " + y + "  #" +str(i)) )
-				i += 1
+					", .heuristic_conflicts ="+format(x.conflicts_count, "3")+ " }" + (", " if str(x) != l[-1] else "") + " // " + y + "  #" +str(n)) )
+				n += 1
 
 			output.append( (2 , "};") )
 			output.append( (0 , "") )
