@@ -86,16 +86,31 @@ class Scenario( defs.Defs ):
 		for depth in range(WH):
 			space = self.spaces_sequence[ depth ]
 			ref = ""
-			ref += "u" if space < W          else ( "u" if self.spaces_order[ space - W ] < depth else "" );
-			ref += "r" if (space+1) % W == 0 else ( "r" if self.spaces_order[ space + 1 ] < depth else "" )
-			ref += "d" if space >= WH-W      else ( "d" if self.spaces_order[ space + W ] < depth else "" );
-			ref += "l" if space % W == 0     else ( "l" if self.spaces_order[ space - 1 ] < depth else "" );
+			ref += "U" if space < W          else ( "u" if self.spaces_order[ space - W ] < depth else "" );
+			ref += "R" if (space+1) % W == 0 else ( "r" if self.spaces_order[ space + 1 ] < depth else "" )
+			ref += "D" if space >= WH-W      else ( "d" if self.spaces_order[ space + W ] < depth else "" );
+			ref += "L" if space % W == 0     else ( "l" if self.spaces_order[ space - 1 ] < depth else "" );
+
+			# Removes the out reference if not needed (2 ref is enough)
+			for x in [0, 1]:
+				if len(ref) > 2:
+					one_found=False
+					new_ref = ""
+					for s in reversed(ref):
+						if s.upper() == s and not one_found:
+							one_found = True
+						else:
+							new_ref += s
+					ref = new_ref
+
+			ref = ref.lower()
 
 			# Make sure we have the first 2 refs in the correct order
 			if len(ref) > 1:
-				while ref[0:2] not in [ "ur", "rd", "dl", "lu" ]:
+				while ref[0:2] not in [ "ur", "rd", "dl", "lu", "ud", "lr" ]:
 					ref = ref[1:]+ref[0:1]
 					# TODO: what if u+d or l+r ?
+
 
 			self.spaces_references[ space ] = ref
 

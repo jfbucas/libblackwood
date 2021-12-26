@@ -37,7 +37,7 @@ class JBRowScan( scenario.Scenario ):
 		depth=0
 		for y in range(self.puzzle.board_h):
 			for x in range(self.puzzle.board_w):
-				s = x+y*self.puzzle.board_w
+				s = x+(self.puzzle.board_h-y-1)*self.puzzle.board_w
 				self.spaces_order[ s ] = depth 
 				depth+=1
 

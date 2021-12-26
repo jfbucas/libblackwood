@@ -1005,7 +1005,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			(1, "cb->max_depth_seen = 0;"),
 			(1, "cb->heartbeat_limit = heartbeat_time_bonus[ 0 ];"),
 			(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT;" if self.DEBUG > 0 else ""),
-			(1, "cb->commands = SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT;" if self.DEBUG > 0 else ""),
+			#(1, "cb->commands = SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT;" if self.DEBUG > 0 else ""),
 			#(1, "cb->commands = 0;" if self.DEBUG > 0 else ""),
 			#(1, "cb->commands = SHOW_MAX_DEPTH_SEEN | ZERO_DEPTH_NODES_COUNT;" if self.DEBUG > 1 else ""),
 			(1, "cb->commands = SHOW_HEARTBEAT;" if self.DEBUG == 0 else ""),
@@ -1125,28 +1125,36 @@ class LibBlackwood( external_libs.External_Libs ):
 			#conflicts = "_conflicts" if index_piece_name.endswith("_conflicts") else ""
 			conflicts = "_conflicts" if len(conflicts_array) > 0 else ""
 			
-			uSide = "0" if space < W          else "board["+sspace+"-W]->d";
-			rSide = "0" if space % W == W-1   else "board["+sspace+"+1]->l";
-			dSide = "0" if space > WH-W       else "board["+sspace+"+W]->u";
-			lSide = "0" if space % W == 0     else "board["+sspace+"-1]->r";
+			Side = {}
+			Side["u"] = "0" if space < W          else "board["+sspace+"-W]->d";
+			Side["r"] = "0" if space % W == W-1   else "board["+sspace+"+1]->l";
+			Side["d"] = "0" if space >= WH-W      else "board["+sspace+"+W]->u";
+			Side["l"] = "0" if space % W == 0     else "board["+sspace+"-1]->r";
 
 			for_ref = self.puzzle.scenario.spaces_references[ space ]
-			if   for_ref in [ "lu", "dlu", "url", "urdl" ]:
-				output.append( (2, "piece_index_to_try_next["+d+"] = cb->master_index_"+index_piece_name+"[ ("+lSide+" << EDGE_SHIFT_LEFT) + "+uSide+" ];" ) )
-			elif for_ref in [ "ur", "urd" ]:
-				output.append( (2, "piece_index_to_try_next["+d+"] = cb->master_index_"+index_piece_name+"[ ("+uSide+" << EDGE_SHIFT_LEFT) + "+rSide+" ];" ) )
-			elif for_ref in [ "rd" ]:
-				output.append( (2, "piece_index_to_try_next["+d+"] = cb->master_index_"+index_piece_name+"[ ("+rSide+" << EDGE_SHIFT_LEFT) + "+dSide+" ];" ) )
-			elif for_ref in [ "dl" ]:
-				output.append( (2, "piece_index_to_try_next["+d+"] = cb->master_index_"+index_piece_name+"[ ("+dSide+" << EDGE_SHIFT_LEFT) + "+lSide+" ];" ) )
+			if len(for_ref) == 0:
+				ref = "0"
+				strref = "0, 0"
+			elif len(for_ref) == 1:
+				ref = Side[for_ref[0]]
+				strref = Side[for_ref[0]]+ ", 0"
+			elif len(for_ref) == 2:
+				ref = "("+Side[for_ref[0]]+" << EDGE_SHIFT_LEFT) + "+Side[for_ref[1]]
+				strref = Side[for_ref[0]]+" , "+Side[for_ref[1]]
+			elif len(for_ref) == 3:
+				ref = "((("+Side[for_ref[0]]+" << EDGE_SHIFT_LEFT) + "+Side[for_ref[1]]+") << EDGE_SHIFT_LEFT) + "+Side[for_ref[2]]
+				strref = "0, 0"
+			elif len(for_ref) == 4:
+				ref = "((("+Side[for_ref[0]]+" << EDGE_SHIFT_LEFT) + "+Side[for_ref[1]]+") << EDGE_SHIFT_LEFT) + "+Side[for_ref[2]]
+				strref = "0, 0"
 
+			output.append( (2, "piece_index_to_try_next["+d+"] = cb->master_index_"+index_piece_name+"[ "+ref+" ];" ) )
 			output.append( (2, "") )
-
 			
 			output.append( (2, 'depth'+d+"_backtrack:" ) )
 	
 			#if conflicts != "":
-			#	output.append( (2, 'DEBUG_PRINT(("'+" "*depth+' Space '+sspace+' - trying index : %d %d %d\\n", piece_index_to_try_next['+d+'], '+lSide+', '+uSide+' ))'  if self.DEBUG > 0 else "" ))
+			#output.append( (2, 'DEBUG_PRINT(("'+" "*depth+' Space '+sspace+' - trying index : %llu %d %d\\n", piece_index_to_try_next['+d+'], '+strref+' ))'  if self.DEBUG > 0 else "" ))
 			#output.append( (2, 'DEBUG_PRINT(("'+ " "*depth +str(depth)+'\\n"))' ))
 			output.append( (2, "while (cb->"+master_lists_of_rotated_pieces+"[ piece_index_to_try_next["+d+"] ] != NULL) {"))
 			
