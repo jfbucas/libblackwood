@@ -98,9 +98,10 @@ class RotatedPiece():
 		self.heuristic_stats16_count = w
 
 	def __str__(self):
-		return str(self.p).zfill(3)+"["+str(self.conflicts_count)+"/"+str(self.heuristic_patterns_count)+":"+chr(ord('a')+self.r)+chr(ord('a')+self.d)+"]"
+		return str(self.p).zfill(3)+"["+str(self.conflicts_count)+"/"+str(self.heuristic_patterns_count)+":"+chr(ord('a')+self.u)+chr(ord('a')+self.r)+chr(ord('a')+self.d)+chr(ord('a')+self.l)+"]"
+
 	def __repr__(self):
-		return str(self.p).zfill(3)+"["+str(self.conflicts_count)+"/"+str(self.heuristic_patterns_count)+":"+chr(ord('a')+self.r)+chr(ord('a')+self.d)+"]"
+		return str(self.p).zfill(3)+"["+str(self.conflicts_count)+"/"+str(self.heuristic_patterns_count)+":"+chr(ord('a')+self.u)+chr(ord('a')+self.r)+chr(ord('a')+self.d)+chr(ord('a')+self.l)+"]"
 
 class RotatedPieceWithRef():
 	ref = 0

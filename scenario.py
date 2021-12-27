@@ -45,6 +45,7 @@ class Scenario( defs.Defs ):
 			for i in range(5):
 				if sum(self.heuristic_patterns_count[i]) > 0:
 					self.printArray(self.heuristic_patterns_count[i], array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
+			#exit()
 		
 		# Init the space order
 		self.prepare_spaces_order()
@@ -109,8 +110,6 @@ class Scenario( defs.Defs ):
 			if len(ref) > 1:
 				while ref[0:2] not in [ "ur", "rd", "dl", "lu", "ud", "lr" ]:
 					ref = ref[1:]+ref[0:1]
-					# TODO: what if u+d or l+r ?
-
 
 			self.spaces_references[ space ] = ref
 
