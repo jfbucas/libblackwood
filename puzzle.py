@@ -168,12 +168,6 @@ class Puzzle( defs.Defs ):
 
 		self.TITLE_STR += self.name+"("+ self.scenario.name +")"
 
-		# The Seed for the Generator
-		self.seed = random.randint(0, sys.maxsize)
-		if os.environ.get('SEED') != None:
-			self.seed = int(os.environ.get('SEED'))
-			if self.DEBUG > 0:
-				self.info(" * Init Puzzle Env Seed : "+str(self.seed) )
 	
 
 		# Prepare the list of lists of pieces
@@ -637,7 +631,7 @@ class Puzzle( defs.Defs ):
 
 
 	# ----- Prepare pieces and heuristics
-	def prepare_pieces( self, local_seed=None ):
+	def prepare_pieces( self ):
 		W=self.board_w
 		H=self.board_h
 		WH=self.board_wh
@@ -651,10 +645,7 @@ class Puzzle( defs.Defs ):
 		master_all_rotated_pieces = {}
 
 		# Randomize the pieces
-		if local_seed:
-			random.seed( local_seed )
-		else:
-			random.seed( self.seed )
+		random.seed( self.scenario.seed )
 
 
 		corner_pieces = self.getPieces(only_corner=True) 

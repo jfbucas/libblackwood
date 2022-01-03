@@ -34,7 +34,7 @@ class LibArrays( external_libs.External_Libs ):
 		self.dependencies = [ "defs" ]
 		self.modules_names = self.MACROS_NAMES_A
 
-		# We always want to generate new random lists of pieces
+		# We always want to generate new lists of pieces
 		#self.force_compile = True
 
 		external_libs.External_Libs.__init__( self, skipcompile )
@@ -64,10 +64,10 @@ class LibArrays( external_libs.External_Libs ):
 			output.append( (0 , "#define LAST "+format(len(self.puzzle.master_lists_of_rotated_pieces)-1, '6')) )
 
 		# ---------------------------------
-		if only_signature:
-			output.append( (0 , "extern uint64 seed;") )
-		else:
-			output.append( (0 , "uint64 seed = "+str(self.puzzle.seed)+";" ) )
+		#if only_signature:
+		#	output.append( (0 , "extern uint64 seed;") )
+		#else:
+		#	output.append( (0 , "uint64 seed = "+str(self.puzzle.seed)+";" ) )
 
 		# ---------------------------------
 		if only_signature:

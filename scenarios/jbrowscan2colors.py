@@ -1,7 +1,7 @@
 import scenario
 
 class JBRowScan2Colors( scenario.Scenario ):
-	"""Joshua Blackwood Heuristics for a simple rowscan Scenario"""
+	"""Joshua Blackwood Heuristics for a simple rowscan Scenario with only 2 colors"""
 
 	def __init__( self, puzzle ):
 
@@ -17,6 +17,11 @@ class JBRowScan2Colors( scenario.Scenario ):
 		self.timelimit = 800 # Minutes
 
 		scenario.Scenario.__init__(self)
+
+	def __str__(self):
+		return self.name + " Seed="+str(self.seed) + " Patterns:" + str(self.heuristic_patterns)
+	def __repr__(self):
+		return self.__str__()
 
 	def prepare_patterns_count_heuristics( self ):
 
@@ -39,8 +44,11 @@ class JBRowScan2Colors( scenario.Scenario ):
 		depth=0
 		for y in range(self.puzzle.board_h):
 			for x in range(self.puzzle.board_w):
-				s = x+(self.puzzle.board_h-y-1)*self.puzzle.board_w
+				s = x+y*self.puzzle.board_w
 				self.spaces_order[ s ] = depth 
 				depth+=1
+
+		# Reverse to start from the bottom
+		self.reverse_spaces_order = True
 
 scenario.global_list.append(JBRowScan2Colors)

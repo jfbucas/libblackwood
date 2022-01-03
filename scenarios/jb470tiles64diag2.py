@@ -18,6 +18,11 @@ class JB470Tiles64Diag2( scenario.Scenario ):
 
 		scenario.Scenario.__init__(self)
 
+	def __str__(self):
+		return self.name + " Seed="+str(self.seed) + " Patterns:" + str(self.heuristic_patterns) + " Conflicts:" + str(self.conflicts_indexes_allowed)
+	def __repr__(self):
+		return self.__str__()
+
 	def prepare_patterns_count_heuristics( self ):
 
 		for i in range(self.puzzle.board_wh):
@@ -31,7 +36,6 @@ class JB470Tiles64Diag2( scenario.Scenario ):
 				self.heuristic_patterns_count[0][i] = int((i - 76) * 0.6538) + 89
 			elif i in range(103, 161):
 				self.heuristic_patterns_count[0][i] = int((i - 102) / 4.4615) + 106
-
 
 	def prepare_spaces_order( self ):
 

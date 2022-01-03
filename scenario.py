@@ -29,6 +29,7 @@ class Scenario( defs.Defs ):
 		self.spaces_order = [None] * self.puzzle.board_wh
 		self.spaces_sequence = [None] * self.puzzle.board_wh
 		self.spaces_references = [None] * self.puzzle.board_wh
+		self.reverse_spaces_order = False
 
 		# The Seed for the Generator
 		self.seed = random.randint(0, sys.maxsize)
@@ -81,8 +82,28 @@ class Scenario( defs.Defs ):
 		H=self.puzzle.board_h
 		WH=self.puzzle.board_wh
 
+		# Reverse to start from the bottom
+		if self.reverse_spaces_order:
+			tmp = [ None ] * WH
+			for depth in range(WH):
+				s = self.spaces_order.index(depth)
+				sx = s % W
+				sy = s // W
+				sy = W-1 -sy
+				s = sx+sy*W
+				self.spaces_sequence[ depth ] = s
+				tmp[s] = depth
+			self.spaces_order = tmp
+
+
+		tmp = [ " " ] * WH
 		for depth in range(WH):
 			self.spaces_sequence[ depth ] = self.spaces_order.index(depth)
+
+			if self.DEBUG_STATIC > 2:
+				tmp[ self.spaces_sequence[ depth ] ] = "X"
+				print("---[ Sequence " + str(depth) + " ]---\n")
+				self.printArray(tmp, array_w=W, array_h=H)
 
 		for depth in range(WH):
 			space = self.spaces_sequence[ depth ]
@@ -182,6 +203,9 @@ class Scenario( defs.Defs ):
 
 		return master_piece_name		
 
+	def next_seed(self):
+		self.seed += 1
+		return self.seed
 
 if __name__ == "__main__":
 	import data

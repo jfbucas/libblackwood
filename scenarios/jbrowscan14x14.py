@@ -18,6 +18,11 @@ class JBRowScan14x14( scenario.Scenario ):
 
 		scenario.Scenario.__init__(self)
 
+	def __str__(self):
+		return self.name + " Seed="+str(self.seed) + " Patterns:" + str(self.heuristic_patterns)
+	def __repr__(self):
+		return self.__str__()
+
 	def prepare_patterns_count_heuristics( self ):
 
 		for i in range(self.puzzle.board_wh):
@@ -53,5 +58,8 @@ class JBRowScan14x14( scenario.Scenario ):
 				if s not in self.puzzle.static_spaces_centers:
 					self.spaces_order[ s ] = depth 
 					depth+=1
+
+		# Reverse to start from the bottom
+		self.reverse_spaces_order = True
 
 scenario.global_list.append(JBRowScan14x14)

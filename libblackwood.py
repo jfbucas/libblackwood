@@ -2,7 +2,6 @@
 import os
 import sys
 import ctypes
-import random
 import multiprocessing
 import itertools
 import math
@@ -222,10 +221,6 @@ class LibBlackwood( external_libs.External_Libs ):
 				(2, prefix+'printf( '+out+' "Heartbeats: %llu/%llu\\n", b->heartbeat, b->heartbeat_limit );' ),
 				(0, '' ),
 
-				(1, 'if (b->commands & SHOW_SEED)' ),
-				(2, prefix+'printf( '+out+' "Seed: %llu\\n\\n", b->seed );' ),
-				(0, '' ),
-
 
 				# SHOW/ZERO NODES_COUNT
 				(1, 'if (b->commands & SHOW_DEPTH_NODES_COUNT)' ),
@@ -266,6 +261,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(2, prefix+'printf( '+out+' " > 0  | reset heartbeat\\n");'),
 				(2, prefix+'printf( '+out+' " > hb | one heartbeat\\n");'),
 				(2, prefix+'printf( '+out+' " > c  | cls\\n");'),
+				(2, prefix+'printf( '+out+' " > w  | send notification\\n");'),
 				(2, prefix+'printf( '+out+' " > d  | nodes count\\n");'),
 				(2, prefix+'printf( '+out+' " > z  | zero nodes count\\n");'),
 				(2, prefix+'printf( '+out+' " > b  | show best board\\n");'),
@@ -311,8 +307,6 @@ class LibBlackwood( external_libs.External_Libs ):
 				(0, "" ),
 				] )
 
-			output.append( (1 , "uint64 seed;") )
-			
 			for name,array in self.puzzle.master_index.items():
 				output.append( (1 , "uint64 master_index_"+name+"[ "+str(len(array))+" ];") )
 
@@ -550,8 +544,6 @@ class LibBlackwood( external_libs.External_Libs ):
 		#output.append( (1, 'DEBUG3_PRINT(("Allocate Blackwood\\n" ));'), )
 		output.append( (1, 'b = (p_blackwood)calloc(1, sizeof(t_blackwood));') )
 
-		output.append( (1 , "b->seed = seed;") )
-
 		for name,array in self.puzzle.master_index.items():
 			output.append( (1 , "for(i=0; i<"+str(len(array))+"; i++) b->master_index_"+name+"[i] = master_index_"+name+"[i];") )
 
@@ -591,24 +583,6 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		output = []
 		
-		# Set seed
-		output.extend( [ 
-			(0, "void set_blackwood_seed("),
-			(1, "p_blackwood cb,"),
-			(1, "uint64 seed") 
-			] )
-
-		if only_signature:
-			output.append( (1, ');') )
-		else:
-			output.append( (1, ") {") )
-			output.append( (1, "if (cb)") )
-			output.append( (2, "cb->seed = seed;") )
-			output.append( (1, "else") )
-			output.append( (2, 'DEBUG_PRINT(("set_blackwood_seed NULL pointer\\n"));') )
-			output.append( (0, "}") )
-
-
 		# Set master_indexes
 		for name,array in self.puzzle.master_index.items():
 			output.extend( [ 
@@ -659,15 +633,8 @@ class LibBlackwood( external_libs.External_Libs ):
 		cb = self.cb
 	
 		# Get a new random order of pieces lists
-		seed = random.randint(0, sys.maxsize)
-		if os.environ.get('SEED') != None:
-			seed = int(os.environ.get('SEED'))
-			if self.DEBUG > 0:
-				self.info(" * Env Seed for Prepare Pieces : "+str(seed) )
-		( master_index, master_lists_of_rotated_pieces, master_all_rotated_pieces ) = self.puzzle.prepare_pieces(local_seed=seed)
-
-		# Set Seed
-		self.LibExt.set_blackwood_seed( cb, seed )
+		seed = self.puzzle.scenario.next_seed()
+		( master_index, master_lists_of_rotated_pieces, master_all_rotated_pieces ) = self.puzzle.prepare_pieces()
 
 		# Set master_indexes
 		for name,master_array in master_index.items():
@@ -743,9 +710,6 @@ class LibBlackwood( external_libs.External_Libs ):
 			pf_args += "patterns["+str(s)+"],"
 
 		
-		pf_str += "&seed=%llu"
-		pf_args += "b->seed,"
-
 		pf_str += "&motifs_order="+self.puzzle.motifs_order
 
 		pf_args = pf_args.rstrip(',')

@@ -18,6 +18,11 @@ class JB470Circle( scenario.Scenario ):
 
 		scenario.Scenario.__init__(self)
 
+	def __str__(self):
+		return self.name + " Seed="+str(self.seed) + " Patterns:" + str(self.heuristic_patterns) + " Conflicts:" + str(self.conflicts_indexes_allowed)
+	def __repr__(self):
+		return self.__str__()
+
 	def prepare_patterns_count_heuristics( self ):
 
 		for i in range(self.puzzle.board_wh):

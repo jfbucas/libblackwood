@@ -110,7 +110,7 @@ class Wait_For_Notification_Thread(threading.Thread):
 				payload="{\"username\":\""+self.puzzle.HOSTNAME+"\","
 				payload+="\"icon_emoji\":\":puzzle:\","
 				payload+="\"channel\":\""+channel+"\","
-				payload+="\"text\":\"@channel [View]("+self.notification_url.value.decode("utf-8")+") "+self.puzzle.scenario.name
+				payload+="\"text\":\"@channel [View]("+self.notification_url.value.decode("utf-8")+") "+ str(self.puzzle.scenario)
 				payload+=" "+str(self.libblackwood.LibExt.getMaxDepthSeen(self.libblackwood.cb))
 				payload+=" "+max_depth_seen_hb
 				payload+="\"}"
