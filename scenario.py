@@ -204,7 +204,8 @@ class Scenario( defs.Defs ):
 		return master_piece_name		
 
 	def next_seed(self):
-		self.seed += 1
+		self.seed = random.randint(0, sys.maxsize)
+		#self.seed += 1
 		return self.seed
 
 if __name__ == "__main__":
