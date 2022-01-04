@@ -59,6 +59,6 @@ class JB469( scenario.Scenario ):
 			]
 
 		# Reverse to start from the bottom
-		self.reverse_spaces_order = True
+		#self.reverse_spaces_order = True
 
 scenario.global_list.append(JB469)
