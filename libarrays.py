@@ -59,9 +59,14 @@ class LibArrays( external_libs.External_Libs ):
 		H=self.puzzle.board_h
 		WH=self.puzzle.board_wh
 
+		LAST =  len(self.puzzle.master_lists_of_rotated_pieces)-1
+		master_index_type = "uint16"
+		if LAST > 65535:
+			master_index_type = "uint32"
+
 		# ---------------------------------
 		if not only_signature:
-			output.append( (0 , "#define LAST "+format(len(self.puzzle.master_lists_of_rotated_pieces)-1, '6')) )
+			output.append( (0 , "#define LAST "+format(LAST, '6')) )
 
 		# ---------------------------------
 		#if only_signature:
@@ -72,10 +77,10 @@ class LibArrays( external_libs.External_Libs ):
 		# ---------------------------------
 		if only_signature:
 			for name,array in self.puzzle.master_index.items():
-				output.append( (0 , "extern uint64 master_index_"+name+"[ "+str(len(array))+" ];") )
+				output.append( (0 , "extern "+master_index_type+" master_index_"+name+"[ "+str(len(array))+" ];") )
 		else:
 			for name,array in self.puzzle.master_index.items():
-				output.append( (0 , "uint64 master_index_"+name+"[] = {") )
+				output.append( (0 , master_index_type+" master_index_"+name+"[] = {") )
 			
 				l = len([x for x in self.chunks(array, 1<<self.EDGE_SHIFT_LEFT)])
 				for x in self.chunks(array, 1<<self.EDGE_SHIFT_LEFT):
@@ -126,7 +131,9 @@ class LibArrays( external_libs.External_Libs ):
 					edges + \
 					heuristic_patterns + \
 					heuristic_stats16 + \
-					", .heuristic_conflicts ="+format(x.conflicts_count, "3")+ " }" + (", " if str(x) != l[-1] else "") + " // " + y + "  #" +str(n)) )
+					", .heuristic_conflicts ="+format(x.conflicts_count, "3")+ \
+					", .padding ="+format(0, "3")+ \
+					" }" + (", " if str(x) != l[-1] else "  ") + " // " + y + "  #" +str(n)) )
 				n += 1
 
 			output.append( (2 , "};") )
@@ -259,6 +266,7 @@ class LibArrays( external_libs.External_Libs ):
 			( 1,	heuristic_stats16 ),
 			( 1,	heuristic_patterns ),
 			( 1,	"uint8 heuristic_conflicts;" ),
+			( 1,	"uint8 padding;" ),
 			( 0, "};" ),
 			( 0, "typedef struct st_rotated_piece t_rotated_piece;" ),
 			( 0, "typedef struct st_rotated_piece * p_rotated_piece;" ),

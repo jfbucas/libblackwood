@@ -307,8 +307,13 @@ class LibBlackwood( external_libs.External_Libs ):
 				(0, "" ),
 				] )
 
+			LAST =  len(self.puzzle.master_lists_of_rotated_pieces)-1
+			master_index_type = "uint16"
+			if LAST > 65535:
+				master_index_type = "uint32"
+
 			for name,array in self.puzzle.master_index.items():
-				output.append( (1 , "uint64 master_index_"+name+"[ "+str(len(array))+" ];") )
+				output.append( (1 , master_index_type+" master_index_"+name+"[ "+str(len(array))+" ];") )
 
 			output.append( (1 , "p_rotated_piece master_lists_of_rotated_pieces[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
 
@@ -739,7 +744,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, 'uint64 i, d, piece, space;'), 
 				(1, 'uint8 patterns[ WH * 4 ];'), 
 				(1, 'uint8 l, u, temp;'), 
-				(1, 'uint8 url_pieces[ WH ];'), 
+				(1, 'uint16 url_pieces[ WH ];'), 
 				(1, "p_rotated_piece * board;"),
 				])
 
@@ -757,7 +762,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(2, "if (board[ space ] == NULL) continue;"),
 
 				(2, "// Insert the piece"),
-				(2, "url_pieces[ space ] = board[ space ]->p;"),
+				(2, "url_pieces[ space ] = board[ space ]->p+1;"), # Real pieces are numbered from 1 
 				(2, "patterns[ space*4 + 0 ] = board[ space ]->u; // Up"),
 				(2, "patterns[ space*4 + 1 ] = board[ space ]->r; // Right"),
 				(2, "patterns[ space*4 + 2 ] = board[ space ]->d; // Down"),
@@ -937,11 +942,16 @@ class LibBlackwood( external_libs.External_Libs ):
 		if self.puzzle.scenario.heuristic_stats16:
 			output.append( (1, 'uint8 cumulative_heuristic_stats16_count[WH];' ) )
 
+		LAST =  len(self.puzzle.master_lists_of_rotated_pieces)-1
+		master_index_type = "uint16"
+		if LAST > 65535:
+			master_index_type = "uint32"
+
 		output.extend( [
 			(1, 'uint8 cumulative_heuristic_conflicts_count[WH];' ),
-			(1, 'uint64 piece_index_to_try_next[WH];' ),
+			(1, master_index_type+' piece_index_to_try_next[WH];' ),
 			(1, 'uint64 depth_nodes_count[WH];' ),
-			(1, 'uint64 piece_candidates;' ),
+			#(1, 'uint64 piece_candidates;' ),
 			#(1, 'uint8 conflicts_allowed_this_turn;' ),
 			(1, 't_rotated_piece * current_rotated_piece;' ),
 			(1, 't_rotated_piece * board['+str(WH)+'];' ),
