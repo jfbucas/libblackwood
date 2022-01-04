@@ -1023,7 +1023,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, 'depth'+d+":  // Labels are ugly, don't do this at home" ),
 				] )
 
-			if ((self.DEBUG > 0 and depth > 140) or (depth > self.puzzle.scenario.depth_first_notification-7)) and depth < self.puzzle.scenario.depth_first_notification:
+			if ((self.DEBUG > 0 and depth > WH//2) or (depth > self.puzzle.scenario.depth_first_notification-7)) and depth < self.puzzle.scenario.depth_first_notification:
 				output.append( (2, 'if (cb->max_depth_seen < '+d+') {') )
 				output.append( (3, 'cb->max_depth_seen = '+d+';') )
 				output.append( (3, 'cb->max_depth_seen_heartbeat['+d+'] = cb->heartbeat;') )
@@ -1043,6 +1043,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (3, 'cb->commands |= SHOW_BEST_BOARD_URL_ONCE;' if depth>=WH-2 else '' ) )
 				output.append( (3, 'fdo_commands(output, cb);' ) )
 				output.append( (2, '}' if depth<WH else '') )
+
 			if depth == WH:
 				output.append( (2, '// We have a complete puzzle !!' ) )
 				output.append( (2, 'setWFN(cb, 1);' ) )
@@ -1065,7 +1066,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (2, 'cb->depth_nodes_count['+sspace+'] ++;' if self.DEBUG > 0 else "") )
 
 			output.append( (2, '' ) )
-			if depth in ([ 140 ] if self.DEBUG == 0 else range(0, WH, W*2)):
+			if depth in (range(0, WH, W*4) if self.DEBUG == 0 else range(0, WH, W*2)):
 				output.append( (2, 'if (cb->check_commands) {') )
 				#output.append( (3, 'DEBUG_PRINT(("'+" "*depth+' Space '+sspace+' - checking commands : %llx \\n", cb->commands ))'  if self.DEBUG > 1 else "" ))
 				output.append( (3, 'clearCheckCommands(cb);' ), )
