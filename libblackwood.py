@@ -46,8 +46,11 @@ class LibBlackwood( external_libs.External_Libs ):
 				'SHOW_DEPTH_NODES_COUNT':	1<<8,
 				'ZERO_DEPTH_NODES_COUNT':	1<<9,
 
-				'SHOW_BEST_BOARD_URL':		1<<10,
-				'SHOW_BEST_BOARD_URL_ONCE':	1<<11,
+				'SHOW_DEPTH_PIECES_COUNT':	1<<10,
+				'ZERO_DEPTH_PIECES_COUNT':	1<<11,
+
+				'SHOW_BEST_BOARD_URL':		1<<12,
+				'SHOW_BEST_BOARD_URL_ONCE':	1<<13,
 
 				'SHOW_MAX_DEPTH_SEEN':		1<<14,
 				'SHOW_MAX_DEPTH_SEEN_ONCE':	1<<15,
@@ -140,6 +143,11 @@ class LibBlackwood( external_libs.External_Libs ):
 			elif command in [ "z", "zero", "zero_depth_nodes_count" ]:
 				self.LibExt.xorCommands( self.cb, self.COMMANDS[ 'ZERO_DEPTH_NODES_COUNT' ] )
 
+			elif command in [ "dd", "ddnc", "show_depth_pieces_count" ]:
+				self.LibExt.xorCommands( self.cb, self.COMMANDS[ 'SHOW_DEPTH_PIECES_COUNT' ] )
+			elif command in [ "zz", "zzero", "zero_depth_pieces_count" ]:
+				self.LibExt.xorCommands( self.cb, self.COMMANDS[ 'ZERO_DEPTH_PIECES_COUNT' ] )
+
 			elif command in [ "b", "best", "show_best_board", "url" ]:
 				self.LibExt.xorCommands( self.cb, self.COMMANDS[ 'SHOW_BEST_BOARD_URL_ONCE' ] )
 			elif command in [ "m", "max", "show_max_depth_seen" ]:
@@ -224,11 +232,20 @@ class LibBlackwood( external_libs.External_Libs ):
 
 				# SHOW/ZERO NODES_COUNT
 				(1, 'if (b->commands & SHOW_DEPTH_NODES_COUNT)' ),
-				(2, prefix+'printDepthNodeCount( '+out+' b );' ),
+				(2, prefix+'printDepthNodesCount( '+out+' b );' ),
 				(0, '' ),
 
 				(1, 'if (b->commands & ZERO_DEPTH_NODES_COUNT)' ),
 				(2, 'for(i=0;i<WH;i++) b->depth_nodes_count[i] = 0;' ),
+				(0, '' ),
+
+				# SHOW/ZERO PIECES_COUNT
+				(1, 'if (b->commands & SHOW_DEPTH_PIECES_COUNT)' ),
+				(2, prefix+'printDepthPiecesCount( '+out+' b );' ),
+				(0, '' ),
+
+				(1, 'if (b->commands & ZERO_DEPTH_PIECES_COUNT)' ),
+				(2, 'for(i=0;i<WH;i++) b->depth_pieces_count[i] = 0;' ),
 				(0, '' ),
 
 
@@ -263,7 +280,9 @@ class LibBlackwood( external_libs.External_Libs ):
 				(2, prefix+'printf( '+out+' " > c  | cls\\n");'),
 				(2, prefix+'printf( '+out+' " > w  | send notification\\n");'),
 				(2, prefix+'printf( '+out+' " > d  | nodes count\\n");'),
+				(2, prefix+'printf( '+out+' " > dd | pieces count\\n");'),
 				(2, prefix+'printf( '+out+' " > z  | zero nodes count\\n");'),
+				(2, prefix+'printf( '+out+' " > zz | zero pieces count\\n");'),
 				(2, prefix+'printf( '+out+' " > b  | show best board\\n");'),
 				(2, prefix+'printf( '+out+' " > m  | show max depth\\n");'),
 				(2, prefix+'printf( '+out+' " > s  | save best board\\n");'),
@@ -325,6 +344,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(0, "" ),
 				(1, "// Counters on each node" ),
 				(1, "uint64 depth_nodes_count[ WH ];"),
+				(1, "uint64 depth_pieces_count[ WH ];"),
 				(0, "" ),
 				(1, "// Records at what heartbeat the max_depth_seen have been found" ),
 				(1, "uint64 max_depth_seen_heartbeat[ WH ];"),
@@ -819,7 +839,7 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		output = []
 
-		for (prefix, (fname, vname, uname))  in itertools.product([ "", "s", "f" ], [ ("DepthNodeCount", "depth_nodes_count", "nodes/s") ]):
+		for (prefix, (fname, vname, uname))  in itertools.product([ "", "s", "f" ], [ ("DepthNodesCount", "depth_nodes_count", "nodes/s") , ("DepthPiecesCount", "depth_pieces_count", "pieces/s") ]):
 
 			if prefix == "":
 				out = ""
@@ -875,7 +895,22 @@ class LibBlackwood( external_libs.External_Libs ):
 						(2, prefix+'printf( '+out+'"\\n" );' ),
 						(1, '} // y' ),
 						(1, prefix+'printf( '+out+'"\\n" );' ),
-						(1, prefix+'printf( '+out+'"Total: %llu '+uname+'\\n\\n", total );' ),
+						#(1, prefix+'printf( '+out+'"Total: %llu '+uname+'\\n\\n", total );' ),
+						(1, 'if (total == 0) {' ),
+						(2, prefix+'printf( '+out+'"  . " );' ),
+						(1, '} else if (total < 1000) {' ),
+						(2, prefix+'printf( '+out+'"Total: '+self.verdoie +"%3llu"+self.XTermNormal+' '+uname+'\\n\\n", total/1);' ),
+						(1, '} else if (total < 1000000) {' ),
+						(2, prefix+'printf( '+out+'"Total: '+self.jaunoie +"%3lluK"+self.XTermNormal+' '+uname+'\\n\\n", total/1000);' ),
+						(1, '} else if (total < 1000000000) {' ),
+						(2, prefix+'printf( '+out+'"Total: '+self.rougeoie+"%3lluM"+self.XTermNormal+' '+uname+'\\n\\n", total/1000000);' ),
+						(1, '} else if (total < 1000000000000) {' ),
+						(2, prefix+'printf( '+out+'"Total: '+self.violoie +"%3lluG"+self.XTermNormal+' '+uname+'\\n\\n", total/1000000000);' ),
+						(1, '} else if (total < 1000000000000000) {' ),
+						(2, prefix+'printf( '+out+'"Total: '+self.bleuoie +"%3lluT"+self.XTermNormal+' '+uname+'\\n\\n", total/1000000000000);' ),
+						(1, '} else {' ),
+						(2, prefix+'printf( '+out+'"Total: %3llu '+uname+'\\n\\n", total);' ),
+						(1, '}' ),
 						])
 				else:
 					output.extend( [
@@ -950,7 +985,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		output.extend( [
 			(1, 'uint8 cumulative_heuristic_conflicts_count[WH];' ),
 			(1, master_index_type+' piece_index_to_try_next[WH];' ),
-			(1, 'uint64 depth_nodes_count[WH];' ),
+			#(1, 'uint64 depth_nodes_count[WH];' ),
 			#(1, 'uint64 piece_candidates;' ),
 			#(1, 'uint8 conflicts_allowed_this_turn;' ),
 			(1, 't_rotated_piece * current_rotated_piece;' ),
@@ -978,13 +1013,14 @@ class LibBlackwood( external_libs.External_Libs ):
 		output.extend( [
 			(1, "cb->max_depth_seen = 0;"),
 			(1, "cb->heartbeat_limit = heartbeat_time_bonus[ 0 ];"),
-			(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT;" if self.DEBUG > 0 else ""),
+			(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_DEPTH_PIECES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT | ZERO_DEPTH_PIECES_COUNT;" if self.DEBUG > 0 else ""),
 			#(1, "cb->commands = SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT;" if self.DEBUG > 0 else ""),
 			#(1, "cb->commands = 0;" if self.DEBUG > 0 else ""),
 			#(1, "cb->commands = SHOW_MAX_DEPTH_SEEN | ZERO_DEPTH_NODES_COUNT;" if self.DEBUG > 1 else ""),
 			(1, "cb->commands = SHOW_HEARTBEAT;" if self.DEBUG == 0 else ""),
 			(1, 'for(i=0;i<WH;i++) cb->board[i] = NULL;' ),
 			(1, 'for(i=0;i<WH;i++) cb->depth_nodes_count[i] = 0;' ),
+			(1, 'for(i=0;i<WH;i++) cb->depth_pieces_count[i] = 0;' ),
 			(1, 'for(i=0;i<WH;i++) cb->max_depth_seen_heartbeat[i] = 0;' ),
 			(2, ""),
 
@@ -1010,7 +1046,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		output.extend( [
 			(2, 'cumulative_heuristic_conflicts_count[i] = 0;' ),
 			(2, 'piece_index_to_try_next[i] = '+self.xffff+';' ),
-			(2, 'depth_nodes_count[i] = 0;' ),
+			#(2, 'depth_nodes_count[i] = 0;' ),
 			(2, 'board[i] = NULL;' ),
 			(1, '}' ),
 			(1, '' ),
@@ -1133,6 +1169,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			#output.append( (2, 'DEBUG_PRINT(("'+ " "*depth +str(depth)+'\\n"))' ))
 			output.append( (2, "while (cb->"+master_lists_of_rotated_pieces+"[ piece_index_to_try_next["+d+"] ] != NULL) {"))
 			
+			output.append( (3, 'cb->depth_pieces_count['+sspace+'] ++;' if self.DEBUG > 0 else "") )
 			
 			output.append( (3, "current_rotated_piece = cb->"+master_lists_of_rotated_pieces+"[ piece_index_to_try_next["+d+"] ];" ))
 			#output.append( (3, 'DEBUG_PRINT(("'+" " * depth+' Trying piece : %d\\n", current_rotated_piece->p))' ))
