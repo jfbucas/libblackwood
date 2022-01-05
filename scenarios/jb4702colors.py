@@ -14,7 +14,7 @@ class JB4702Colors( scenario.Scenario ):
 		self.heuristic_stats16 = False
 		self.depth_first_notification = 252
 
-		self.timelimit = 30 # Minutes
+		self.timelimit = 120 # Minutes
 
 		scenario.Scenario.__init__(self)
 
@@ -61,7 +61,7 @@ class JB4702Colors( scenario.Scenario ):
 			]
 
 		# Reverse to start from the bottom
-		self.reverse_spaces_order = True
+		#self.reverse_spaces_order = True
 
 
 scenario.global_list.append(JB4702Colors)

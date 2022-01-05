@@ -7,6 +7,8 @@ class Tomy_4x4( puzzle.Puzzle ):
 	def __init__( self ):
 
 		self.name = "tomy/pieces.txt.4x4.js"
+		self.motifs_order = "jef"
+		self.upside_down = False
 
 		self.board_w = 4
 		self.board_h = 4

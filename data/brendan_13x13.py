@@ -7,6 +7,7 @@ class Brendan_13x13( puzzle.Puzzle ):
 
 		self.name = "brendan/pieces_13x13.txt.js"
 		self.motifs_order = "jef"
+		self.upside_down = False
 
 		self.board_w = 13
 		self.board_h = 13

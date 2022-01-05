@@ -8,9 +8,7 @@ for x in os.listdir("scenarios"):
 		exec("from . import "+x.replace(".py", ""))
 
 
-
 def loadScenario( puzzle, name = "JB470" ):
-	import os
 
 	if os.environ.get('SCENARIO') != None:
 		name = os.environ.get('SCENARIO')

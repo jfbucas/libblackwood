@@ -4,10 +4,11 @@ import puzzle
 class Tomy_EternityII( puzzle.Puzzle ):
 	"""The full Eternity II puzzle"""
 
-	def __init__( self, with_clues=True  ):
+	def __init__( self, with_clues=True, upside_down=False  ):
 
 		self.name = "EternityII"
 		self.motifs_order = "jef"
+		self.upside_down = upside_down
 
 		self.board_w = 16
 		self.board_h = 16
@@ -276,18 +277,32 @@ class Tomy_EternityII( puzzle.Puzzle ):
 
 		self.fixed = []
 
-		if with_clues:
-			self.fixed.extend( [
-				[ 180,210,3 ],
-				[ 207,34,3 ],
-				[ 248,221,0 ],
-				[ 254,45,3 ]
-				] )
+		if not upside_down:
+			if with_clues:
+				self.fixed.extend( [
+					[ 180,210,3 ],
+					[ 207,34,3 ],
+					[ 248,221,0 ],
+					[ 254,45,3 ]
+					] )
 
-		# Mandatory piece in the middle
-		self.fixed.extend( [
-			[ 138,135,2 ], # as the last one, so that it is on masks[2]
-			] )
+			# Mandatory piece in the middle
+			self.fixed.extend( [
+				[ 138,135,2 ], # as the last one, so that it is on masks[2]
+				] )
+		else:
+			if with_clues:
+				self.fixed.extend( [
+					[ 180,45,1 ],
+					[ 207,221,1 ],
+					[ 248,34,2 ],
+					[ 254,210,1 ]
+					] )
+
+			# Mandatory piece in the middle
+			self.fixed.extend( [
+				[ 138,120,0 ], # as the last one, so that it is on masks[2]
+				] )
 
 		puzzle.Puzzle.__init__( self )
 

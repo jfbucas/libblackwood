@@ -326,21 +326,16 @@ class LibBlackwood( external_libs.External_Libs ):
 				(0, "" ),
 				] )
 
-			LAST =  len(self.puzzle.master_lists_of_rotated_pieces)-1
-			master_index_type = "uint64" # 64, 32, 16  doesn't make any difference in speed
-			if LAST > 65535:
-				master_index_type = "uint32"
-
 			for name,array in self.puzzle.master_index.items():
-				output.append( (1 , master_index_type+" master_index_"+name+"[ "+str(len(array))+" ];") )
+				output.append( (1 , "uint64 master_index_"+name+"[ "+str(len(array))+" ];") )
 
-			output.append( (1 , "p_rotated_piece master_lists_of_rotated_pieces[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
+			output.append( (1 , "t_union_rotated_piece master_lists_of_union_rotated_pieces[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
 
 
 			output.extend( [
 				(0, "" ),
 				(1, "// The Board" ),
-				(1, "p_rotated_piece board[ WH ];"),
+				(1, "t_union_rotated_piece board[ WH ];"),
 				(0, "" ),
 				(1, "// Counters on each node" ),
 				(1, "uint64 depth_nodes_count[ WH ];"),
@@ -572,7 +567,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		for name,array in self.puzzle.master_index.items():
 			output.append( (1 , "for(i=0; i<"+str(len(array))+"; i++) b->master_index_"+name+"[i] = master_index_"+name+"[i];") )
 
-		output.append( (1 , "for(i=0; i<"+str(len(self.puzzle.master_lists_of_rotated_pieces))+"; i++) b->master_lists_of_rotated_pieces[i] = master_lists_of_rotated_pieces[i];") )
+		output.append( (1 , "for(i=0; i<"+str(len(self.puzzle.master_lists_of_rotated_pieces))+"; i++) b->master_lists_of_union_rotated_pieces[i] = master_lists_of_union_rotated_pieces[i];") )
 
 		for (c, n, s) in self.FLAGS:
 			output.append( (1, "b->"+n+" = 0;") )
@@ -642,9 +637,9 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (1, "uint64 i;") )
 			output.append( (1, "if (cb) {") )
 			output.append( (2, "for(i=0; i<"+str(len(self.puzzle.master_lists_of_rotated_pieces))+"; i++) {") )
-			output.append( (3, "cb->master_lists_of_rotated_pieces[i] = NULL;") )
+			output.append( (3, "cb->master_lists_of_union_rotated_pieces[i].value = 0;") )
 			output.append( (3, "if (array[i] != "+self.xffff+")") )
-			output.append( (4, "cb->master_lists_of_rotated_pieces[i] = &(MARP[array[i]]);") )
+			output.append( (4, "cb->master_lists_of_union_rotated_pieces[i] = MAURP[array[i]];") )
 			output.append( (3, "}") )
 			output.append( (1, "} else") )
 			output.append( (2, 'DEBUG_PRINT(("set_blackwood_master_index_'+name+' NULL pointer\\n"));') )
@@ -765,12 +760,9 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, 'uint8 patterns[ WH * 4 ];'), 
 				(1, 'uint8 l, u, temp;'), 
 				(1, 'uint16 url_pieces[ WH ];'), 
-				(1, "p_rotated_piece * board;"),
 				])
 
 			output.extend( [
-				(1, "board = b->board;"),
-				(0, ""),
 				(0, ""),
 				(1, "for(i=0; i<WH*4; i++) patterns[i] = 0;"),
 				])
@@ -779,43 +771,31 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, "for(d=0; d<WH; d++) {"),
 				(2, "space = spaces_sequence[d];"),
 				(2, "url_pieces[ space ] = 0;"),
-				(2, "if (board[ space ] == NULL) continue;"),
+				(2, "if (b->board[ space ].value == 0) continue;"),
+				] )
 
-				(2, "// Insert the piece"),
-				(2, "url_pieces[ space ] = board[ space ]->p+1;"), # Real pieces are numbered from 1 
-				(2, "patterns[ space*4 + 0 ] = board[ space ]->u; // Up"),
-				(2, "patterns[ space*4 + 1 ] = board[ space ]->r; // Right"),
-				(2, "patterns[ space*4 + 2 ] = board[ space ]->d; // Down"),
-				(2, "patterns[ space*4 + 3 ] = board[ space ]->l; // Left"),
+			if self.puzzle.upside_down:
+				output.extend( [
+					(2, "// Insert the piece upside-down"),
+					(2, "url_pieces[ WH-1-space ] = b->board[ space ].info.p+1;"), # Real pieces are numbered from 1 
+					(2, "patterns[ (WH-1-space)*4 + 0 ] = b->board[ space ].info.d; // Up"),
+					(2, "patterns[ (WH-1-space)*4 + 1 ] = b->board[ space ].info.l; // Right"),
+					(2, "patterns[ (WH-1-space)*4 + 2 ] = b->board[ space ].info.u; // Down"),
+					(2, "patterns[ (WH-1-space)*4 + 3 ] = b->board[ space ].info.r; // Left"),
+					(1, "} // For"),
+					] )
+			else:
+				output.extend( [
+					(2, "// Insert the piece"),
+					(2, "url_pieces[ space ] = b->board[ space ].info.p+1;"), # Real pieces are numbered from 1 
+					(2, "patterns[ space*4 + 0 ] = b->board[ space ].info.u; // Up"),
+					(2, "patterns[ space*4 + 1 ] = b->board[ space ].info.r; // Right"),
+					(2, "patterns[ space*4 + 2 ] = b->board[ space ].info.d; // Down"),
+					(2, "patterns[ space*4 + 3 ] = b->board[ space ].info.l; // Left"),
+					(1, "} // For"),
+					] )
 
-				(3, "/*"),
-				(3, "patterns[ space*4 + 0 ] = pieces[board[ space ]->p].u; // Up"),
-				(3, "patterns[ space*4 + 1 ] = pieces[board[ space ]->p].r; // Right"),
-				(3, "patterns[ space*4 + 2 ] = pieces[board[ space ]->p].d; // Down"),
-				(3, "patterns[ space*4 + 3 ] = pieces[board[ space ]->p].l; // Left"),
-
-				(3, "// Rotate the piece to match the right and down"),
-				(3, "i = 0;"),
-				(3, "l = 0;"),
-				(3, "u = 0;"),
-				(3, "if (space % W != 0) l = board[ space-1 ]->r;"),
-				(3, "if (space     >= W) u = board[ space-W ]->d;"),
-				(3, "while ("),
-				(3, "   (((int)(patterns[ space*4 + 0 ] == u) +"),
-				(3, "     (int)(patterns[ space*4 + 1 ] == board[ space ]->r) +"),
-				(3, "     (int)(patterns[ space*4 + 2 ] == board[ space ]->d) +"),
-				(3, "     (int)(patterns[ space*4 + 3 ] == l)) < 3) "),
-				(3, "       && (i < 8)) {"),
-				(4, "temp = patterns[ space*4 + 0 ];"),
-				(4, "patterns[ space*4 + 0 ] = patterns[ space*4 + 3 ];"),
-				(4, "patterns[ space*4 + 3 ] = patterns[ space*4 + 2 ];"),
-				(4, "patterns[ space*4 + 2 ] = patterns[ space*4 + 1 ];"),
-				(4, "patterns[ space*4 + 1 ] = temp;"),
-				(4, "i++;"),
-				(3, "}"),
-				(3, "*/"),
-
-				(1, "} // For"),
+			output.extend( [
 				(0, ""),
 				(1, "for(i=0; i<WH*4; i++) patterns[i] += \'a\';"),
 				])
@@ -977,19 +957,11 @@ class LibBlackwood( external_libs.External_Libs ):
 		if self.puzzle.scenario.heuristic_stats16:
 			output.append( (1, 'uint8 cumulative_heuristic_stats16_count[WH];' ) )
 
-		LAST =  len(self.puzzle.master_lists_of_rotated_pieces)-1
-		master_index_type = "uint64"
-		if LAST > 65535:
-			master_index_type = "uint32"
-
 		output.extend( [
 			(1, 'uint8 cumulative_heuristic_conflicts_count[WH];' ),
-			(1, master_index_type+' piece_index_to_try_next[WH];' ),
-			#(1, 'uint64 depth_nodes_count[WH];' ),
-			#(1, 'uint64 piece_candidates;' ),
-			#(1, 'uint8 conflicts_allowed_this_turn;' ),
-			(1, 't_rotated_piece * current_rotated_piece;' ),
-			(1, 't_rotated_piece * board['+str(WH)+'];' ),
+			(1, 'p_union_rotated_piece piece_to_try_next[WH];' ),
+			(1, 't_union_rotated_piece current_piece;' ),
+			(1, 't_union_rotated_piece board['+str(WH)+'];' ),
 			(1, '' ),
 			
 			(1, 'was_allocated = 0;' ),
@@ -1018,7 +990,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			#(1, "cb->commands = 0;" if self.DEBUG > 0 else ""),
 			#(1, "cb->commands = SHOW_MAX_DEPTH_SEEN | ZERO_DEPTH_NODES_COUNT;" if self.DEBUG > 1 else ""),
 			(1, "cb->commands = SHOW_HEARTBEAT;" if self.DEBUG == 0 else ""),
-			(1, 'for(i=0;i<WH;i++) cb->board[i] = NULL;' ),
+			(1, 'for(i=0;i<WH;i++) cb->board[i].value = 0;' ),
 			(1, 'for(i=0;i<WH;i++) cb->depth_nodes_count[i] = 0;' ),
 			(1, 'for(i=0;i<WH;i++) cb->depth_pieces_count[i] = 0;' ),
 			(1, 'for(i=0;i<WH;i++) cb->max_depth_seen_heartbeat[i] = 0;' ),
@@ -1045,9 +1017,8 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		output.extend( [
 			(2, 'cumulative_heuristic_conflicts_count[i] = 0;' ),
-			(2, 'piece_index_to_try_next[i] = '+self.xffff+';' ),
-			#(2, 'depth_nodes_count[i] = 0;' ),
-			(2, 'board[i] = NULL;' ),
+			(2, 'piece_to_try_next[i] = &(cb->master_lists_of_union_rotated_pieces['+self.xffff+']);' ),
+			(2, 'board[i].value = 0;' ),
 			(1, '}' ),
 			(1, '' ),
 			(1, 'DEBUG_PRINT(("x-]'+self.XTermInfo+'  Starting Solve  '+self.XTermNormal+'[-x\\n"));' ),
@@ -1056,8 +1027,6 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		#for (c, n, s) in self.FLAGS:
 		#	output.append( (1, 'DEBUG_PRINT(("'+c+': %llu\\n", cb->'+n+'));') )
-
-		master_lists_of_rotated_pieces = "master_lists_of_rotated_pieces"
 
 		# this goes from 0....255; we have solved #0 already, so start at #1.
 		for depth in range(0,WH+1):
@@ -1133,14 +1102,13 @@ class LibBlackwood( external_libs.External_Libs ):
 
 			index_piece_name = self.puzzle.scenario.get_index_piece_name(depth)
 			conflicts_array = [ x for x in self.puzzle.scenario.conflicts_indexes_allowed if x <= depth ]
-			#conflicts = "_conflicts" if index_piece_name.endswith("_conflicts") else ""
 			conflicts = "_conflicts" if len(conflicts_array) > 0 else ""
 			
 			Side = {}
-			Side["u"] = "0" if space < W          else "board["+sspace+"-W]->d";
-			Side["r"] = "0" if space % W == W-1   else "board["+sspace+"+1]->l";
-			Side["d"] = "0" if space >= WH-W      else "board["+sspace+"+W]->u";
-			Side["l"] = "0" if space % W == 0     else "board["+sspace+"-1]->r";
+			Side["u"] = "0" if space < W          else "board["+sspace+"-W].info.d";
+			Side["r"] = "0" if space % W == W-1   else "board["+sspace+"+1].info.l";
+			Side["d"] = "0" if space >= WH-W      else "board["+sspace+"+W].info.u";
+			Side["l"] = "0" if space % W == 0     else "board["+sspace+"-1].info.r";
 
 			for_ref = self.puzzle.scenario.spaces_references[ space ]
 			if len(for_ref) == 0:
@@ -1159,62 +1127,56 @@ class LibBlackwood( external_libs.External_Libs ):
 				ref = "((("+Side[for_ref[0]]+" << EDGE_SHIFT_LEFT) + "+Side[for_ref[1]]+") << EDGE_SHIFT_LEFT) + "+Side[for_ref[2]]
 				strref = "0, 0"
 
-			output.append( (2, "piece_index_to_try_next["+d+"] = cb->master_index_"+index_piece_name+"[ "+ref+" ];" ) )
+			output.append( (2, "piece_to_try_next["+d+"] = &(cb->master_lists_of_union_rotated_pieces[cb->master_index_"+index_piece_name+"[ "+ref+" ] ]);" ) )
 			output.append( (2, "") )
 			
 			output.append( (2, 'depth'+d+"_backtrack:" ) )
 	
 			#if conflicts != "":
-			#output.append( (2, 'DEBUG_PRINT(("'+" "*depth+' Space '+sspace+' - trying index : %llu %d %d\\n", piece_index_to_try_next['+d+'], '+strref+' ))'  if self.DEBUG > 0 else "" ))
+			#output.append( (2, 'DEBUG_PRINT(("'+" "*depth+' Space '+sspace+' - trying index : %p %d %d\\n", piece_to_try_next['+d+'], '+strref+' ))'  if self.DEBUG > 0 else "" ))
 			#output.append( (2, 'DEBUG_PRINT(("'+ " "*depth +str(depth)+'\\n"))' ))
-			output.append( (2, "while (cb->"+master_lists_of_rotated_pieces+"[ piece_index_to_try_next["+d+"] ] != NULL) {"))
+			output.append( (2, "while ( piece_to_try_next["+d+"]->value != 0 ) {"))
 			
 			output.append( (3, 'cb->depth_pieces_count['+sspace+'] ++;' if self.DEBUG > 0 else "") )
 			
-			output.append( (3, "current_rotated_piece = cb->"+master_lists_of_rotated_pieces+"[ piece_index_to_try_next["+d+"] ];" ))
-			#output.append( (3, 'DEBUG_PRINT(("'+" " * depth+' Trying piece : %d\\n", current_rotated_piece->p))' ))
+			output.append( (3, "current_piece = *(piece_to_try_next["+d+"]);" ))
+			#output.append( (3, 'DEBUG_PRINT(("'+" " * depth+' Trying piece : %d\\n", current_piece.info.p))' ))
 			if depth > 0:
 				for i in range(5):
 					if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
 						if self.puzzle.scenario.heuristic_patterns_count[i][depth] > 0: 
-							output.append( (3, "if ((cumulative_heuristic_patterns_count_"+str(i)+"["+d+"-1] + current_rotated_piece->heuristic_patterns_"+str(i)+") < "+str(self.puzzle.scenario.heuristic_patterns_count[i][depth])+" ) break;"))
+							output.append( (3, "if ((cumulative_heuristic_patterns_count_"+str(i)+"["+d+"-1] + current_piece.info.heuristic_patterns_"+str(i)+") < "+str(self.puzzle.scenario.heuristic_patterns_count[i][depth])+" ) break;"))
 				if self.puzzle.scenario.heuristic_stats16:
-					output.append( (3, "if ((cumulative_heuristic_stats16_count["+d+"-1] + current_rotated_piece->heuristic_stats16_count) < "+str(self.puzzle.scenario.heuristic_stats16_count[depth])+" ) break;"))
+					output.append( (3, "if ((cumulative_heuristic_stats16_count["+d+"-1] + current_piece.info.heuristic_stats16_count) < "+str(self.puzzle.scenario.heuristic_stats16_count[depth])+" ) break;"))
 
 			if len(conflicts_array) > 0:
-				if depth == conflicts_array[0]:
-					output.append( (3, "if (current_rotated_piece->heuristic_conflicts > "+str(len(conflicts_array))+ ") break; // "+str(conflicts_array)))
-				else:
-					output.append( (3, "if (current_rotated_piece->heuristic_conflicts + cumulative_heuristic_conflicts_count["+d+"-1] > "+str(len(conflicts_array))+ ") break; // "+str(conflicts_array)))
+				cumul = "" if depth == conflicts_array[0] else "+ cumulative_heuristic_conflicts_count["+d+"-1]"
+				output.append( (3, "if (current_piece.info.heuristic_conflicts "+ cumul +" > "+str(len(conflicts_array))+ ") break; // "+str(conflicts_array)))
 			
-			output.append( (3, "piece_index_to_try_next["+d+"] ++;"))
-			output.append( (3, "if (pieces_used[ current_rotated_piece->p ] != 0) continue;"))
+			output.append( (3, "piece_to_try_next["+d+"] ++;"))
+			output.append( (3, "if (pieces_used[ current_piece.info.p ] != 0) continue;"))
 			
-			output.append( (3, "board["+sspace+"] = current_rotated_piece;"))
-			#output.append( (3, 'DEBUG_PRINT(("'+" "*depth+' Space '+sspace+' - inserting piece : %d \\n", board['+sspace+']->p ))'  if self.DEBUG > 1 else "" ))
-			output.append( (3, 'pieces_used[current_rotated_piece->p] = 1;' ) )
+			output.append( (3, "board["+sspace+"] = current_piece;"))
+			#output.append( (3, 'DEBUG_PRINT(("'+" "*depth+' Space '+sspace+' - inserting piece : %d \\n", board['+sspace+'].info.p ))'  if self.DEBUG > 1 else "" ))
+			output.append( (3, "pieces_used[ current_piece.info.p ] = 1;" ) )
 			for i in range(5):
 				if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
-					if depth == 0: 
-						output.append( (3, "cumulative_heuristic_patterns_count_"+str(i)+"["+d+"] = current_rotated_piece->heuristic_patterns_"+str(i)+";"))
-					elif depth <= self.puzzle.scenario.max_index(self.puzzle.scenario.heuristic_patterns_count[i]): 
-						output.append( (3, "cumulative_heuristic_patterns_count_"+str(i)+"["+d+"] = cumulative_heuristic_patterns_count_"+str(i)+"["+d+"-1] + current_rotated_piece->heuristic_patterns_"+str(i)+";"))
+					cumul = "" if depth == 0 else "cumulative_heuristic_patterns_count_"+str(i)+"["+d+"-1] +" 
+					if depth <= self.puzzle.scenario.max_index(self.puzzle.scenario.heuristic_patterns_count[i]): 
+						output.append( (3, "cumulative_heuristic_patterns_count_"+str(i)+"["+d+"] = "+cumul+" current_piece.info.heuristic_patterns_"+str(i)+";"))
 			if self.puzzle.scenario.heuristic_stats16:
-				if depth == 0: 
-					output.append( (3, "cumulative_heuristic_stats16_count["+d+"] = current_rotated_piece->heuristic_stats16_count;"))
-				elif depth <= self.puzzle.scenario.max_index(self.puzzle.scenario.heuristic_stats16_count): 
-					output.append( (3, "cumulative_heuristic_stats16_count["+d+"] = cumulative_heuristic_stats16_count["+d+"-1] + current_rotated_piece->heuristic_stats16_count;"))
+				cumul = "" if depth == 0 else "cumulative_heuristic_stats16_count["+d+"-1] +" 
+				if depth <= self.puzzle.scenario.max_index(self.puzzle.scenario.heuristic_stats16_count): 
+					output.append( (3, "cumulative_heuristic_stats16_count["+d+"] = "+cumul+" current_piece.info.heuristic_stats16_count;"))
 			if len(conflicts_array) > 0:
-				if depth == conflicts_array[0]:
-					output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = current_rotated_piece->heuristic_conflicts;"))
-				else:
-					output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = cumulative_heuristic_conflicts_count["+d+"-1] + current_rotated_piece->heuristic_conflicts;"))
+				cumul = "" if depth == conflicts_array[0] else "cumulative_heuristic_conflicts_count["+d+"-1] + "
+				output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = "+cumul+" current_piece.info.heuristic_conflicts;"))
 			
 			output.append( (3, "goto depth"+str(depth+1)+";"))
 			output.append( (2, "}"))
 
-			output.append( (2, 'pieces_used[board['+sprevious_space+']->p] = 0;' if depth > 0 else "" ))
-			output.append( (2, 'board['+sprevious_space+'] = NULL;' if depth > 0 else "" ))
+			output.append( (2, 'pieces_used[ board['+sprevious_space+'].info.p ] = 0;' if depth > 0 else "" ))
+			output.append( (2, 'board['+sprevious_space+'].value = 0;' if depth > 0 else "" ))
 			output.append( (2, ""))
 			output.append( (2, "goto depth"+str(depth-1)+"_backtrack;" if depth>0 else "goto depth_end;" ))
 

@@ -60,27 +60,18 @@ class LibArrays( external_libs.External_Libs ):
 		WH=self.puzzle.board_wh
 
 		LAST =  len(self.puzzle.master_lists_of_rotated_pieces)-1
-		master_index_type = "uint64"
-		if LAST > 65535:
-			master_index_type = "uint32"
 
 		# ---------------------------------
 		if not only_signature:
 			output.append( (0 , "#define LAST "+format(LAST, '6')) )
 
 		# ---------------------------------
-		#if only_signature:
-		#	output.append( (0 , "extern uint64 seed;") )
-		#else:
-		#	output.append( (0 , "uint64 seed = "+str(self.puzzle.seed)+";" ) )
-
-		# ---------------------------------
 		if only_signature:
 			for name,array in self.puzzle.master_index.items():
-				output.append( (0 , "extern "+master_index_type+" master_index_"+name+"[ "+str(len(array))+" ];") )
+				output.append( (0 , "extern uint64 master_index_"+name+"[ "+str(len(array))+" ];") )
 		else:
 			for name,array in self.puzzle.master_index.items():
-				output.append( (0 , master_index_type+" master_index_"+name+"[] = {") )
+				output.append( (0 , "uint64 master_index_"+name+"[] = {") )
 			
 				l = len([x for x in self.chunks(array, 1<<self.EDGE_SHIFT_LEFT)])
 				for x in self.chunks(array, 1<<self.EDGE_SHIFT_LEFT):
@@ -90,29 +81,10 @@ class LibArrays( external_libs.External_Libs ):
 				output.append( (2 , "};") )
 				output.append( (0 , "") )
 
-
 		# ---------------------------------
-		if only_signature:
-			output.append( (0 , "extern p_rotated_piece master_lists_of_rotated_pieces[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
-			output.append( (0 , "#define MARP master_all_rotated_pieces") )
-		else:
-			
-			output.append( (0 , "p_rotated_piece master_lists_of_rotated_pieces[] = {") )
-			v = 0
-			for x in self.chunks(self.puzzle.master_lists_of_rotated_pieces, 16):
-				output.append( (2 , ", ".join(["&(MARP["+format(n, '4')+"])" if n != None else format("NULL", '13') for n in x]) + ( "," if len(x)==16 else " " ) + "  // "+str(v)) )
-				v += 16
-
-			output.append( (2 , "};") )
-			output.append( (0 , "") )
-
-
-
-		# ---------------------------------
-		if only_signature:
-			output.append( (0 , "extern t_rotated_piece master_all_rotated_pieces[ "+str(len(self.puzzle.master_all_rotated_pieces))+" ];") )
-		else:
-			output.append( (0 , "t_rotated_piece master_all_rotated_pieces[] = {") )
+		if not only_signature:
+			output.append( (0, "// master_all_rotated_pieces") )
+			output.append( (1 , "#define MAURPNULL { .value = 0 }" )) 
 			l = sorted(self.puzzle.master_all_rotated_pieces.keys())
 			n = 0
 			for y in l:
@@ -129,13 +101,47 @@ class LibArrays( external_libs.External_Libs ):
 				if self.puzzle.scenario.heuristic_stats16:
 					heuristic_stats16 = ", .heuristic_stats16_count ="+format(x.heuristic_stats16_count, "3")
 
-				output.append( (2, "{ .p ="+format(x.p, "3")+ \
+				output.append( (1, "#define MAURP"+str(n)+" { .info = { " \
+					".p ="+format(x.p, "3")+ \
 					edges + \
 					heuristic_patterns + \
 					heuristic_stats16 + \
 					", .heuristic_conflicts ="+format(x.conflicts_count, "3")+ \
-					", .padding ="+format(0, "3")+ \
-					" }" + (", " if str(x) != l[-1] else "  ") + " // " + y + "  #" +str(n)) )
+					" } }" + " // " + y + "  #" +str(n)) )
+				n += 1
+
+			output.append( (0 , "") )
+
+		
+
+		# ---------------------------------
+		if only_signature:
+			output.append( (0 , "extern t_union_rotated_piece master_lists_of_union_rotated_pieces[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
+			output.append( (0 , "#define MAURP master_all_union_rotated_pieces") )
+		else:
+			
+			output.append( (0 , "t_union_rotated_piece master_lists_of_union_rotated_pieces[] = {") )
+			v = 0
+			for x in self.chunks(self.puzzle.master_lists_of_rotated_pieces, 16):
+				output.append( (2 , ", ".join([format("MAURP"+str(n),"8") if n != None else format("MAURPNULL", '8') for n in x]) + ( "," if len(x)==16 else " " ) + "  // "+str(v)) )
+				v += 16
+
+			output.append( (2 , "};") )
+			output.append( (0 , "") )
+
+
+
+		# ---------------------------------
+		if only_signature:
+			output.append( (0 , "extern t_union_rotated_piece master_all_union_rotated_pieces[ "+str(len(self.puzzle.master_all_rotated_pieces))+" ];") )
+		else:
+			output.append( (0 , "t_union_rotated_piece master_all_union_rotated_pieces[] = {") )
+			l = sorted(self.puzzle.master_all_rotated_pieces.keys())
+			n = 0
+			for y in l:
+				x = self.puzzle.master_all_rotated_pieces[y]
+				output.append( (2, "MAURP"+str(n) + (", " if str(x) != l[-1] else "  ") + " // " + y + "  #" +str(n)) )
+
 				n += 1
 
 			output.append( (2 , "};") )
@@ -258,22 +264,7 @@ class LibArrays( external_libs.External_Libs ):
 				heuristic_patterns += "uint8 heuristic_patterns_"+str(i)+";"
 
 		output.extend( [
-			( 0, "// Rotated Piece" ),
-			( 0, "struct st_rotated_piece {" ),
-			( 1,	"uint8 p;" ),
-			( 1,	"uint8 u;" ),
-			( 1,	"uint8 r;" ),
-			( 1,	"uint8 d;" ),
-			( 1,	"uint8 l;" ),
-			( 1,	heuristic_stats16 ),
-			( 1,	heuristic_patterns ),
-			( 1,	"uint8 heuristic_conflicts;" ),
-			( 1,	"uint8 padding;" ),
-			( 0, "};" ),
-			( 0, "typedef struct st_rotated_piece t_rotated_piece;" ),
-			( 0, "typedef struct st_rotated_piece * p_rotated_piece;" ),
-			( 0, "" ),
-			( 0, "// Rotated Piece" ),
+			( 0, "// Rotated Piece Union" ),
 			( 0, "union union_rotated_piece {" ),
 			( 1,	"struct {" ),
 			( 2,		"uint8 p;" ),
@@ -284,14 +275,11 @@ class LibArrays( external_libs.External_Libs ):
 			( 2,		heuristic_stats16 ),
 			( 2,		heuristic_patterns ),
 			( 2,		"uint8 heuristic_conflicts;" ),
-			( 2,		"uint8 padding;" ),
 			( 1,	"} info;" ),
-			( 1,	"uint64 data;" ),
+			( 1,	"uint64 value;" ),
 			( 0, "};" ),
-			#( 0, "typedef union union_rotated_piece t_rotated_piece;" ),
-			#( 0, "typedef union union_rotated_piece * p_rotated_piece;" ),
-			( 0, "" ),
-			( 0, "" ),
+			( 0, "typedef union union_rotated_piece t_union_rotated_piece;" ),
+			( 0, "typedef union union_rotated_piece * p_union_rotated_piece;" ),
 			( 0, "" ),
 			( 0, "" ),
 			( 0, "" ),

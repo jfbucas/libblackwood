@@ -1,22 +1,12 @@
+import os
 
-from . import brendan_06x06
-from . import brendan_07x07
-from . import brendan_08x08
-from . import brendan_09x09
-from . import brendan_10x10
-from . import brendan_11x11
-from . import brendan_12x12
-from . import brendan_13x13
-from . import brendan_14x14
-from . import brendan_15x15
-
-from . import tomy_4x4
-from . import tomy_EternityII
-from . import tomy_EternityII_Blackwood
+# Import the puzzle modules
+for x in os.listdir("data"):
+	if x.endswith(".py") and x != "__init__.py":
+		exec("from . import "+x.replace(".py", ""))
 
 
-def loadPuzzle( puzzlename = "E2nc" ):
-	import os
+def loadPuzzle( puzzlename = "E2udnc" ):
 
 	if os.environ.get('PUZZLE') != None:
 		puzzlename = os.environ.get('PUZZLE')
@@ -28,6 +18,8 @@ def loadPuzzle( puzzlename = "E2nc" ):
 		p = tomy_EternityII.Tomy_EternityII()
 	elif puzzlename in [ "E2nc", "E2clueless", "E2noclue", "E2noclues" ]:
 		p = tomy_EternityII.Tomy_EternityII(with_clues=False)
+	elif puzzlename in [ "E2udnc", "E2udclueless", "E2udnoclue", "E2udnoclues" ]:
+		p = tomy_EternityII.Tomy_EternityII(with_clues=False, upside_down=True)
 	elif puzzlename in [ "JB", "jb", "blackwood", "b" ]:
 		p = tomy_EternityII_Blackwood.Tomy_EternityII_Blackwood()
 	elif puzzlename in [ "Tomy_4x4", "T4x4", "4x4" ]:
@@ -45,6 +37,7 @@ def loadPuzzle( puzzlename = "E2nc" ):
 
 	if p == None:
 		print( "ERROR: Unknown puzzle: ", puzzlename)
+		exit()
 
 	return p
 

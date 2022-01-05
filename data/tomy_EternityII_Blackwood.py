@@ -8,6 +8,7 @@ class Tomy_EternityII_Blackwood( puzzle.Puzzle ):
 
 		self.name = "tomy/pieces.txt.EternityII_blackwood.js"
 		self.motifs_order = "jblackwood"
+		self.upside_down = False
 
 		self.board_w = 16
 		self.board_h = 16
