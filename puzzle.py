@@ -114,9 +114,9 @@ class RotatedPieceWithRef():
 		self.rotated_piece = rotated_piece
 
 	def __str__(self):
-		return str(self.ref)+":"+str(self.rotated_piece.p+1)+"("+str(self.score)+")"
+		return str(self.ref)+":"+str(self.rotated_piece.p)+"("+str(self.score)+")"
 	def __repr__(self):
-		return str(self.ref)+":"+str(self.rotated_piece.p+1)+"("+str(self.score)+")"
+		return str(self.ref)+":"+str(self.rotated_piece.p)+"("+str(self.score)+")"
 
 
 class Puzzle( defs.Defs ):
@@ -459,6 +459,71 @@ class Puzzle( defs.Defs ):
 
 		rotatedPieces = []
 
+		for left in self.colors:
+			for up in self.colors:
+
+				for rotation in [ 0, 1, 2, 3 ]:
+
+					rotation_conflicts = 0
+					pattern_conflicts = 0
+
+					if left != piece.l:
+						rotation_conflicts += 1
+						if piece.l in self.colors_border:
+							pattern_conflicts += 1
+
+					if up != piece.u:
+						rotation_conflicts += 1
+						if piece.u in self.colors_border:
+							pattern_conflicts += 1
+
+					if  (rotation_conflicts == 0) or \
+					   ((rotation_conflicts == 1) and allow_conflicts):
+
+						if pattern_conflicts == 0:
+							
+							rotatedPieces.append(
+								RotatedPieceWithRef(
+									ref = (left << self.EDGE_SHIFT_LEFT) + up,
+
+									score = score - 100000 * rotation_conflicts,
+									rotated_piece = RotatedPiece(
+										p = piece.p,
+										rotation = rotation,
+										u = piece.u,
+										r = piece.r,
+										d = piece.d,
+										l = piece.l,
+										b = rotation_conflicts,
+										h = heuristic_patterns_count,
+										w = self.pieces_stats16_weight[ piece.p ]
+										)
+									)
+								)
+					piece.turnCW()
+
+
+
+		return rotatedPieces
+
+	# ----- Get all the pieces
+	def getRotatedPiecesNew( self, piece, allow_conflicts=False, for_ref="" ):
+		
+		score = 0
+		heuristic_patterns_count = [ 0, 0, 0, 0, 0 ]
+
+		i = 0
+		for hp in self.scenario.heuristic_patterns:
+			for pattern in hp:
+				for e in piece.getEdges():
+					if e == pattern:
+						score += 100
+						heuristic_patterns_count[i] += 1
+			i += 1
+
+
+		rotatedPieces = []
+
 		for rotation in [ 0, 1, 2, 3 ]:
 
 			piece_edges = {}
@@ -480,7 +545,7 @@ class Puzzle( defs.Defs ):
 				if allow_conflicts:
 					it0 = list(itertools.product([pe[0]],self.colors))
 					it1 = list(itertools.product(self.colors,[pe[1]]))
-					elist = it0 + it1
+					elist = list(dict.fromkeys(it0 + it1))
 				else:
 					elist = [ (pe[0], pe[1]) ]
 			elif len(for_ref) == 3:
@@ -488,7 +553,7 @@ class Puzzle( defs.Defs ):
 					it0 = list(itertools.product([pe[0]],[pe[1]],self.colors))
 					it1 = list(itertools.product([pe[0]],self.colors,[pe[2]]))
 					it2 = list(itertools.product(self.colors,[pe[1]],[pe[2]]))
-					elist = it0 + it1 + it2
+					elist = list(dict.fromkeys(it0 + it1 + it2))
 				else:
 					elist = [ (pe[0], pe[1], pe[2]) ]
 			elif len(for_ref) == 4:
@@ -497,7 +562,7 @@ class Puzzle( defs.Defs ):
 					it1 = list(itertools.product([pe[0]],[pe[2]],self.colors,[pe[3]]))
 					it2 = list(itertools.product([pe[0]],self.colors,[pe[2]],[pe[3]]))
 					it3 = list(itertools.product(self.colors,[pe[1]],[pe[2]],[pe[3]]))
-					elist = it0 + it1 + it2 + it3
+					elist = list(dict.fromkeys(it0 + it1 + it2 + it3))
 				else:
 					elist = [ (pe[0], pe[1], pe[2], pe[3]) ]
 		
@@ -526,10 +591,11 @@ class Puzzle( defs.Defs ):
 				for i in range(len(for_ref)):
 					conflict[for_ref[i]] = (e[i] != piece_edges[for_ref[i]])
 
-				if (conflict["u"] and (piece_edges["u"] == 0)) or \
-				   (conflict["r"] and (piece_edges["r"] == 0)) or \
-				   (conflict["d"] and (piece_edges["d"] == 0)) or \
-				   (conflict["l"] and (piece_edges["l"] == 0)):
+
+				if (conflict["u"] and (piece_edges["u"] in self.colors_border)) or \
+				   (conflict["r"] and (piece_edges["r"] in self.colors_border)) or \
+				   (conflict["d"] and (piece_edges["d"] in self.colors_border)) or \
+				   (conflict["l"] and (piece_edges["l"] in self.colors_border)):
 					continue
 
 				conflicts = int(conflict["u"]) + int(conflict["r"]) + int(conflict["d"]) + int(conflict["l"])
@@ -562,40 +628,40 @@ class Puzzle( defs.Defs ):
 		return rotatedPieces
 
 	# 
-	def list_rotated_pieces_to_dict(self, list_pieces, allow_conflicts=False, reference="", u=None, r=None, d=None, l=None, n=None, rotation=None):
+	def list_rotated_pieces_to_dict(self, list_pieces, allow_conflicts=False, reference="", u=None, r=None, d=None, l=None, p=None, rotation=None):
 		if self.DEBUG > 0:
 			self.top("list rotated pieces to dict")
 			self.info( " * List rotated pieces to dict with reference " + reference )
 
 		tmp = []
-		for p in list_pieces:
-			tmp.extend(self.getRotatedPieces( p, allow_conflicts, reference ))
+		for piece in list_pieces:
+			tmp.extend(self.getRotatedPiecesNew( piece, allow_conflicts, reference ))
 			
 		list_pieces_rotated = {}
-		for p in tmp:
+		for piece in tmp:
 			if u != None:
-				if p.rotated_piece.u != u:
+				if piece.rotated_piece.u != u:
 					continue
 			if r != None:
-				if p.rotated_piece.r != r:
+				if piece.rotated_piece.r != r:
 					continue
 			if d != None:
-				if p.rotated_piece.d != d:
+				if piece.rotated_piece.d != d:
 					continue
 			if l != None:
-				if p.rotated_piece.l != l:
+				if piece.rotated_piece.l != l:
 					continue
-			if n != None:
-				if p.rotated_piece.p != n:
+			if p != None:
+				if piece.rotated_piece.p != p:
 					continue
 			if rotation != None:
-				if p.rotated_piece.rotation != rotation:
+				if piece.rotated_piece.rotation != rotation:
 					continue
 
-			if p.ref in list_pieces_rotated.keys():
-				list_pieces_rotated[p.ref].append(p)
+			if piece.ref in list_pieces_rotated.keys():
+				list_pieces_rotated[piece.ref].append(piece)
 			else:
-				list_pieces_rotated[p.ref] = [ p ]
+				list_pieces_rotated[piece.ref] = [ piece ]
 
 		if self.DEBUG > 0:
 			self.info( " * List rotated pieces to dict with reference "+ reference + " took "+ self.top("list rotated pieces to dict"))
@@ -662,6 +728,7 @@ class Puzzle( defs.Defs ):
 		# Border
 		possible_references_border = list(dict.fromkeys([ self.scenario.spaces_references[s] for s in self.static_spaces_borders]))
 		for (reference, (direction,rotation), conflicts) in itertools.product(possible_references_border, [("u",0),("r",1),("d",2),("l",3)], [False,True]):
+			#tmp = self.list_rotated_pieces_to_dict(border_pieces, rotation=rotation, allow_conflicts=False, reference=reference)
 			tmp = self.list_rotated_pieces_to_dict(border_pieces, rotation=rotation, allow_conflicts=conflicts, reference=reference)
 			master_index[ "border_"+direction+("_conflicts" if conflicts else "")+"_"+reference ] = self.list_rotated_pieces_to_array(tmp, reference)
 
@@ -677,7 +744,7 @@ class Puzzle( defs.Defs ):
 			for i in range(fr):
 				p.turnCW()
 			reference = self.scenario.spaces_references[fs]
-			tmp = self.list_rotated_pieces_to_dict(fixed_pieces, n=fp, rotation=fr, reference=reference)
+			tmp = self.list_rotated_pieces_to_dict(fixed_pieces, p=fp, rotation=fr, reference=reference)
 			master_index[ "fixed"+str(fp)+"_"+reference ] = self.list_rotated_pieces_to_array(tmp, reference)
 
 			# Assuming neighbors of fixed pieces are always center_pieces

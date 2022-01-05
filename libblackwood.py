@@ -327,7 +327,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				] )
 
 			LAST =  len(self.puzzle.master_lists_of_rotated_pieces)-1
-			master_index_type = "uint16"
+			master_index_type = "uint64"
 			if LAST > 65535:
 				master_index_type = "uint32"
 
@@ -978,7 +978,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (1, 'uint8 cumulative_heuristic_stats16_count[WH];' ) )
 
 		LAST =  len(self.puzzle.master_lists_of_rotated_pieces)-1
-		master_index_type = "uint16"
+		master_index_type = "uint64"
 		if LAST > 65535:
 			master_index_type = "uint32"
 

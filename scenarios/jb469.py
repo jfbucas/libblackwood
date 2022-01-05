@@ -61,4 +61,13 @@ class JB469( scenario.Scenario ):
 		# Reverse to start from the bottom
 		#self.reverse_spaces_order = True
 
+	# Overload the scenario function
+	def prepare_spaces_references( self ):
+		if self.reverse_spaces_order:
+			self.spaces_references = ["dl"] * self.puzzle.board_wh
+		else:
+			self.spaces_references = ["lu"] * self.puzzle.board_wh
+		
+
+
 scenario.global_list.append(JB469)

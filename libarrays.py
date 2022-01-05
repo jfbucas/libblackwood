@@ -60,7 +60,7 @@ class LibArrays( external_libs.External_Libs ):
 		WH=self.puzzle.board_wh
 
 		LAST =  len(self.puzzle.master_lists_of_rotated_pieces)-1
-		master_index_type = "uint16"
+		master_index_type = "uint64"
 		if LAST > 65535:
 			master_index_type = "uint32"
 
@@ -98,8 +98,10 @@ class LibArrays( external_libs.External_Libs ):
 			
 			output.append( (0 , "#define MARP master_all_rotated_pieces") )
 			output.append( (0 , "p_rotated_piece master_lists_of_rotated_pieces[] = {") )
+			v = 0
 			for x in self.chunks(self.puzzle.master_lists_of_rotated_pieces, 16):
-				output.append( (2 , ", ".join(["&(MARP["+format(n, '4')+"])" if n != None else format("NULL", '13') for n in x]) + ( "," if len(x)==16 else "" )) )
+				output.append( (2 , ", ".join(["&(MARP["+format(n, '4')+"])" if n != None else format("NULL", '13') for n in x]) + ( "," if len(x)==16 else " " ) + "  // "+str(v)) )
+				v += 16
 
 			output.append( (2 , "};") )
 			output.append( (0 , "") )

@@ -55,13 +55,18 @@ class Scenario( defs.Defs ):
 			self.info( " * Spaces order" )
 			self.printArray(self.spaces_order, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
 
-		# Init the space sequence and references
-		self.prepare_spaces_sequence_and_references()
+		# Init the spaces sequence
+		self.prepare_spaces_sequence()
 
 		if self.DEBUG_STATIC > 2:
-			self.info( " * Spaces sequences" )
+			self.info( " * Spaces sequence" )
 			self.printArray(self.spaces_sequence, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
 
+
+		# Init the spaces references
+		self.prepare_spaces_references()
+		if self.DEBUG_STATIC > 0:
+			self.printArray(self.spaces_references, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
 		
 		# Once we have the sequence, we can determine the pieces Weights, based on stats
 		if self.heuristic_stats16:
@@ -76,8 +81,8 @@ class Scenario( defs.Defs ):
 				self.printArray(self.heuristic_stats16_count, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
 				#exit()
 
-	# ----- Prepare spaces sequences and references
-	def prepare_spaces_sequence_and_references( self ):
+	# ----- Prepare spaces sequence
+	def prepare_spaces_sequence( self ):
 		W=self.puzzle.board_w
 		H=self.puzzle.board_h
 		WH=self.puzzle.board_wh
@@ -104,6 +109,14 @@ class Scenario( defs.Defs ):
 				tmp[ self.spaces_sequence[ depth ] ] = "X"
 				print("---[ Sequence " + str(depth) + " ]---\n")
 				self.printArray(tmp, array_w=W, array_h=H)
+
+
+	# ----- Prepare spaces references
+	# References can also be defined in the scenario by overloading this function
+	def prepare_spaces_references( self ):
+		W=self.puzzle.board_w
+		H=self.puzzle.board_h
+		WH=self.puzzle.board_wh
 
 		for depth in range(WH):
 			space = self.spaces_sequence[ depth ]
@@ -134,8 +147,6 @@ class Scenario( defs.Defs ):
 
 			self.spaces_references[ space ] = ref
 
-		if self.DEBUG_STATIC > 0:
-			self.printArray(self.spaces_references, array_w=W, array_h=H)
 			
 	# ----- Return the index of the last number before the zeros
 	def max_index( self, array ):
