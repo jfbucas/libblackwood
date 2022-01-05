@@ -352,7 +352,7 @@ class Puzzle( defs.Defs ):
 		else:
 			#if self.DEBUG_STATIC > 0:
 			self.info( " * Statistics not found: " + filename )
-			exit()
+			#exit()
 				
 			self.stats = None
 

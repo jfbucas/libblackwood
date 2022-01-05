@@ -14,7 +14,7 @@ class JB4702Colors( scenario.Scenario ):
 		self.heuristic_stats16 = False
 		self.depth_first_notification = 252
 
-		self.timelimit = 120 # Minutes
+		self.timelimit = 240 # Minutes
 
 		scenario.Scenario.__init__(self)
 
