@@ -94,9 +94,9 @@ class LibArrays( external_libs.External_Libs ):
 		# ---------------------------------
 		if only_signature:
 			output.append( (0 , "extern p_rotated_piece master_lists_of_rotated_pieces[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
+			output.append( (0 , "#define MARP master_all_rotated_pieces") )
 		else:
 			
-			output.append( (0 , "#define MARP master_all_rotated_pieces") )
 			output.append( (0 , "p_rotated_piece master_lists_of_rotated_pieces[] = {") )
 			v = 0
 			for x in self.chunks(self.puzzle.master_lists_of_rotated_pieces, 16):
@@ -272,6 +272,24 @@ class LibArrays( external_libs.External_Libs ):
 			( 0, "};" ),
 			( 0, "typedef struct st_rotated_piece t_rotated_piece;" ),
 			( 0, "typedef struct st_rotated_piece * p_rotated_piece;" ),
+			( 0, "" ),
+			( 0, "// Rotated Piece" ),
+			( 0, "union union_rotated_piece {" ),
+			( 1,	"struct {" ),
+			( 2,		"uint8 p;" ),
+			( 2,		"uint8 u;" ),
+			( 2,		"uint8 r;" ),
+			( 2,		"uint8 d;" ),
+			( 2,		"uint8 l;" ),
+			( 2,		heuristic_stats16 ),
+			( 2,		heuristic_patterns ),
+			( 2,		"uint8 heuristic_conflicts;" ),
+			( 2,		"uint8 padding;" ),
+			( 1,	"} info;" ),
+			( 1,	"uint64 data;" ),
+			( 0, "};" ),
+			#( 0, "typedef union union_rotated_piece t_rotated_piece;" ),
+			#( 0, "typedef union union_rotated_piece * p_rotated_piece;" ),
 			( 0, "" ),
 			( 0, "" ),
 			( 0, "" ),

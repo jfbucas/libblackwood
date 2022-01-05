@@ -327,7 +327,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				] )
 
 			LAST =  len(self.puzzle.master_lists_of_rotated_pieces)-1
-			master_index_type = "uint64"
+			master_index_type = "uint64" # 64, 32, 16  doesn't make any difference in speed
 			if LAST > 65535:
 				master_index_type = "uint32"
 
@@ -644,7 +644,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (2, "for(i=0; i<"+str(len(self.puzzle.master_lists_of_rotated_pieces))+"; i++) {") )
 			output.append( (3, "cb->master_lists_of_rotated_pieces[i] = NULL;") )
 			output.append( (3, "if (array[i] != "+self.xffff+")") )
-			output.append( (4, "cb->master_lists_of_rotated_pieces[i] = &(master_all_rotated_pieces[array[i]]);") )
+			output.append( (4, "cb->master_lists_of_rotated_pieces[i] = &(MARP[array[i]]);") )
 			output.append( (3, "}") )
 			output.append( (1, "} else") )
 			output.append( (2, 'DEBUG_PRINT(("set_blackwood_master_index_'+name+' NULL pointer\\n"));') )
