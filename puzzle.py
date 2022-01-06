@@ -141,6 +141,17 @@ class Puzzle( defs.Defs ):
 	static_spaces_borders = []
 	static_spaces_centers = []
 
+	static_space_up		= []
+	static_space_right	= []
+	static_space_down	= []
+	static_space_left	= []
+	static_space_up_right	= []
+	static_space_right_down	= []
+	static_space_down_left	= []
+	static_space_left_up	= []
+
+	static_spaces_type = []		# the type for each space
+
 	pieces_stats16_weight = []
 
 	# Precomputed statistics
@@ -157,18 +168,18 @@ class Puzzle( defs.Defs ):
 		self.board_wh = self.board_w * self.board_h
 	
 		self.normalizePieces()		# Make sure the pieces are how we expect them to be
-
 		self.initStaticColorsCount()
-		self.initStaticSpacesList()
 
 		self.readStatistics()
 		self.pieces_stats16_weight = [0] * self.board_wh
 
 		self.scenario = scenarios.loadScenario(self)
 
-		self.TITLE_STR += self.name+"("+ self.scenario.name +")"
+		self.initStaticSpacesList()
+		self.initStaticSpaceURDL()
+		self.initStaticSpacesType()
 
-	
+		self.TITLE_STR += self.name+"("+ self.scenario.name +")"
 
 		# Prepare the list of lists of pieces
 		( self.master_index, self.master_lists_of_rotated_pieces, self.master_all_rotated_pieces ) = self.prepare_pieces()
@@ -302,6 +313,91 @@ class Puzzle( defs.Defs ):
 			self.info( " * Spaces Corners : " + str(len(self.static_spaces_corners))+" "+str(self.static_spaces_corners) )
 			self.info( " * Spaces Borders : " + str(len(self.static_spaces_borders))+" "+str(self.static_spaces_borders) )
 			self.info( " * Spaces Centers : " + str(len(self.static_spaces_centers))+" "+str(self.static_spaces_centers) )
+
+	# ----- Init the static space up, right, down, left
+	def initStaticSpaceURDL( self ):
+		"""Init the static space up, right, down, left"""
+
+		self.static_space_up    = [None] * self.board_wh 
+		self.static_space_right = [None] * self.board_wh 
+		self.static_space_down  = [None] * self.board_wh 
+		self.static_space_left  = [None] * self.board_wh 
+		self.static_space_up_right    = [None] * self.board_wh 
+		self.static_space_right_down = [None] * self.board_wh 
+		self.static_space_down_left  = [None] * self.board_wh 
+		self.static_space_left_up  = [None] * self.board_wh 
+
+		for s in range( self.board_wh ):
+			self.static_space_up[ s ]	= s - self.board_w
+			self.static_space_right[ s ]	= s + 1
+			self.static_space_down[ s ]	= s + self.board_w
+			self.static_space_left[ s ]	= s - 1
+			self.static_space_up_right[ s ]		= s - self.board_w + 1
+			self.static_space_right_down[ s ]	= s + 1 + self.board_w
+			self.static_space_down_left[ s ]	= s + self.board_w - 1
+			self.static_space_left_up[ s ]		= s - 1 - self.board_w
+
+
+			if self.static_space_up[ s ] < 0:
+				self.static_space_up[ s ] = None
+
+			if self.static_space_down[ s ] >= self.board_wh:
+				self.static_space_down[ s ] = None
+
+			if self.static_space_right[ s ] // self.board_w != s // self.board_w:
+				self.static_space_right[ s ] = None
+			
+			if self.static_space_left[ s ] // self.board_w != s // self.board_w:
+				self.static_space_left[ s ] = None
+		
+
+			if self.static_space_up[ s ] == None  or  self.static_space_right[ s ] == None:
+				self.static_space_up_right[ s ] = None
+
+			if self.static_space_right[ s ] == None  or  self.static_space_down[ s ] == None:
+				self.static_space_right_down[ s ] = None
+
+			if self.static_space_down[ s ] == None  or  self.static_space_left[ s ] == None:
+				self.static_space_down_left[ s ] = None
+
+			if self.static_space_left[ s ] == None  or  self.static_space_up[ s ] == None:
+				self.static_space_left_up[ s ] = None
+
+
+		if self.DEBUG_STATIC > 2:
+			self.printArray( self.static_space_up, self.static_space_right, self.static_space_down, self.static_space_left, array_w=self.board_w, array_h=self.board_h)
+			self.printArray( self.static_space_up_right, self.static_space_right_down, self.static_space_down_left, self.static_space_left_up, array_w=self.board_w, array_h=self.board_h )
+			
+
+	# ----- Init the static type for each space
+	def initStaticSpacesType( self ):
+		"""Init the static type for each space"""
+
+		self.static_spaces_type = [None] * self.board_wh 
+
+		# Clean the array
+		for s in range( self.board_wh ):
+			self.static_spaces_type[ s ] = "center"
+
+		# Borders
+		for s in range( self.board_wh ):
+			if ((s % self.board_w) == 0          ):	self.static_spaces_type[ s ] = "border"
+			if ((s % self.board_w) == (self.board_w-1)):	self.static_spaces_type[ s ] = "border"
+			if (s < self.board_w)		:	self.static_spaces_type[ s ] = "border"
+			if (s > (self.board_wh - self.board_w))	:	self.static_spaces_type[ s ] = "border"
+
+		# Corners
+		self.static_spaces_type[ 0 ] = "corner"
+		self.static_spaces_type[ self.board_w - 1 ] = "corner"
+		self.static_spaces_type[ self.board_wh - self.board_w ] = "corner"
+		self.static_spaces_type[ self.board_wh - 1 ] = "corner"
+
+		# Fixed
+		for [ fp, fs, fr ] in self.fixed:
+			self.static_spaces_type[ fs ] = "fixed"
+
+		if self.DEBUG_STATIC > 2:
+			self.printArray( self.static_spaces_type, array_w=self.board_w, array_h=self.board_h)
 
 	# ----- read pre-computed data
 	def readStatistics( self ):
@@ -713,29 +809,28 @@ class Puzzle( defs.Defs ):
 		# Randomize the pieces
 		random.seed( self.scenario.seed )
 
-
-		corner_pieces = self.getPieces(only_corner=True) 
-		border_pieces = self.getPieces(only_border=True) 
-		center_pieces = self.getPieces(only_center=True) 
-		fixed_pieces  = self.getPieces(only_fixed=True) 
+		pieces = {}
+		pieces["corner"] = self.getPieces(only_corner=True) 
+		pieces["border"] = self.getPieces(only_border=True) 
+		pieces["center"] = self.getPieces(only_center=True) 
+		pieces["fixed" ] = self.getPieces(only_fixed=True) 
 		
 		# Corner
 		possible_references_corner = list(dict.fromkeys([ self.scenario.spaces_references[s] for s in self.static_spaces_corners]))
 		for reference in possible_references_corner:
-			tmp = self.list_rotated_pieces_to_dict(corner_pieces, reference=reference)
+			tmp = self.list_rotated_pieces_to_dict(pieces["corner"], reference=reference)
 			master_index[ "corner_"+reference ] = self.list_rotated_pieces_to_array(tmp, reference)
 
 		# Border
 		possible_references_border = list(dict.fromkeys([ self.scenario.spaces_references[s] for s in self.static_spaces_borders]))
 		for (reference, (direction,rotation), conflicts) in itertools.product(possible_references_border, [("u",0),("r",1),("d",2),("l",3)], [False,True]):
-			#tmp = self.list_rotated_pieces_to_dict(border_pieces, rotation=rotation, allow_conflicts=False, reference=reference)
-			tmp = self.list_rotated_pieces_to_dict(border_pieces, rotation=rotation, allow_conflicts=conflicts, reference=reference)
+			tmp = self.list_rotated_pieces_to_dict(pieces["border"], rotation=rotation, allow_conflicts=conflicts, reference=reference)
 			master_index[ "border_"+direction+("_conflicts" if conflicts else "")+"_"+reference ] = self.list_rotated_pieces_to_array(tmp, reference)
 
 		# Center
 		possible_references_center = list(dict.fromkeys([ self.scenario.spaces_references[s] for s in self.static_spaces_centers]))
 		for (reference, conflicts) in itertools.product(possible_references_center, [False,True]):
-			tmp = self.list_rotated_pieces_to_dict(center_pieces, allow_conflicts=conflicts, reference=reference)
+			tmp = self.list_rotated_pieces_to_dict(pieces["center"], allow_conflicts=conflicts, reference=reference)
 			master_index[ "center"+("_conflicts" if conflicts else "")+"_"+reference ] = self.list_rotated_pieces_to_array(tmp, reference)
 
 		# Fixed
@@ -743,26 +838,36 @@ class Puzzle( defs.Defs ):
 			p = Piece( fp, self.pieces[fp][0], self.pieces[fp][1], self.pieces[fp][2], self.pieces[fp][3] )
 			for i in range(fr):
 				p.turnCW()
+
+			# The fixed piece
 			reference = self.scenario.spaces_references[fs]
-			tmp = self.list_rotated_pieces_to_dict(fixed_pieces, p=fp, rotation=fr, reference=reference)
+			tmp = self.list_rotated_pieces_to_dict(pieces["fixed"], p=fp, rotation=fr, reference=reference)
 			master_index[ "fixed"+str(fp)+"_"+reference ] = self.list_rotated_pieces_to_array(tmp, reference)
 
-			# Assuming neighbors of fixed pieces are always center_pieces
-			reference = self.scenario.spaces_references[fs+W]
-			tmp = self.list_rotated_pieces_to_dict(center_pieces, u=p.d, reference=reference)
-			master_index[ "fixed"+str(fp)+"_s"+"_"+reference ] = self.list_rotated_pieces_to_array(tmp, reference)
+			# Neighbors of fixed pieces
+			if self.static_space_down[ fs ] != None:
+				nfs = self.static_space_down[ fs ]
+				reference = self.scenario.spaces_references[nfs]
+				tmp = self.list_rotated_pieces_to_dict(pieces[ self.static_spaces_type[ nfs ] ], u=p.d, reference=reference)
+				master_index[ "fixed"+str(fp)+"_s"+"_"+reference ] = self.list_rotated_pieces_to_array(tmp, reference)
 
-			reference = self.scenario.spaces_references[fs-1]
-			tmp = self.list_rotated_pieces_to_dict(center_pieces, r=p.l, reference=reference)
-			master_index[ "fixed"+str(fp)+"_w"+"_"+reference ] = self.list_rotated_pieces_to_array(tmp, reference)
+			if self.static_space_left[ fs ] != None:
+				nfs = self.static_space_left[ fs ]
+				reference = self.scenario.spaces_references[nfs]
+				tmp = self.list_rotated_pieces_to_dict(pieces[ self.static_spaces_type[ nfs ] ], r=p.l, reference=reference)
+				master_index[ "fixed"+str(fp)+"_w"+"_"+reference ] = self.list_rotated_pieces_to_array(tmp, reference)
 
-			reference = self.scenario.spaces_references[fs-W]
-			tmp = self.list_rotated_pieces_to_dict(center_pieces, d=p.u, reference=reference)
-			master_index[ "fixed"+str(fp)+"_n"+"_"+reference ] = self.list_rotated_pieces_to_array(tmp, reference)
+			if self.static_space_up[ fs ] != None:
+				nfs = self.static_space_up[ fs ]
+				reference = self.scenario.spaces_references[nfs]
+				tmp = self.list_rotated_pieces_to_dict(pieces[ self.static_spaces_type[ nfs ] ], d=p.u, reference=reference)
+				master_index[ "fixed"+str(fp)+"_n"+"_"+reference ] = self.list_rotated_pieces_to_array(tmp, reference)
 
-			reference = self.scenario.spaces_references[fs+1]
-			tmp = self.list_rotated_pieces_to_dict(center_pieces, l=p.r, reference=reference)
-			master_index[ "fixed"+str(fp)+"_e"+"_"+reference ] = self.list_rotated_pieces_to_array(tmp, reference)
+			if self.static_space_right[ fs ] != None:
+				nfs = self.static_space_right[ fs ]
+				reference = self.scenario.spaces_references[nfs]
+				tmp = self.list_rotated_pieces_to_dict(pieces[ self.static_spaces_type[ nfs ] ], l=p.r, reference=reference)
+				master_index[ "fixed"+str(fp)+"_e"+"_"+reference ] = self.list_rotated_pieces_to_array(tmp, reference)
 
 
 		if self.DEBUG > 4:

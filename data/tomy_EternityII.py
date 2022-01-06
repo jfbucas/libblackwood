@@ -288,7 +288,7 @@ class Tomy_EternityII( puzzle.Puzzle ):
 
 			# Mandatory piece in the middle
 			self.fixed.extend( [
-				[ 138,135,2 ], # as the last one, so that it is on masks[2]
+				[ 138,135,2 ],
 				] )
 		else:
 			if with_clues:
@@ -301,7 +301,7 @@ class Tomy_EternityII( puzzle.Puzzle ):
 
 			# Mandatory piece in the middle
 			self.fixed.extend( [
-				[ 138,120,0 ], # as the last one, so that it is on masks[2]
+				[ 138,120,0 ],
 				] )
 
 		puzzle.Puzzle.__init__( self )

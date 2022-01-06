@@ -6,7 +6,7 @@ for x in os.listdir("data"):
 		exec("from . import "+x.replace(".py", ""))
 
 
-def loadPuzzle( puzzlename = "E2udnc" ):
+def loadPuzzle( puzzlename = "E2ncud" ):
 
 	if os.environ.get('PUZZLE') != None:
 		puzzlename = os.environ.get('PUZZLE')
@@ -18,7 +18,7 @@ def loadPuzzle( puzzlename = "E2udnc" ):
 		p = tomy_EternityII.Tomy_EternityII()
 	elif puzzlename in [ "E2nc", "E2clueless", "E2noclue", "E2noclues" ]:
 		p = tomy_EternityII.Tomy_EternityII(with_clues=False)
-	elif puzzlename in [ "E2udnc", "E2udclueless", "E2udnoclue", "E2udnoclues" ]:
+	elif puzzlename in [ "E2ncud", "E2cluelessupsidedown", "E2noclueud", "E2nocluesud" ]:
 		p = tomy_EternityII.Tomy_EternityII(with_clues=False, upside_down=True)
 	elif puzzlename in [ "JB", "jb", "blackwood", "b" ]:
 		p = tomy_EternityII_Blackwood.Tomy_EternityII_Blackwood()

@@ -758,19 +758,17 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, ") {"),
 				(1, 'uint64 i, d, piece, space;'), 
 				(1, 'uint8 patterns[ WH * 4 ];'), 
-				(1, 'uint8 l, u, temp;'), 
 				(1, 'uint16 url_pieces[ WH ];'), 
 				])
 
 			output.extend( [
 				(0, ""),
 				(1, "for(i=0; i<WH*4; i++) patterns[i] = 0;"),
+				(1, "for(i=0; i<WH; i++) url_pieces[i] = 0;"),
 				])
 
 			output.extend( [
-				(1, "for(d=0; d<WH; d++) {"),
-				(2, "space = spaces_sequence[d];"),
-				(2, "url_pieces[ space ] = 0;"),
+				(1, "for(space=0; space<WH; space++) {"),
 				(2, "if (b->board[ space ].value == 0) continue;"),
 				] )
 
@@ -778,11 +776,10 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.extend( [
 					(2, "// Insert the piece upside-down"),
 					(2, "url_pieces[ WH-1-space ] = b->board[ space ].info.p+1;"), # Real pieces are numbered from 1 
-					(2, "patterns[ (WH-1-space)*4 + 0 ] = b->board[ space ].info.d; // Up"),
-					(2, "patterns[ (WH-1-space)*4 + 1 ] = b->board[ space ].info.l; // Right"),
-					(2, "patterns[ (WH-1-space)*4 + 2 ] = b->board[ space ].info.u; // Down"),
-					(2, "patterns[ (WH-1-space)*4 + 3 ] = b->board[ space ].info.r; // Left"),
-					(1, "} // For"),
+					(2, "patterns[ (WH-1-space)*4 + 0 ] = b->board[ space ].info.d; // Down"),
+					(2, "patterns[ (WH-1-space)*4 + 1 ] = b->board[ space ].info.l; // Left"),
+					(2, "patterns[ (WH-1-space)*4 + 2 ] = b->board[ space ].info.u; // Up"),
+					(2, "patterns[ (WH-1-space)*4 + 3 ] = b->board[ space ].info.r; // Right"),
 					] )
 			else:
 				output.extend( [
@@ -792,10 +789,10 @@ class LibBlackwood( external_libs.External_Libs ):
 					(2, "patterns[ space*4 + 1 ] = b->board[ space ].info.r; // Right"),
 					(2, "patterns[ space*4 + 2 ] = b->board[ space ].info.d; // Down"),
 					(2, "patterns[ space*4 + 3 ] = b->board[ space ].info.l; // Left"),
-					(1, "} // For"),
 					] )
 
 			output.extend( [
+				(1, "} // For"),
 				(0, ""),
 				(1, "for(i=0; i<WH*4; i++) patterns[i] += \'a\';"),
 				])
@@ -1062,7 +1059,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			if depth == WH:
 				output.append( (2, '// We have a complete puzzle !!' ) )
 				output.append( (2, 'setWFN(cb, 1);' ) )
-				output.append( (2, 'for(i=0;(i<300) && (!getTTF(cb));i++) {') )
+				output.append( (2, 'for(i=0;(i<3000000) && (!getTTF(cb));i++) {') )
 				output.append( (3, 'fdo_commands(output, cb);' ) )
 				output.append( (3, 'sleep(1); // Wait for the WFN thread' ) )
 				output.append( (2, '}' ) )

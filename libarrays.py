@@ -275,6 +275,7 @@ class LibArrays( external_libs.External_Libs ):
 			( 2,		heuristic_stats16 ),
 			( 2,		heuristic_patterns ),
 			( 2,		"uint8 heuristic_conflicts;" ),
+			#( 2,		"uint8 padding;" ),
 			( 1,	"} info;" ),
 			( 1,	"uint64 value;" ),
 			( 0, "};" ),

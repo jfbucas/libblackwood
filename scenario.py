@@ -33,10 +33,10 @@ class Scenario( defs.Defs ):
 
 		# The Seed for the Generator
 		self.seed = random.randint(0, sys.maxsize)
-		if os.environ.get('SEED') != None:
-			self.seed = int(os.environ.get('SEED'))
-			if self.DEBUG > 0:
-				self.info(" * Init Scenario Env Seed : "+str(self.seed) )
+		#if os.environ.get('SEED') != None:
+		#	self.seed = int(os.environ.get('SEED'))
+		#	if self.DEBUG > 0:
+		#		self.info(" * Init Scenario Env Seed : "+str(self.seed) )
 
 		# Init the pattern heuristic
 		self.prepare_patterns_count_heuristics()
@@ -173,38 +173,39 @@ class Scenario( defs.Defs ):
 			conflicts = "_conflicts"
 
 		master_piece_name = ""
-		# Is it a corner/border?
-		if y == 0:
-			if x in [ 0, W ]:
-				master_piece_name = "corner"
-			else:
-				master_piece_name = "border_u"
-
-		elif y == H:
-			if x in [ 0, W ]:
-				master_piece_name = "corner"
-			else:
-				master_piece_name = "border_d" + conflicts
-		    
-		else:
-			if x == 0:
-				master_piece_name = "border_l"
-			elif x == W:
-				master_piece_name = "border_r" + conflicts
-
 		# Is it a fixed or next to a fixed?
 		if master_piece_name == "":
 			for ( fpiece, fspace, frotation ) in self.puzzle.fixed:
 				if space == fspace:
 					master_piece_name = "fixed"+str(fpiece)
-				elif space == fspace-self.puzzle.board_w:
+				elif space == self.puzzle.static_space_up[fspace]:
 					master_piece_name = "fixed"+str(fpiece)+"_n"
-				elif space == fspace+1:
+				elif space == self.puzzle.static_space_right[fspace]:
 					master_piece_name = "fixed"+str(fpiece)+"_e"
-				elif space == fspace+self.puzzle.board_w:
+				elif space == self.puzzle.static_space_down[fspace]:
 					master_piece_name = "fixed"+str(fpiece)+"_s"
-				elif space == fspace-1:
+				elif space == self.puzzle.static_space_left[fspace]:
 					master_piece_name = "fixed"+str(fpiece)+"_w"
+
+		# Is it a corner/border?
+		if master_piece_name == "":
+			if y == 0:
+				if x in [ 0, W ]:
+					master_piece_name = "corner"
+				else:
+					master_piece_name = "border_u"
+
+			elif y == H:
+				if x in [ 0, W ]:
+					master_piece_name = "corner"
+				else:
+					master_piece_name = "border_d" + conflicts
+			    
+			else:
+				if x == 0:
+					master_piece_name = "border_l"
+				elif x == W:
+					master_piece_name = "border_r" + conflicts
 
 		# Default is center
 		if master_piece_name == "":
@@ -216,7 +217,13 @@ class Scenario( defs.Defs ):
 
 	def next_seed(self):
 		self.seed = random.randint(0, sys.maxsize)
-		#self.seed += 1
+
+		# SEED=2502973653805784301  # 252 in 1 sec!
+		if os.environ.get('SEED') != None:
+			self.seed = int(os.environ.get('SEED'))
+			if self.DEBUG > 0:
+				self.info(" * Init Scenario Env Seed : "+str(self.seed) )
+
 		return self.seed
 
 if __name__ == "__main__":
