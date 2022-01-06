@@ -422,10 +422,10 @@ class Puzzle( defs.Defs ):
 					q.fixed = True
 
 			if only_corner:
-				if q.isCorner():
+				if q.isCorner() and not q.isFixed():
 					l.append(q)
 			elif only_border:
-				if q.isBorder():
+				if q.isBorder() and not q.isFixed():
 					l.append(q)
 			elif only_center:
 				if q.isCenter() and not q.isFixed():
