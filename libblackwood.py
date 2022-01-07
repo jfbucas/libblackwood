@@ -1042,6 +1042,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			(1, "cb->max_depth_seen = 0;"),
 			(1, "cb->heartbeat_limit = heartbeat_time_bonus[ 0 ];"),
 			(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_DEPTH_PIECES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT | ZERO_DEPTH_PIECES_COUNT;" if self.DEBUG > 0 else ""),
+			#(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_DEPTH_PIECES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL ;" if self.DEBUG > 0 else ""),
 			#(1, "cb->commands = SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT;" if self.DEBUG > 0 else ""),
 			#(1, "cb->commands = 0;" if self.DEBUG > 0 else ""),
 			#(1, "cb->commands = SHOW_MAX_DEPTH_SEEN | ZERO_DEPTH_NODES_COUNT;" if self.DEBUG > 1 else ""),
@@ -1084,6 +1085,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		#for (c, n, s) in self.FLAGS:
 		#	output.append( (1, 'DEBUG_PRINT(("'+c+': %llu\\n", cb->'+n+'));') )
 		
+		# At first, they are the same, they only become different when filtering happens
 		master_lists_of_union_rotated_pieces    = "master_lists_of_union_rotated_pieces"
 		master_lists_of_union_rotated_pieces_hp = "master_lists_of_union_rotated_pieces"
 
@@ -1205,7 +1207,6 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (3, "piece_to_try_next["+d+"] = &(cb->"+master_lists_of_union_rotated_pieces+"[cb->master_index_"+index_piece_name+"[ "+ref+" ] ]);" ) )
 				output.append( (2, "} else {" ) )
 				output.append( (3, "piece_to_try_next["+d+"] = &(cb->"+master_lists_of_union_rotated_pieces_hp+"[cb->master_index_"+index_piece_name+"[ "+ref+" ] ]);" ) )
-				output.append( (3, 'cb->depth_pieces_count['+sspace+'] ++;' if self.DEBUG > 0 else "") )
 				output.append( (2, "}" ) )
 			
 			output.append( (2, "") )
@@ -1216,6 +1217,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			#output.append( (2, 'DEBUG_PRINT(("'+ " "*depth +str(depth)+'\\n"))' ))
 			output.append( (2, "while ( piece_to_try_next["+d+"]->value != 0 ) {"))
 			
+			output.append( (3, 'cb->depth_pieces_count['+sspace+'] ++;' if self.DEBUG > 0 else "") )
 			
 			output.append( (3, "current_piece = *(piece_to_try_next["+d+"]);" ))
 			#output.append( (3, 'DEBUG_PRINT(("'+" " * depth+' Trying piece : %d\\n", current_piece.info.p))' ))

@@ -19,8 +19,8 @@ class JB4702ColorsFC( scenario.Scenario ):
 		self.heuristic_stats16 = False
 		#self.depth_filters = [] #  i*self.puzzle.board_w for i in range(1,(self.puzzle.board_h//4)) ]
 		#self.depth_filters = [ i*self.puzzle.board_w for i in [ 1 ] ] #range(1,(self.puzzle.board_h//4)) ]
-		self.depth_filters = [ 16 ] #range(1,(self.puzzle.board_h//4)) ]
-		self.depth_filters = [ ]
+		#self.depth_filters = [ 16 ] #range(1,(self.puzzle.board_h//4)) ]
+		self.depth_filters = [ 57 ] # For some reason 57 seems to be a quiet place...
 		self.depth_first_notification = 252
 
 		self.timelimit = 12*60 # Minutes
