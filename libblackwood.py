@@ -330,7 +330,11 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (1 , "uint64 master_index_"+name+"[ "+str(len(array))+" ];") )
 
 			output.append( (1 , "t_union_rotated_piece master_lists_of_union_rotated_pieces[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
+			output.append( (1 , "t_union_rotated_piece master_lists_of_union_rotated_pieces_without_heuristic_patterns[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
 
+			for d in self.puzzle.scenario.depth_filters:
+				output.append( (0 , "t_union_rotated_piece master_lists_of_union_rotated_pieces_filtered_from_depth_"+str(d)+"[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
+				output.append( (0 , "t_union_rotated_piece master_lists_of_union_rotated_pieces_filtered_from_depth_"+str(d)+"_without_heuristic_patterns[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
 
 			output.extend( [
 				(0, "" ),
@@ -913,6 +917,61 @@ class LibBlackwood( external_libs.External_Libs ):
 		return output
 
 
+	# ----- Generate filter function
+	def gen_filter_function( self, only_signature=False ):
+
+		output = []
+
+		for d in self.puzzle.scenario.depth_filters:
+			dd = str(d)
+			output.extend([ 
+				(0, "void filter_depth_"+dd+"("),
+				(1, "p_blackwood b,"),
+				(1, "uint8 * pieces_used"),
+				])
+
+			if only_signature:
+				output.extend( [ (1, ');'), ])
+			else:
+				output.extend( [
+					(1, ") {"),
+					(0, ''), 
+					(1, 'uint64 src, dst, dst_hp;'), 
+					(1, 't_union_rotated_piece p;'),
+					] )
+
+				total_hp = ""
+				for i in range(5):
+					if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+						total_hp += "p.info.heuristic_patterns_"+str(i)+" + "
+
+				#output.append( (1, 'DEBUG_PRINT(("Filtering_depth_'+dd+'\\n"));' ) )
+				output.append( (1, "dst = 0;" ) )
+				output.append( (1, "dst_hp = 0;" ) )
+				output.append( (1, "for(src = 0; src < "+str(len(self.puzzle.master_lists_of_rotated_pieces))+"; src++) {" ) )
+				output.append( (2, "p = b->master_lists_of_union_rotated_pieces[src];" ) )
+				output.append( (2, "if (p.value != 0) { " ) )
+				output.append( (3, "if (pieces_used[p.info.p] == 0) { " ) )
+				output.append( (4, "b->master_lists_of_union_rotated_pieces_filtered_from_depth_"+dd+"[dst] = p;" ) )
+				output.append( (4, "dst++;" ) )
+				output.append( (4, "if (" +total_hp +" 0 == 0) { " ) )
+				output.append( (5, "b->master_lists_of_union_rotated_pieces_filtered_from_depth_"+dd+"_without_heuristic_patterns[dst_hp] = p;" ) )
+				output.append( (5, "dst_hp++;" ) )
+				output.append( (4, "}" ) )
+				output.append( (3, "}" ) )
+				output.append( (2, "} else {" ) )
+				output.append( (3, "b->master_lists_of_union_rotated_pieces_filtered_from_depth_"+dd+"[dst].value = 0;" ) )
+				output.append( (3, "dst = src+1;") )
+				output.append( (3, "b->master_lists_of_union_rotated_pieces_filtered_from_depth_"+dd+"_without_heuristic_patterns[dst_hp].value = 0;" ) )
+				output.append( (3, "dst_hp = src+1;") )
+				output.append( (2, "}" ) )
+				output.append( (1, "}" ) )
+				output.append( (0, " " ) )
+
+				output.append( (0, "}" ) )
+
+		return output
+
 
 
 
@@ -1024,6 +1083,9 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		#for (c, n, s) in self.FLAGS:
 		#	output.append( (1, 'DEBUG_PRINT(("'+c+': %llu\\n", cb->'+n+'));') )
+		
+		master_lists_of_union_rotated_pieces    = "master_lists_of_union_rotated_pieces"
+		master_lists_of_union_rotated_pieces_hp = "master_lists_of_union_rotated_pieces"
 
 		# this goes from 0....255; we have solved #0 already, so start at #1.
 		for depth in range(0,WH+1):
@@ -1096,6 +1158,12 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (4, '}' ), )
 				output.append( (2, '}' ), )
 
+			if depth in self.puzzle.scenario.depth_filters:
+				output.append( (2, '// We filter the lists to try only the pieces that are remaining' ) )
+				output.append( (2, 'filter_depth_'+d+'(cb, pieces_used);' ) )
+				output.append( (0, '' ) )
+				master_lists_of_union_rotated_pieces    = "master_lists_of_union_rotated_pieces_filtered_from_depth_"+d
+				master_lists_of_union_rotated_pieces_hp = "master_lists_of_union_rotated_pieces_filtered_from_depth_"+d+"_without_heuristic_patterns"
 
 			index_piece_name = self.puzzle.scenario.get_index_piece_name(depth)
 			conflicts_array = [ x for x in self.puzzle.scenario.conflicts_indexes_allowed if x <= depth ]
@@ -1124,9 +1192,23 @@ class LibBlackwood( external_libs.External_Libs ):
 				ref = "((("+Side[for_ref[0]]+" << EDGE_SHIFT_LEFT) + "+Side[for_ref[1]]+") << EDGE_SHIFT_LEFT) + "+Side[for_ref[2]]
 				strref = "0, 0"
 
-			output.append( (2, "piece_to_try_next["+d+"] = &(cb->master_lists_of_union_rotated_pieces[cb->master_index_"+index_piece_name+"[ "+ref+" ] ]);" ) )
-			output.append( (2, "") )
+			total_hp = ""
+			for i in range(5):
+				if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+					total_hp += 'cumulative_heuristic_patterns_count_'+str(i)+'['+d+'-1] + '
+
+			if depth <= self.puzzle.scenario.max_index(self.puzzle.scenario.heuristic_patterns_count[0]): # TODO
+				# Unlikely we need the master_lists_of_union_rotated_pieces_hp before reaching the max_index
+				output.append( (2, "piece_to_try_next["+d+"] = &(cb->"+master_lists_of_union_rotated_pieces+"[cb->master_index_"+index_piece_name+"[ "+ref+" ] ]);" ) )
+			else:
+				output.append( (2, "if ("+total_hp+" 0 < TOTAL_HEURISTIC_PATTERNS ) {" ) )
+				output.append( (3, "piece_to_try_next["+d+"] = &(cb->"+master_lists_of_union_rotated_pieces+"[cb->master_index_"+index_piece_name+"[ "+ref+" ] ]);" ) )
+				output.append( (2, "} else {" ) )
+				output.append( (3, "piece_to_try_next["+d+"] = &(cb->"+master_lists_of_union_rotated_pieces_hp+"[cb->master_index_"+index_piece_name+"[ "+ref+" ] ]);" ) )
+				output.append( (3, 'cb->depth_pieces_count['+sspace+'] ++;' if self.DEBUG > 0 else "") )
+				output.append( (2, "}" ) )
 			
+			output.append( (2, "") )
 			output.append( (2, 'depth'+d+"_backtrack:" ) )
 	
 			#if conflicts != "":
@@ -1134,7 +1216,6 @@ class LibBlackwood( external_libs.External_Libs ):
 			#output.append( (2, 'DEBUG_PRINT(("'+ " "*depth +str(depth)+'\\n"))' ))
 			output.append( (2, "while ( piece_to_try_next["+d+"]->value != 0 ) {"))
 			
-			output.append( (3, 'cb->depth_pieces_count['+sspace+'] ++;' if self.DEBUG > 0 else "") )
 			
 			output.append( (3, "current_piece = *(piece_to_try_next["+d+"]);" ))
 			#output.append( (3, 'DEBUG_PRINT(("'+" " * depth+' Trying piece : %d\\n", current_piece.info.p))' ))
@@ -1159,8 +1240,8 @@ class LibBlackwood( external_libs.External_Libs ):
 			for i in range(5):
 				if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
 					cumul = "" if depth == 0 else "cumulative_heuristic_patterns_count_"+str(i)+"["+d+"-1] +" 
-					if depth <= self.puzzle.scenario.max_index(self.puzzle.scenario.heuristic_patterns_count[i]): 
-						output.append( (3, "cumulative_heuristic_patterns_count_"+str(i)+"["+d+"] = "+cumul+" current_piece.info.heuristic_patterns_"+str(i)+";"))
+					#if depth <= self.puzzle.scenario.max_index(self.puzzle.scenario.heuristic_patterns_count[i]): 
+					output.append( (3, "cumulative_heuristic_patterns_count_"+str(i)+"["+d+"] = "+cumul+" current_piece.info.heuristic_patterns_"+str(i)+";"))
 			if self.puzzle.scenario.heuristic_stats16:
 				cumul = "" if depth == 0 else "cumulative_heuristic_stats16_count["+d+"-1] +" 
 				if depth <= self.puzzle.scenario.max_index(self.puzzle.scenario.heuristic_stats16_count): 
@@ -1273,6 +1354,7 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		self.writeGen( gen, self.gen_do_commands(only_signature=True) )
 		self.writeGen( gen, self.gen_print_functions(only_signature=True) )
+		self.writeGen( gen, self.gen_filter_function( only_signature=True ) )
 		self.writeGen( gen, self.gen_solve_function(only_signature=True) )
 
 		self.writeGen( gen, self.getFooterH() )
@@ -1314,6 +1396,7 @@ class LibBlackwood( external_libs.External_Libs ):
 
 
 		elif macro_name == "generate":
+			self.writeGen( gen, self.gen_filter_function( only_signature=False ) )
 			self.writeGen( gen, self.gen_solve_function(only_signature=False) )
 
 

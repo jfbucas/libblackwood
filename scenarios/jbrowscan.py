@@ -8,11 +8,11 @@ class JBRowScan( scenario.Scenario ):
 		self.puzzle = puzzle
 		self.name = __name__.split(".")[1]
 
-		self.score_target = 480
 		self.heuristic_patterns = [ [ 9, 12, 15 ] ]
-		self.conflicts_indexes_allowed = [256]
+		self.conflicts_indexes_allowed = []
 		self.heuristic_stats16 = False
 		self.depth_first_notification = 225
+		self.depth_filters = []
 
 		self.timelimit = 800 # Minutes
 

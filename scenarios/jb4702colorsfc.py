@@ -9,7 +9,6 @@ class JB4702ColorsFC( scenario.Scenario ):
 		self.puzzle = puzzle
 		self.name = __name__.split(".")[1]
 
-		self.score_target = 470
 		self.heuristic_patterns = [ [ 9, 15 ] ]
 		self.conflicts_indexes_allowed = [ 197, 203, 210, 216, 221, 225, 229, 233, 236, 238 ]
 		#self.conflicts_indexes_allowed = [ 197, 203, 210, 216, 221, 225, 229, 233, 236, 238 ] + list(range(240,256,1))
@@ -18,6 +17,10 @@ class JB4702ColorsFC( scenario.Scenario ):
 		#	e = random.choice(self.conflicts_indexes_allowed)
 		#	self.conflicts_indexes_allowed.remove(e)
 		self.heuristic_stats16 = False
+		#self.depth_filters = [] #  i*self.puzzle.board_w for i in range(1,(self.puzzle.board_h//4)) ]
+		#self.depth_filters = [ i*self.puzzle.board_w for i in [ 1 ] ] #range(1,(self.puzzle.board_h//4)) ]
+		self.depth_filters = [ 16 ] #range(1,(self.puzzle.board_h//4)) ]
+		self.depth_filters = [ ]
 		self.depth_first_notification = 252
 
 		self.timelimit = 12*60 # Minutes

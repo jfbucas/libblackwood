@@ -82,9 +82,11 @@ class LibArrays( external_libs.External_Libs ):
 				output.append( (0 , "") )
 
 		# ---------------------------------
-		if not only_signature:
+		if only_signature:
 			output.append( (0, "// master_all_rotated_pieces") )
 			output.append( (1 , "#define MAURPNULL { .value = 0 }" )) 
+
+			total_heuristic_patterns = [0] * self.puzzle.board_wh
 			l = sorted(self.puzzle.master_all_rotated_pieces.keys())
 			n = 0
 			for y in l:
@@ -93,9 +95,11 @@ class LibArrays( external_libs.External_Libs ):
 				edges = ", .u ="+format(x.u, "3")+ ", .r ="+format(x.r, "3")+ ", .d ="+format(x.d, "3")+ ",  .l ="+format(x.l, "3")
 
 				heuristic_patterns = ""
+				total_heuristic_patterns[ x.p ] = 0
 				for i in range(5):
 					if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
 						heuristic_patterns += ", .heuristic_patterns_"+str(i)+" ="+format(x.heuristic_patterns_count[i], "3")
+						total_heuristic_patterns[ x.p ] += x.heuristic_patterns_count[i]
 
 				heuristic_stats16 = ""
 				if self.puzzle.scenario.heuristic_stats16:
@@ -110,6 +114,9 @@ class LibArrays( external_libs.External_Libs ):
 					" } }" + " // " + y + "  #" +str(n)) )
 				n += 1
 
+			total_heuristic_patterns = sum(total_heuristic_patterns)
+			output.append( (0 , "" )) 
+			output.append( (1 , "#define TOTAL_HEURISTIC_PATTERNS "+str( total_heuristic_patterns ) )) 
 			output.append( (0 , "") )
 
 		
