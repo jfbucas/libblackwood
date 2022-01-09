@@ -2,6 +2,7 @@
 EternityII solver
 
 This is a reimplementation of Joshua Blackwood's algorithm to solve EternityII
+(See https://github.com/jblackwood345/)
 
 It is written in Python3 and generates a C external library.
 
