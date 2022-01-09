@@ -30,6 +30,7 @@ class Scenario( defs.Defs ):
 		self.spaces_sequence = [None] * self.puzzle.board_wh
 		self.spaces_references = [None] * self.puzzle.board_wh
 		self.reverse_spaces_order = False
+		self.flip_spaces_order = False
 
 		self.score_target = self.puzzle.board_wh*2 - self.puzzle.board_w - self.puzzle.board_h
 		self.score_target -= len(self.conflicts_indexes_allowed)
@@ -97,7 +98,20 @@ class Scenario( defs.Defs ):
 				s = self.spaces_order.index(depth)
 				sx = s % W
 				sy = s // W
-				sy = W-1 -sy
+				sy = W-1 - sy
+				s = sx+sy*W
+				self.spaces_sequence[ depth ] = s
+				tmp[s] = depth
+			self.spaces_order = tmp
+
+		# Flip the space order
+		if self.flip_spaces_order:
+			tmp = [ None ] * WH
+			for depth in range(WH):
+				s = self.spaces_order.index(depth)
+				sx = s % W
+				sx = W-1 - sx
+				sy = s // W
 				s = sx+sy*W
 				self.spaces_sequence[ depth ] = s
 				tmp[s] = depth

@@ -940,8 +940,25 @@ class Puzzle( defs.Defs ):
 				if c in p:
 					for e in p:
 						relations[ c*len(colors) + e ] += 1
+						relations[ e*len(colors) + c ] += 1
+
+		# Clear the borders
+		for x in range(len(colors)):
+			relations[ 0*len(colors) + x ] = 0 
+		for y in range(len(colors)):
+			relations[ y*len(colors) + 0 ] = 0 
+		for i in range(len(colors)):
+			relations[ i*len(colors) + i ] = 0 
+
 			
-		for m in range(max(relations)):
+		for m in range(max(relations)+1):
+			try:
+				relations.index(m)
+			except ValueError as error:
+				continue
+			except IndexError as error:
+				continue
+
 			print("##################################", m, "########################")
 			print()
 			print( "".rjust(3, " "), end="   " )

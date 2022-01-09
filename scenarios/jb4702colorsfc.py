@@ -10,6 +10,10 @@ class JB4702ColorsFC( scenario.Scenario ):
 		self.name = __name__.split(".")[1]
 
 		self.heuristic_patterns = [ [ 9, 15 ] ]
+		#self.heuristic_patterns = [ [ 3, 21 ] ] # XXX
+		#self.heuristic_patterns = [ [ 9, 19 ] ] # XXX
+		#self.heuristic_patterns = [ [ 9, 19 ] ] # Ok
+		#self.heuristic_patterns = [ [ 9, 19 ] ] # Ok
 		self.conflicts_indexes_allowed = [ 197, 203, 210, 216, 221, 225, 229, 233, 236, 238 ]
 		#self.conflicts_indexes_allowed = [ 197, 203, 210, 216, 221, 225, 229, 233, 236, 238 ] + list(range(240,256,1))
 		#self.conflicts_indexes_allowed = list(range(197,256,3))
@@ -23,9 +27,10 @@ class JB4702ColorsFC( scenario.Scenario ):
 		self.depth_filters = [ 57 ] # For some reason 57 seems to be a quiet place...
 		self.depth_first_notification = 252
 
-		self.timelimit = 12*60 # Minutes
+		self.timelimit = 4*60 # Minutes
 
 		# Add a fixed corner in upside-down scenario and reversed space_order
+		"""
 		if not self.puzzle.upside_down:
 			#self.puzzle.fixed.extend( [ [ 1, 0, 3 ] ] )    # Left-Up Corner
 			self.puzzle.fixed.extend( [ [ 1, 15, 0 ] ] )    # Up-Right Corner
@@ -36,6 +41,7 @@ class JB4702ColorsFC( scenario.Scenario ):
 			#self.puzzle.fixed.extend( [ [ 1, 15, 0 ] ] )    # Corner
 			#self.puzzle.fixed.extend( [ [ 1, 240, 2 ] ] )  # Corner
 			self.puzzle.fixed.extend( [ [ 1, 255, 1 ] ] )  # Left Up Corner
+		"""
 
 		scenario.Scenario.__init__(self)
 
@@ -83,6 +89,7 @@ class JB4702ColorsFC( scenario.Scenario ):
 
 		# Reverse to start from the bottom
 		#self.reverse_spaces_order = True
+		self.flip_spaces_order = True
 
 
 scenario.global_list.append(JB4702ColorsFC)
