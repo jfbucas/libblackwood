@@ -27,7 +27,8 @@ class JB4702ColorsFC( scenario.Scenario ):
 		self.depth_filters = [ 57 ] # For some reason 57 seems to be a quiet place...
 		self.depth_first_notification = 252
 
-		self.timelimit = 4*60 # Minutes
+		#self.timelimit = 4*60 # Minutes
+		self.timelimit = 30 # Minutes
 
 		# Add a fixed corner in upside-down scenario and reversed space_order
 		"""
