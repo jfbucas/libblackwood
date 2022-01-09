@@ -31,7 +31,6 @@ class JB4702ColorsFC( scenario.Scenario ):
 		self.timelimit = 30 # Minutes
 
 		# Add a fixed corner in upside-down scenario and reversed space_order
-		"""
 		if not self.puzzle.upside_down:
 			#self.puzzle.fixed.extend( [ [ 1, 0, 3 ] ] )    # Left-Up Corner
 			self.puzzle.fixed.extend( [ [ 1, 15, 0 ] ] )    # Up-Right Corner
@@ -42,7 +41,6 @@ class JB4702ColorsFC( scenario.Scenario ):
 			#self.puzzle.fixed.extend( [ [ 1, 15, 0 ] ] )    # Corner
 			#self.puzzle.fixed.extend( [ [ 1, 240, 2 ] ] )  # Corner
 			self.puzzle.fixed.extend( [ [ 1, 255, 1 ] ] )  # Left Up Corner
-		"""
 
 		scenario.Scenario.__init__(self)
 
@@ -57,15 +55,17 @@ class JB4702ColorsFC( scenario.Scenario ):
 			if i in range(15, 27):
 				self.heuristic_patterns_count[0][i] = int((i - 14) * 2)
 			elif i in range(27, 37):
-				self.heuristic_patterns_count[0][i] = int((i - 26) * 1.3) + 24
+				self.heuristic_patterns_count[0][i] = int((i - 26) * 1.3) + 24 #self.heuristic_patterns_count[0][26]
 			elif i in range(37, 57):
-				self.heuristic_patterns_count[0][i] = int((i - 36) * 1.3) + 37
+				self.heuristic_patterns_count[0][i] = int((i - 36) * 1.3) + 37 #self.heuristic_patterns_count[0][36]
 			elif i in range(57, 77):
-				self.heuristic_patterns_count[0][i] = int((i - 56) * 0.85) + 57
+				self.heuristic_patterns_count[0][i] = int((i - 56) * 0.85) + 57 #self.heuristic_patterns_count[0][56]
 			elif i in range(77, 103):
-				self.heuristic_patterns_count[0][i] = int((i - 76) * 0.5) + 74
+				self.heuristic_patterns_count[0][i] = int((i - 76) * 0.5) + 74 #self.heuristic_patterns_count[0][76]
 			elif i in range(103, 151):
-				self.heuristic_patterns_count[0][i] = int((i - 102) / 5.3334) + 87
+				self.heuristic_patterns_count[0][i] = int((i - 102) / 5.3334) + 87 #self.heuristic_patterns_count[0][102]
+			elif i in range(151, 180):
+				self.heuristic_patterns_count[0][i] = int((i - 151) / 8.3334) + 95 #self.heuristic_patterns_count[0][102]
 
 	def prepare_spaces_order( self ):
 
@@ -90,7 +90,7 @@ class JB4702ColorsFC( scenario.Scenario ):
 
 		# Reverse to start from the bottom
 		#self.reverse_spaces_order = True
-		self.flip_spaces_order = True
+		#self.flip_spaces_order = True
 
 
 scenario.global_list.append(JB4702ColorsFC)

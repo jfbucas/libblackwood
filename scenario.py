@@ -243,6 +243,8 @@ class Scenario( defs.Defs ):
 				self.seed = 3920984767605482993  # 252 in 5 min!
 			elif self.seed == 9:
 				self.seed = 3991861456812545526  # 252 in 951 sec!
+			elif self.seed == 32:
+				self.seed = 8535430728254241251  # 252 in 32 sec! (flipped, no fixed corner)
 
 			if self.DEBUG > 0:
 				self.info(" * Init Scenario Env Seed : "+str(self.seed) )
