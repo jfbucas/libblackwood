@@ -12,9 +12,10 @@ class JB4702Colors( scenario.Scenario ):
 		self.conflicts_indexes_allowed = [ 197, 203, 210, 216, 221, 225, 229, 233, 236, 238 ]
 		self.heuristic_stats16 = False
 		self.depth_first_notification = 252
-		self.depth_filters = []
+		self.depth_filters = [ 57 ] # For some reason 57 seems to be a quiet place...
+		#self.depth_filters = []
 
-		self.timelimit = 480 # Minutes
+		self.timelimit = 45 # Minutes
 
 		scenario.Scenario.__init__(self)
 
@@ -62,6 +63,7 @@ class JB4702Colors( scenario.Scenario ):
 
 		# Reverse to start from the bottom
 		#self.reverse_spaces_order = True
+		self.flip_spaces_order = True
 
 
 scenario.global_list.append(JB4702Colors)

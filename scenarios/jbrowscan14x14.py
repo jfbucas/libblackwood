@@ -11,8 +11,8 @@ class JBRowScan14x14( scenario.Scenario ):
 		self.heuristic_patterns = [ [ 9, 15 ] ]
 		self.conflicts_indexes_allowed = []
 		self.heuristic_stats16 = False
-		self.depth_first_notification = 186
-		self.depth_filters = []
+		self.depth_first_notification = 187
+		self.depth_filters = [ 14*4]
 
 		self.timelimit = 800 # Minutes
 
@@ -39,7 +39,9 @@ class JBRowScan14x14( scenario.Scenario ):
 			elif i in range(77, 103):
 				self.heuristic_patterns_count[0][i] = int((i - 76) * 0.5) + self.heuristic_patterns_count[0][76]
 			elif i in range(103, 151):
-				self.heuristic_patterns_count[0][i] = int((i - 102) / 5.3334) + self.heuristic_patterns_count[0][102] 
+				self.heuristic_patterns_count[0][i] = int((i - 102) / 2.8034) + self.heuristic_patterns_count[0][102] 
+			#elif i in range(151, 180):
+			#	self.heuristic_patterns_count[0][i] = int((i - 151) / 3.0334) + self.heuristic_patterns_count[0][150]
 
 
 	def prepare_spaces_order( self ):
@@ -60,6 +62,6 @@ class JBRowScan14x14( scenario.Scenario ):
 					depth+=1
 
 		# Reverse to start from the bottom
-		self.reverse_spaces_order = True
+		#self.reverse_spaces_order = True
 
 scenario.global_list.append(JBRowScan14x14)

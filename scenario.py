@@ -183,10 +183,11 @@ class Scenario( defs.Defs ):
 
 		W=self.puzzle.board_w-1
 		H=self.puzzle.board_h-1
+		WH = W*H
 
 		# From a certain depth, we authorize conflicts (or breaks)
 		conflicts = "" 
-		if depth >= min(self.conflicts_indexes_allowed):
+		if depth >= (min(self.conflicts_indexes_allowed) if len(self.conflicts_indexes_allowed) > 0 else WH):
 			conflicts = "_conflicts"
 
 		master_piece_name = ""

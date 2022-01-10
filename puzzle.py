@@ -173,10 +173,13 @@ class Puzzle( defs.Defs ):
 		self.readStatistics()
 		self.pieces_stats16_weight = [0] * self.board_wh
 
-		self.scenario = scenarios.loadScenario(self)
-
 		self.initStaticSpacesList()
 		self.initStaticSpaceURDL()
+
+		# Because Fixed pieces can be defined in the scenario
+		# it has to be placed before SpacesType
+		self.scenario = scenarios.loadScenario(self)
+
 		self.initStaticSpacesType()
 
 		self.TITLE_STR += self.name+"("+ self.scenario.name +")"
