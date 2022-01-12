@@ -234,7 +234,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(0, '' ),
 
 				(1, 'if (b->commands & SHOW_HEARTBEAT)' ),
-				(2, prefix+'printf( '+out+' "Heartbeats: %llu/%llu\\n", b->heartbeat, b->heartbeat_limit );' ),
+				(2, prefix+'printf( '+out+' "Heartbeats: %llu/%llu   Adaptative Filter Depth: %llu\\n", b->heartbeat, b->heartbeat_limit, b->adaptative_filter_depth);' ),
 				(0, '' ),
 
 
@@ -348,9 +348,9 @@ class LibBlackwood( external_libs.External_Libs ):
 
 			output.append( (1 , "t_union_rotated_piece master_lists_of_union_rotated_pieces[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
 			#output.append( (1 , "t_union_rotated_piece master_lists_of_union_rotated_pieces_without_heuristic_patterns[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
-			output.append( (1 , "int64 adaptative_filter_depth;"), )
+			output.append( (1 , "uint64 adaptative_filter_depth;"), )
 			output.append( (1 , "t_union_rotated_piece master_lists_of_union_rotated_pieces_for_adaptative_filter[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
-			output.append( (1 , "p_union_rotated_piece adaptative_filter_master_lists[ WH ];") )
+			#output.append( (1 , "p_union_rotated_piece adaptative_filter_master_lists[ WH ];") )
 
 			#for d in self.puzzle.scenario.depth_filters:
 			#	output.append( (0 , "t_union_rotated_piece master_lists_of_union_rotated_pieces_filtered_from_depth_"+str(d)+"[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
@@ -366,7 +366,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, "uint64 depth_pieces_count[ WH ];"),
 				(0, "" ),
 				(1, "// Time keeping on nodes" ),
-				(1, "int64 depth_nodes_heartbeat[ WH ];"),
+				(1, "uint64 depth_nodes_heartbeat[ WH ];"),
 				(0, "" ),
 				(1, "// Records at what heartbeat the max_depth_seen have been found" ),
 				(1, "uint64 max_depth_seen_heartbeat[ WH ];"),
@@ -960,45 +960,61 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.extend( [
 				(1, ") {"),
 				(0, ''), 
-				(1, 'uint64 src, dst, depth;'), 
+				(1, 'uint64 src, dst, depth, used, rejected;'), 
 				(1, 't_union_rotated_piece p;'),
 				(1, 'uint8 pieces_used[WH];' ),
 				(0, '' ),
 				] )
 
 			output.extend( [
+				(1, '// Clear the pieces used' ),
 				(1, 'for(depth=0; depth < WH; depth++) pieces_used[depth] = 0;' ),
+				(1, 'used = rejected = 0;' ),
+				(1, '' ),
 				(0, '' ),
-				(1, '// Find the most recent depth older than 1 heartbeat and the pieces used until then' ),
+				(1, '// Find the most recent depth older than 1 heartbeat' ),
 				(1, 'for(depth=0; depth < WH; depth++) {' ),
+				#(1, 'for(depth=0; depth < W*6; depth++) {' ),
+				(2, 'if ( b->depth_nodes_heartbeat[depth] == 0 ) continue;' ),
 				(2, 'if (b->heartbeat - b->depth_nodes_heartbeat[depth] > 1) {' ),
 				(3, 'b->adaptative_filter_depth = depth;' ),
-				(3, 'pieces_used[ board[ spaces_sequence[ depth ] ].info.p ] = 1;' ),
 				(2, '} else {' ),
 				(3, 'break;' ),
+				(2, '}' ),
 				(1, '}' ),
+				(0, '' ),
+				(1, '// Mark the pieces used up to then' ),
+				(1, 'if ( b->adaptative_filter_depth < WH ) {' ),
+				(2, 'for(depth=0; depth < b->adaptative_filter_depth; depth++) {' ),
+				(3, 'pieces_used[ board[ spaces_sequence[ depth ] ].info.p ] = 1;' ),
+				(3, 'used ++;' ),
+				(2, '}' ),
 				(1, '}' ),
 				(0, '' ),
 				] )
 
 			output.extend( [
 				#(1, 'DEBUG_PRINT(("Filtering from depth %llu\\n", b->adaptative_filter_depth));' ),
-				(1, "dst = 0;" ),
-				(1, "for(src = 0; src < "+str(len(self.puzzle.master_lists_of_rotated_pieces))+"; src++) {" ),
-				(2, "p = b->master_lists_of_union_rotated_pieces[src];" ),
-				(2, "if (p.value != 0) { " ),
-				(3, "if (pieces_used[p.info.p] == 0) { " ),
-				(4, "b->master_lists_of_union_rotated_pieces_for_adaptative_filter[dst] = p;" ),
-				(4, "dst++;" ),
+				(1, "if (b->adaptative_filter_depth < WH) {" ),
+				(2, "dst = 0;" ),
+				(2, "for(src = 0; src < "+str(len(self.puzzle.master_lists_of_rotated_pieces))+"; src++) {" ),
+				(3, "p = b->master_lists_of_union_rotated_pieces[src];" ),
+				(3, "if (p.value != 0) { " ),
+				(4, "if (pieces_used[p.info.p] == 0) { " ),
+				(5, "b->master_lists_of_union_rotated_pieces_for_adaptative_filter[dst] = p;" ),
+				(5, "dst++;" ),
+				(4, "} else { rejected ++; }" ),
+				(3, "} else {" ),
+				(4, "b->master_lists_of_union_rotated_pieces_for_adaptative_filter[dst].value = 0;" ),
+				(4, "dst = src+1;"),
 				(3, "}" ),
-				(2, "} else {" ),
-				(3, "b->master_lists_of_union_rotated_pieces_for_adaptative_filter[dst].value = 0;" ),
-				(3, "dst = src+1;"),
 				(2, "}" ),
 				(1, "}" ),
+				#(1, 'DEBUG_PRINT(("Filtering from depth %llu used=%llu rejected=%llu\\n", b->adaptative_filter_depth, used, rejected));' ),
 				(0, " " ),
 				] )
 
+			"""
 			output.extend( [
 				(1, '// Set the adaptative_filter_master_lists' ),
 				(1, 'for(depth=0; depth < WH; depth++) {' ),
@@ -1010,6 +1026,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, '}' ),
 				(0, '' ),
 				] )
+			"""
 
 			output.append( (0, "}" ) )
 
@@ -1083,9 +1100,12 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		output.extend( [
 			(1, "cb->max_depth_seen = 0;"),
+			(1, "cb->heartbeat = 1; // We start at 1 for the adaptative filter "),
 			(1, "cb->heartbeat_limit = heartbeat_time_bonus[ 0 ];"),
 			(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_DEPTH_PIECES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT | ZERO_DEPTH_PIECES_COUNT;" if self.DEBUG > 0 else ""),
-			#(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_DEPTH_PIECES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT | ZERO_DEPTH_PIECES_COUNT;" if self.DEBUG > 0 else ""),
+			(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_DEPTH_PIECES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT | ZERO_DEPTH_PIECES_COUNT;" if self.DEBUG > 0 else ""),
+			(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_DEPTH_PIECES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT | ZERO_DEPTH_PIECES_COUNT;" if self.DEBUG > 0 else ""),
+			(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_DEPTH_PIECES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT | ZERO_DEPTH_PIECES_COUNT;" if self.DEBUG > 0 else ""),
 			#(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_DEPTH_PIECES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL ;" if self.DEBUG > 0 else ""),
 			#(1, "cb->commands = SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT;" if self.DEBUG > 0 else ""),
 			#(1, "cb->commands = 0;" if self.DEBUG > 0 else ""),
@@ -1094,10 +1114,10 @@ class LibBlackwood( external_libs.External_Libs ):
 			(1, 'for(i=0;i<WH;i++) cb->board[i].value = 0;' ),
 			(1, 'for(i=0;i<WH;i++) cb->depth_nodes_count[i] = 0;' ),
 			(1, 'for(i=0;i<WH;i++) cb->depth_pieces_count[i] = 0;' ),
-			(1, 'for(i=0;i<WH;i++) cb->depth_nodes_heartbeat[i] = -1;' ),
+			(1, 'for(i=0;i<WH;i++) cb->depth_nodes_heartbeat[i] = 0;' ),
 			(1, 'for(i=0;i<WH;i++) cb->max_depth_seen_heartbeat[i] = 0;' ),
-			(1, 'for(i=0;i<WH;i++) cb->adaptative_filter_master_lists[i] = cb->master_lists_of_union_rotated_pieces;' ),
-			(1, 'cb->adaptative_filter_depth = -1;' ),
+			#(1, 'for(i=0;i<WH;i++) cb->adaptative_filter_master_lists[i] = cb->master_lists_of_union_rotated_pieces;' ),
+			(1, 'cb->adaptative_filter_depth = WH;' ),
 			(2, ""),
 
 			(1, '// Output' ),
@@ -1140,7 +1160,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		for depth in range(0,WH+1):
 			d=str(depth)
 
-			master_lists_of_union_rotated_pieces = "adaptative_filter_master_lists["+d+"]"
+			#master_lists_of_union_rotated_pieces = "adaptative_filter_master_lists["+d+"]"
 
 			output.extend( [
 				(1, "// ==--==--==--==--[ Reaching depth "+d+" ]--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--== "),
@@ -1194,9 +1214,13 @@ class LibBlackwood( external_libs.External_Libs ):
 
 			output.append( (2, "// if we backtrack further than the current adaptative_filter_depth, we reset" ) )
 			output.append( (2, "if (cb->adaptative_filter_depth > "+d+") {" ) )
-			#output.append( (3, 'DEBUG_PRINT(("Undo Filtering from depth %llu\\n", cb->adaptative_filter_depth));' ) )
-			output.append( (3, 'for(i='+d+';i<WH;i++) cb->adaptative_filter_master_lists[i] = cb->master_lists_of_union_rotated_pieces;' ), )
-			output.append( (3, 'cb->adaptative_filter_depth = -1;' ), )
+			output.append( (3, 'cb->adaptative_filter_depth = WH;' ), )
+			output.append( (3, 'adaptative_filter_depth(cb, board);' ) )
+			#output.append( (3, 'if (cb->adaptative_filter_depth != WH){' ), )
+			#output.append( (4, 'DEBUG_PRINT(("Undo Filtering from depth %llu\\n", cb->adaptative_filter_depth));' ) )
+			#output.append( (3, '}else{' ), )
+			#output.append( (4, 'DEBUG_PRINT(("[NO] Filtering from depth %llu\\n", cb->adaptative_filter_depth));' ) )
+			#output.append( (3, '}' ), )
 			output.append( (2, '}' ), )
 			output.append( (2, '' ), )
 
@@ -1215,11 +1239,10 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (0, '' ) )
 				output.append( (3, 'fdo_commands(output, cb);' ), )
 				output.append( (0, '' ) )
-				output.append( (3, 'if (getLCA(cb) || getPause(cb))' ) )
-				output.append( (4, 'while ((getLCA(cb) || getPause(cb)) && !getTTF(cb)) {' ) )
-				output.append( (5, 'fdo_commands(output, cb);' ), )
-				output.append( (5, 'sleep(1);' ), )
-				output.append( (4, '}' ), )
+				output.append( (3, 'while ((getLCA(cb) || getPause(cb)) && !getTTF(cb)) {' ) )
+				output.append( (4, 'fdo_commands(output, cb);' ), )
+				output.append( (4, 'sleep(1);' ), )
+				output.append( (3, '}' ), )
 				output.append( (2, '}' ), )
 
 			#if depth in self.puzzle.scenario.depth_filters:
@@ -1262,7 +1285,12 @@ class LibBlackwood( external_libs.External_Libs ):
 					total_hp += 'cumulative_heuristic_patterns_count_'+str(i)+'['+d+'-1] + '
 
 			# Unlikely we need the master_lists_of_union_rotated_pieces_hp before reaching the max_index
-			output.append( (2, "piece_to_try_next["+d+"] = &(cb->"+master_lists_of_union_rotated_pieces+"[cb->master_index_"+index_piece_name+"[ "+ref+" ] ]);" ) )
+			#output.append( (2, "piece_to_try_next["+d+"] = &(cb->"+master_lists_of_union_rotated_pieces+"[cb->master_index_"+index_piece_name+"[ "+ref+" ] ]);" ) )
+			output.append( (2, "if ( "+d+" > cb->adaptative_filter_depth ) {" ) )
+			output.append( (3, "piece_to_try_next["+d+"] = &(cb->master_lists_of_union_rotated_pieces_for_adaptative_filter[cb->master_index_"+index_piece_name+"[ "+ref+" ] ]);" ) )
+			output.append( (2, "} else {" ) )
+			output.append( (3, "piece_to_try_next["+d+"] = &(cb->master_lists_of_union_rotated_pieces[cb->master_index_"+index_piece_name+"[ "+ref+" ] ]);" ) )
+			output.append( (2, "}" ) )
 
 
 			#if depth <= self.puzzle.scenario.max_index(self.puzzle.scenario.heuristic_patterns_count[0]): # TODO
