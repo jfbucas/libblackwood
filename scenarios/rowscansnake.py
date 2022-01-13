@@ -12,7 +12,6 @@ class RowScanSnake( scenario.Scenario ):
 		self.conflicts_indexes_allowed = []
 		self.heuristic_stats16 = False
 		self.depth_first_notification = 225
-		self.depth_filters = []
 
 		self.timelimit = 800 # Minutes
 

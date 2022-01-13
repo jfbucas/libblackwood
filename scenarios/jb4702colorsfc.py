@@ -21,10 +21,6 @@ class JB4702ColorsFC( scenario.Scenario ):
 		#	e = random.choice(self.conflicts_indexes_allowed)
 		#	self.conflicts_indexes_allowed.remove(e)
 		self.heuristic_stats16 = False
-		#self.depth_filters = [] #  i*self.puzzle.board_w for i in range(1,(self.puzzle.board_h//4)) ]
-		#self.depth_filters = [ i*self.puzzle.board_w for i in [ 1 ] ] #range(1,(self.puzzle.board_h//4)) ]
-		#self.depth_filters = [ 16 ] #range(1,(self.puzzle.board_h//4)) ]
-		self.depth_filters = [ 57 ] # For some reason 57 seems to be a quiet place...
 		self.depth_first_notification = 252
 
 		#self.timelimit = 4*60 # Minutes

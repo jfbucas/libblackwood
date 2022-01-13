@@ -12,7 +12,7 @@ class JBRowScan14x14( scenario.Scenario ):
 		self.conflicts_indexes_allowed = []
 		self.heuristic_stats16 = False
 		self.depth_first_notification = 187
-		self.depth_filters = [ 14*4]
+		self.use_adaptative_filter_depth = True
 
 		self.timelimit = 800 # Minutes
 

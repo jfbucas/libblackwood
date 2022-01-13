@@ -12,7 +12,6 @@ class JB470Diag( scenario.Scenario ):
 		self.conflicts_indexes_allowed = [ 197, 203, 210, 216, 221, 225, 229, 233, 236, 238 ]
 		self.heuristic_stats16 = False
 		self.depth_first_notification = 252
-		self.depth_filters = []
 
 		self.timelimit = 180 # Minutes
 

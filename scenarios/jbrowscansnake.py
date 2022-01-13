@@ -12,7 +12,6 @@ class JBRowScanSnake( scenario.Scenario ):
 		self.conflicts_indexes_allowed = []
 		self.heuristic_stats16 = False
 		self.depth_first_notification = 225
-		self.depth_filters = []
 
 		self.timelimit = 5 # Minutes
 
