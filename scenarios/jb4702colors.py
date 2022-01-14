@@ -13,7 +13,7 @@ class JB4702Colors( scenario.Scenario ):
 		self.heuristic_stats16 = False
 		self.depth_first_notification = 252
 		#self.depth_filters = [ 57 ] # For some reason 57 seems to be a quiet place...
-		self.use_adaptative_filter_depth = False
+		#self.use_adaptative_filter_depth = False
 		#self.depth_filters = []
 
 		self.timelimit = 45 # Minutes
