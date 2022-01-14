@@ -35,38 +35,38 @@ class LibBlackwood( external_libs.External_Libs ):
 
 	DEPTH_COLORS = {}
 
-	COMMANDS = { 
-				'NONE':					0,
-				'CLEAR_SCREEN':				1<<1,
-				'SHOW_TITLE':				1<<2,
-				'SHOW_HEARTBEAT':			1<<3,
-				'SHOW_SEED':				1<<4,
-				'SHOW_HELP':				1<<5,
+	COMMANDS = {}
+	COMMANDS_LIST = [
+				'CLEAR_SCREEN',
+				'SHOW_TITLE',
+				'SHOW_HEARTBEAT',
+				'SHOW_ADAPTATIVE_FILTER',
+				'SHOW_SEED',
+				'SHOW_HELP',
 
-				'SHOW_DEPTH_NODES_COUNT':		1<<8,
-				'ZERO_DEPTH_NODES_COUNT':		1<<9,
+				'SHOW_DEPTH_NODES_COUNT',
+				'ZERO_DEPTH_NODES_COUNT',
 
-				'SHOW_DEPTH_PIECES_COUNT':		1<<10,
-				'ZERO_DEPTH_PIECES_COUNT':		1<<11,
+				'SHOW_DEPTH_PIECES_COUNT',
+				'ZERO_DEPTH_PIECES_COUNT',
 
-				'SHOW_DEPTH_PIECES_USED_COUNT':		1<<12,
-				'ZERO_DEPTH_PIECES_USED_COUNT':		1<<13,
+				'SHOW_DEPTH_PIECES_USED_COUNT',
+				'ZERO_DEPTH_PIECES_USED_COUNT',
 
-				'SHOW_DEPTH_NODES_HEARTBEAT':		1<<14,
-				'ZERO_DEPTH_NODES_HEARTBEAT':		1<<15,
+				'SHOW_DEPTH_NODES_HEARTBEAT',
+				'ZERO_DEPTH_NODES_HEARTBEAT',
 
-				'SHOW_BEST_BOARD_URL':			1<<24,
-				'SHOW_BEST_BOARD_URL_ONCE':		1<<25,
+				'SHOW_BEST_BOARD_URL',
+				'SHOW_BEST_BOARD_URL_ONCE',
 
-				'SHOW_MAX_DEPTH_SEEN':			1<<26,
-				'SHOW_MAX_DEPTH_SEEN_ONCE':		1<<27,
+				'SHOW_MAX_DEPTH_SEEN',
+				'SHOW_MAX_DEPTH_SEEN_ONCE',
 
-				'SAVE_MAX_DEPTH_SEEN_ONCE':		1<<29,
+				'SAVE_MAX_DEPTH_SEEN_ONCE',
 
-				'LEAVE_CPU_ALONE':			1<<30,
-				'TIME_TO_FINISH':			1<<31,
-
-			}
+				'LEAVE_CPU_ALONE',
+				'TIME_TO_FINISH',
+			]
 
 
 	FLAGS = [
@@ -89,6 +89,13 @@ class LibBlackwood( external_libs.External_Libs ):
 		self.puzzle = puzzle
 		
 		self.xffff = format(len(self.puzzle.master_lists_of_rotated_pieces)-1, '6')
+
+
+		self.COMMANDS[ "NONE" ] = 0
+		i = 0
+		for c in self.COMMANDS_LIST:
+			self.COMMANDS[ c ] = 1<<i
+			i += 1
 
 		#self.DEPTH_COLORS[0]= "" 
 		for i in range(190,253):
@@ -242,7 +249,10 @@ class LibBlackwood( external_libs.External_Libs ):
 				(0, '' ),
 
 				(1, 'if (b->commands & SHOW_HEARTBEAT)' ),
-				(2, prefix+'printf( '+out+' "Heartbeats: %llu/%llu   Adaptative Filter Depth: %llu\\n", b->heartbeat, b->heartbeat_limit, b->adaptative_filter_depth);' ),
+				(2, prefix+'printf( '+out+' "Heartbeats: %llu/%llu\\n", b->heartbeat, b->heartbeat_limit);' ),
+				(0, '' ),
+				(1, 'if (b->commands & SHOW_ADAPTATIVE_FILTER)' ),
+				(2, prefix+'printf( '+out+' "Adaptative Filter Depth: %llu\\n", b->adaptative_filter_depth);' ),
 				(0, '' ),
 
 
@@ -895,8 +905,22 @@ class LibBlackwood( external_libs.External_Libs ):
 						(3, 'total += count;' ),
 						(3, 'if (count <= 0) {' ),
 						(4, prefix+'printf( '+out+'"  . " );' ),
-						(3, '} else if (count < 1000) {' ),
-						(4, prefix+'printf( '+out+'"'+self.verdoie +"%3llu"+self.XTermNormal+' ", count/1);' ),
+						] )
+					"""
+					y = ""
+					z = ""
+					for x in range(0,16):
+						output.extend( [
+							(3, '} else if (count < 1'+y+') {' ),
+							(4, prefix+'printf( '+out+'"'+self.rainbow[x] +"%3llu"+self.XTermNormal+' ", count/1'+z+');' ),
+							] )
+						y += "0"
+						z += "000" if x % 3 == 2 else ""
+					"""
+
+					output.extend( [
+						(1, '} else if (count < 1000) {' ),
+						(2, prefix+'printf( '+out+'"'+self.verdoie +"%3llu"+self.XTermNormal+' ", count/1);' ),
 						(3, '} else if (count < 1000000) {' ),
 						(4, prefix+'printf( '+out+'"'+self.jaunoie +"%3llu"+self.XTermNormal+' ", count/1000);' ),
 						(3, '} else if (count < 1000000000) {' ),
@@ -905,6 +929,9 @@ class LibBlackwood( external_libs.External_Libs ):
 						(4, prefix+'printf( '+out+'"'+self.violoie +"%3llu"+self.XTermNormal+' ", count/1000000000);' ),
 						(3, '} else if (count < 1000000000000000) {' ),
 						(4, prefix+'printf( '+out+'"'+self.bleuoie +"%3llu"+self.XTermNormal+' ", count/1000000000000);' ),
+						] )
+
+					output.extend( [
 						(3, '} else {' ),
 						(4, prefix+'printf( '+out+'"%3llu ", count);' ),
 						(3, '}' ),
@@ -1111,18 +1138,28 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (1, "cb->"+n+" = 0;") )
 
 		output.extend( [
-			(1, "cb->max_depth_seen = 0;"),
 			(1, "cb->heartbeat = 1; // We start at 1 for the adaptative filter "),
 			(1, "cb->heartbeat_limit = heartbeat_time_bonus[ 0 ];"),
-			(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_DEPTH_PIECES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT | ZERO_DEPTH_PIECES_COUNT;" if self.DEBUG > 0 else ""),
-			(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_DEPTH_PIECES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT | ZERO_DEPTH_PIECES_COUNT;" if self.DEBUG > 0 else ""),
-			(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_DEPTH_PIECES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT | ZERO_DEPTH_PIECES_COUNT;" if self.DEBUG > 0 else ""),
-			(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_DEPTH_PIECES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT | ZERO_DEPTH_PIECES_COUNT;" if self.DEBUG > 0 else ""),
-			#(1, "cb->commands = CLEAR_SCREEN | SHOW_TITLE | SHOW_SEED | SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_DEPTH_PIECES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL ;" if self.DEBUG > 0 else ""),
-			#(1, "cb->commands = SHOW_HEARTBEAT | SHOW_DEPTH_NODES_COUNT | SHOW_MAX_DEPTH_SEEN | SHOW_BEST_BOARD_URL | ZERO_DEPTH_NODES_COUNT;" if self.DEBUG > 0 else ""),
-			#(1, "cb->commands = 0;" if self.DEBUG > 0 else ""),
-			#(1, "cb->commands = SHOW_MAX_DEPTH_SEEN | ZERO_DEPTH_NODES_COUNT;" if self.DEBUG > 1 else ""),
-			(1, "cb->commands = SHOW_HEARTBEAT;" if self.DEBUG == 0 else ""),
+			] )
+
+		if self.DEBUG > 0:
+ 			output.extend( [
+			(1, "cb->commands |= CLEAR_SCREEN;"),
+			(1, "cb->commands |= SHOW_TITLE;"),
+			(1, "cb->commands |= SHOW_SEED;"),
+			(1, "cb->commands |= SHOW_HEARTBEAT;"),
+			(1, "cb->commands |= SHOW_ADAPTATIVE_FILTER;"),
+			(1, "cb->commands |= SHOW_DEPTH_NODES_COUNT;"),
+			(1, "cb->commands |= SHOW_DEPTH_PIECES_COUNT;"),
+			(1, "cb->commands |= SHOW_DEPTH_PIECES_USED_COUNT;"),
+			(1, "cb->commands |= SHOW_MAX_DEPTH_SEEN;"),
+			(1, "cb->commands |= SHOW_BEST_BOARD_URL;"),
+			(1, "cb->commands |= ZERO_DEPTH_NODES_COUNT;"),
+			(1, "cb->commands |= ZERO_DEPTH_PIECES_COUNT;"),
+			(1, "cb->commands |= ZERO_DEPTH_PIECES_USED_COUNT;"),
+			] )
+
+		output.extend( [
 			(1, 'for(i=0;i<WH;i++) cb->board[i].value = 0;' ),
 			(1, 'for(i=0;i<WH;i++) cb->depth_nodes_count[i] = 0;' ),
 			(1, 'for(i=0;i<WH;i++) cb->depth_pieces_count[i] = 0;' ),
@@ -1304,10 +1341,6 @@ class LibBlackwood( external_libs.External_Libs ):
 			
 			output.append( (3, "current_piece = *(piece_to_try_next["+d+"]);" ))
 			output.append( (3, "piece_to_try_next["+d+"] ++;"))
-			output.append( (3, "if (pieces_used[ current_piece.info.p ] != 0) {"))
-			output.append( (4, 'cb->depth_pieces_used_count['+sspace+'] ++;' if self.DEBUG > 0 else "") )
-			output.append( (4, "continue;"))
-			output.append( (3, "}"))
 			#output.append( (3, 'DEBUG_PRINT(("'+" " * depth+' Trying piece : %d\\n", current_piece.info.p))' ))
 			if depth > 0:
 				for i in range(5):
@@ -1321,6 +1354,10 @@ class LibBlackwood( external_libs.External_Libs ):
 				cumul = "" if depth == conflicts_array[0] else "+ cumulative_heuristic_conflicts_count["+d+"-1]"
 				output.append( (3, "if (current_piece.info.heuristic_conflicts "+ cumul +" > "+str(len(conflicts_array))+ ") break; // "+str(conflicts_array)))
 			
+			output.append( (3, "if (pieces_used[ current_piece.info.p ] != 0) {"))
+			output.append( (4, 'cb->depth_pieces_used_count['+sspace+'] ++;' if self.DEBUG > 0 else "") )
+			output.append( (4, "continue;"))
+			output.append( (3, "}"))
 			
 			output.append( (3, "board["+sspace+"] = current_piece;"))
 			#output.append( (3, 'DEBUG_PRINT(("'+" "*depth+' Space '+sspace+' - inserting piece : %d \\n", board['+sspace+'].info.p ))'  if self.DEBUG > 1 else "" ))

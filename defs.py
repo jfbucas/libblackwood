@@ -2,6 +2,7 @@
 # Global libs
 import os
 import time
+import math
 from itertools import combinations
 
 #
@@ -88,6 +89,7 @@ class Defs():
 	bleuoie		= "\033"+'[38;5;33m'
 	violoie		= "\033"+'[38;5;97m'
 	noiroie		= "\033"+'[38;5;0m'
+	rainbow = []
 
 	XTermEnv	= "\033[48;5;"+noire+'m'+"\033"+'[38;5;'+jaune_clair+'m'
 	XTermInfo	= "\033[48;5;"+noire+'m'+"\033"+'[38;5;'+verta+'m'
@@ -107,6 +109,8 @@ class Defs():
 
 	# ----- Init the puzzle
 	def __init__( self ):
+
+
 
 		if os.environ.get('DEBUG') != None:
 			self.DEBUG = int(os.environ.get('DEBUG'))
@@ -134,6 +138,24 @@ class Defs():
 			self.NICE = int(os.environ.get('NICE'))
 		os.nice(self.NICE)
 
+		# Generate rainbow colors
+		# For 32 colors
+		nb_rainbow = 32
+		freq = 0.15
+		# For 16 colors
+		nb_rainbow = 16
+		freq = 0.30
+		rainbow_func = lambda i, a, b: int(6 * (math.sin(freq * i + a * math.pi/3) * 127 + 128) / 256) * b
+		for i in range(0,nb_rainbow):
+			self.rainbow.append( '\033[38;5;'+ str( sum([16, rainbow_func(i, 0, 36), rainbow_func(i, 2, 6), rainbow_func(i, 4, 1)]) ) + "m" )
+
+		if self.DEBUG_STATIC > 0:
+			for i in range(0,nb_rainbow):
+				print(self.rainbow[i],"###", end=" ")
+			print(self.XTermNormal)
+
+		# TRUECOLOR would be better but not available yet in GNU/screen packages
+		#printf "\x1b[38;2;255;100;0mTRUECOLOR\x1b[0m\n"
 
 	# ----- Debug
 	def printDebug( self, min_debug_level=1, top=0, msg="" ):

@@ -237,20 +237,6 @@ class Scenario( defs.Defs ):
 	def next_seed(self):
 		self.seed = random.randint(0, sys.maxsize)
 
-		if os.environ.get('SEED') != None:
-			self.seed = int(os.environ.get('SEED'))
-			if self.seed == 1:
-				self.seed = 2502973653805784301  # 252 in 1 sec!
-			elif self.seed == 5:
-				self.seed = 3920984767605482993  # 252 in 5 min!
-			elif self.seed == 9:
-				self.seed = 3991861456812545526  # 252 in 951 sec!
-			elif self.seed == 32:
-				self.seed = 8535430728254241251  # 252 in 32 sec! (flipped, no fixed corner)
-
-			if self.DEBUG > 0:
-				self.info(" * Init Scenario Env Seed : "+str(self.seed) )
-
 		return self.seed
 
 if __name__ == "__main__":

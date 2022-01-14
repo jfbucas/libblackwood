@@ -1,4 +1,7 @@
 import scenario
+import random
+import sys
+import os
 
 class JB470( scenario.Scenario ):
 	"""The Joshua Blackwood 470 Scenario"""
@@ -9,11 +12,11 @@ class JB470( scenario.Scenario ):
 		self.name = __name__.split(".")[1]
 
 		self.heuristic_patterns = [ [ 9, 12, 15 ] ]
-		self.conflicts_indexes_allowed = [ 197, 203, 210, 216, 221, 225, 229, 233, 236, 238 ]
+		self.conflicts_indexes_allowed = [ 197, 203, 210, 216, 221, 225, 229, 233, 236, 238 ] # + [ 240, 242, 244, 246, 248, 250 ]
 		self.heuristic_stats16 = False
 		self.depth_first_notification = 252
 
-		self.timelimit = 180 # Minutes
+		self.timelimit = 15 # Minutes
 
 		scenario.Scenario.__init__(self)
 
@@ -61,5 +64,17 @@ class JB470( scenario.Scenario ):
 		#self.reverse_spaces_order = True
 		self.flip_spaces_order = True
 
+	def next_seed(self):
+		self.seed = random.randint(0, sys.maxsize)
+
+		if os.environ.get('SEED') != None:
+			self.seed = int(os.environ.get('SEED'))
+			if self.seed == 1:
+				self.seed = 321321 # 252 in 1 sec!
+
+			if self.DEBUG > 0:
+				self.info(" * Init Scenario Env Seed : "+str(self.seed) )
+
+		return self.seed
 
 scenario.global_list.append(JB470)

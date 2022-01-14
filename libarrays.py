@@ -204,7 +204,7 @@ class LibArrays( external_libs.External_Libs ):
 
 			output.append( (0 , "uint64 heartbeat_time_bonus[] = {") )
 			for y in range(H):
-				output.append( (2 , ",".join([format(n, '3') for n in [ int(2*pow(3, (x+y*W)-250)*60) if (x+y*W)>250 else 0 if x+y>0 else 60*self.puzzle.scenario.timelimit for x in range(W)]]) + ( "," if y<(H-1) else "" )) )
+				output.append( (2 , ",".join([format(n, '3') for n in [ int(2*pow(3, (x+y*W)-self.puzzle.scenario.depth_first_notification)*60) if (x+y*W)>self.puzzle.scenario.depth_first_notification else 0 if x+y>0 else 60*self.puzzle.scenario.timelimit for x in range(W)]]) + ( "," if y<(H-1) else "" )) )
 			output.append( (2 , "};") )
 			output.append( (0 , "") )
 			
