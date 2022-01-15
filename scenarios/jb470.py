@@ -16,7 +16,8 @@ class JB470( scenario.Scenario ):
 		self.heuristic_stats16 = False
 		self.depth_first_notification = 252
 
-		self.timelimit = 15 # Minutes
+		#self.timelimit = 15 # Minutes
+		self.timelimit = 5 # Minutes
 
 		scenario.Scenario.__init__(self)
 
@@ -69,8 +70,8 @@ class JB470( scenario.Scenario ):
 
 		if os.environ.get('SEED') != None:
 			self.seed = int(os.environ.get('SEED'))
-			if self.seed == 1:
-				self.seed = 321321 # 252 in 1 sec!
+			if self.seed == 244:
+				self.seed = 8192406586059670907 # 253 in 244 sec!
 
 			if self.DEBUG > 0:
 				self.info(" * Init Scenario Env Seed : "+str(self.seed) )

@@ -264,11 +264,12 @@ class External_Libs( defs.Defs ):
 			( 0, "all: " + self.getNameSO(arch=arch) ),
 			#( 0, "main:"   ),
 			#( 1, "@gcc -I. -L . -s -static ./*.o -o main" ),
-			#( 0, "perf:" ),
-			#( 1, "@perf stat -d ./main" ),
 			( 0, "exe: " + self.getNameExe(arch=arch) ),
+			#( 0, "perf: perf stat -e L1-dcache-loads,L1-dcache-load-misses,cycles,instructions,branches,branch-misses " + self.getNameExe(arch=arch) ),
 			( 0, "prepro: "+ " ".join([ self.getNamePrepro( module=module ) for module in self.modules_names ]) ),
 			( 0, "asm: "+ " ".join([ self.getNameASM( module=module ) for module in self.modules_names ]) ),
+			( 0, "perf: exe" ),
+			( 1, "@perf stat -d " + self.getNameExe(arch=arch) ),
 			]
 
 		# Build the list of module to compile
@@ -332,7 +333,8 @@ class External_Libs( defs.Defs ):
 			] )
 
 		# Link the modules into the executable
-		LD_FILES = " "+ " ".join(self.getNamesO(arch=arch))+" -o "+self.getNameExe(arch=arch)
+		#LD_FILES = " "+ " ".join(self.getNamesO(arch=arch))+" -o "+self.getNameExe(arch=arch)
+		LD_FILES = " "+ "./"+self.LIBFOLDER_PUZZLE+"/*.o" + " -o "+self.getNameExe(arch=arch)
 		output.extend( [ 
 			( 0, self.getNameExe(arch=arch)+": "+ " ".join([ self.getNameO( module=module, arch=arch ) for module in self.modules_names ]) + " " + self.getNameFunctionsUsed() ),
 			( 1, '@echo ' + self.getNameExe(arch=arch)),

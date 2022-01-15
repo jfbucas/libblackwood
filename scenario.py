@@ -56,21 +56,21 @@ class Scenario( defs.Defs ):
 		# Init the space order
 		self.prepare_spaces_order()
 
-		if self.DEBUG_STATIC > 2:
+		if self.DEBUG_STATIC > 0:
 			self.info( " * Spaces order" )
 			self.printArray(self.spaces_order, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
 
 		# Init the spaces sequence
 		self.prepare_spaces_sequence()
 
-		if self.DEBUG_STATIC > 2:
+		if self.DEBUG_STATIC > 0:
 			self.info( " * Spaces sequence" )
 			self.printArray(self.spaces_sequence, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
-
 
 		# Init the spaces references
 		self.prepare_spaces_references()
 		if self.DEBUG_STATIC > 0:
+			self.info( " * Spaces references" )
 			self.printArray(self.spaces_references, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
 		
 		# Once we have the sequence, we can determine the pieces Weights, based on stats
