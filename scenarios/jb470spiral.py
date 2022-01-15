@@ -17,7 +17,7 @@ class JB470Spiral( scenario.Scenario ):
 		self.depth_first_notification = 220
 
 		#self.timelimit = 15 # Minutes
-		self.timelimit = 5 # Minutes
+		self.timelimit = 5*60 # Minutes
 
 		scenario.Scenario.__init__(self)
 
