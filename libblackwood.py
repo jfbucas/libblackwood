@@ -77,6 +77,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			[ "Leave CPU alone",		"leave_cpu_alone",		"LCA" ],
 			[ "Pause",			"pause",			"Pause" ],
 			[ "Wait for Notification",	"wait_for_notification",	"WFN" ],
+			[ "Send a Notification",	"send_a_notification",		"SFN" ],
 			[ "Time Heartbeat",		"heartbeat",			"HB" ],
 			[ "Max number of heartbeats",	"heartbeat_limit", 		"HBLimit" ],
 			[ "Check for Commands",		"check_commands",		"CheckCommands" ],
@@ -206,8 +207,8 @@ class LibBlackwood( external_libs.External_Libs ):
 
 			elif command in [ "p", "pause", "lca" ]:
 				self.LibExt.togglePause( self.cb, 1 )
-			elif command in [ "w", "wfn" ]:
-				self.LibExt.setWFN( self.cb, 1 )
+			elif command in [ "w", "sfn" ]:
+				self.LibExt.setSFN( self.cb, 1 )
 			elif command in [ "q", "quit", "exit" ]:
 				self.LibExt.setTTF( self.cb, 1 )
 
@@ -1304,6 +1305,12 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (3, 'while ((cb->leave_cpu_alone || cb->pause) && !cb->time_to_finish) {' ) )
 				output.append( (4, 'fdo_commands(output, cb);' ), )
 				output.append( (4, 'sleep(1);' ), )
+				output.append( (3, '}' ), )
+				output.append( (0, '' ), )
+				output.append( (3, 'if (cb->send_a_notification) {' ), )
+				output.append( (4, 'if (cb->max_depth_seen == 0) for(i=0;i<WH;i++) cb->board[i] = board[i];') )
+				output.append( (4, 'cb->wait_for_notification = 1;' ) )
+				output.append( (4, 'cb->send_a_notification = 0;' ), )
 				output.append( (3, '}' ), )
 				output.append( (2, '}' ), )
 				output.append( (0, '' ), )
