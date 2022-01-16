@@ -70,8 +70,10 @@ class JB470( scenario.Scenario ):
 
 		if os.environ.get('SEED') != None:
 			self.seed = int(os.environ.get('SEED'))
+			if self.seed == 18:
+				self.seed = 3316111202040243245 # 253 in 18 sec! with PUZZLE=E2ncud
 			if self.seed == 244:
-				self.seed = 8192406586059670907 # 253 in 244 sec!
+				self.seed = 8192406586059670907 # 253 in 244 sec! with PUZZLE=E2ncud
 
 			if self.DEBUG > 0:
 				self.info(" * Init Scenario Env Seed : "+str(self.seed) )
