@@ -1089,7 +1089,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, '// Find the most recent depth older than 1 heartbeat' ),
 				(1, 'for(depth=0; depth < WH/2; depth++) {' ),
 				(2, 'if ( b->nodes_heartbeat[depth] == 0 ) continue;' ),
-				(2, 'if (b->nodes_heartbeat[depth] < b->heartbeat) {' ),
+				(2, 'if (b->nodes_heartbeat[depth] < b->heartbeat-1) {' ),
 				(3, 'b->adaptative_filter_depth = depth;' ),
 				(2, '} else {' ),
 				(3, 'break;' ),
@@ -1098,7 +1098,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(0, '' ),
 				(1, '// Mark the pieces used up to then' ),
 				(1, 'if ( b->adaptative_filter_depth < WH ) {' ),
-				(2, 'for(depth=0; depth < b->adaptative_filter_depth; depth++) {' ),
+				(2, 'for(depth=0; depth <= b->adaptative_filter_depth; depth++) {' ),
 				(3, 'pieces_used[ board[ spaces_sequence[ depth ] ].info.p ] = 1;' ),
 				(2, '}' ),
 				(1, '}' ),
@@ -1107,7 +1107,7 @@ class LibBlackwood( external_libs.External_Libs ):
 
 			output.extend( [
 				#(1, 'DEBUG_PRINT(("Filtering from depth %llu\\n", b->adaptative_filter_depth));' ),
-				#(1, "if (b->adaptative_filter_depth < WH) {" ),
+				(1, "if (b->adaptative_filter_depth < WH) {" ),
 				(2, "dst = 0;" ),
 				(2, "for(src = 0; src < "+str(len(self.puzzle.master_lists_of_rotated_pieces))+"; src++) {" ),
 				(3, "p = b->master_lists_of_union_rotated_pieces[src];" ),
@@ -1121,7 +1121,10 @@ class LibBlackwood( external_libs.External_Libs ):
 				(4, "dst = src+1;"),
 				(3, "}" ),
 				(2, "}" ),
-				#(1, "}" ),
+				(1, "} else {" ),
+				(2, "for(src = 0; src < "+str(len(self.puzzle.master_lists_of_rotated_pieces))+"; src++)" ),
+				(3, "b->master_lists_of_union_rotated_pieces_for_adaptative_filter[src] = b->master_lists_of_union_rotated_pieces[src];" ),
+				(1, "}" ),
 				#(1, 'DEBUG_PRINT(("Filtering from depth %llu used=%llu rejected=%llu\\n", b->adaptative_filter_depth, used, rejected));' ),
 				(0, " " ),
 				] )
@@ -1207,17 +1210,19 @@ class LibBlackwood( external_libs.External_Libs ):
 			(1, "cb->commands |= SHOW_HEARTBEAT;"),
 			(1, "cb->commands |= SHOW_ADAPTATIVE_FILTER;"),
 			(1, "cb->commands |= SHOW_STATS_NODES_COUNT;"),
-			#(1, "cb->commands |= ZERO_STATS_NODES_COUNT;"),
+			(1, "cb->commands |= ZERO_STATS_NODES_COUNT;"),
 			(1, "cb->commands |= SHOW_STATS_PIECES_TRIED_COUNT;"),
-			#(1, "cb->commands |= ZERO_STATS_PIECES_TRIED_COUNT;"),
+			(1, "cb->commands |= ZERO_STATS_PIECES_TRIED_COUNT;"),
 			#(1, "cb->commands |= SHOW_STATS_PIECES_USED_COUNT;"),
 			#(1, "cb->commands |= ZERO_STATS_PIECES_USED_COUNT;"),
-			(1, "cb->commands |= SHOW_STATS_HEURISTIC_PATTERNS_BREAK_COUNT;"),
+			#(1, "cb->commands |= SHOW_STATS_HEURISTIC_PATTERNS_BREAK_COUNT;"),
 			#(1, "cb->commands |= ZERO_STATS_HEURISTIC_PATTERNS_BREAK_COUNT;"),
-			(1, "cb->commands |= SHOW_STATS_HEURISTIC_CONFLICTS_BREAK_COUNT;"),
+			#(1, "cb->commands |= SHOW_STATS_HEURISTIC_CONFLICTS_BREAK_COUNT;"),
 			#(1, "cb->commands |= ZERO_STATS_HEURISTIC_CONFLICTS_BREAK_COUNT;"),
-			#(1, "cb->commands |= SHOW_STATS_ADAPTATIVE_FILTER_COUNT;"),
-			#(1, "cb->commands |= ZERO_STATS_ADAPTATIVE_FILTER_COUNT;"),
+			(1, "cb->commands |= SHOW_STATS_ADAPTATIVE_FILTER_COUNT;"),
+			(1, "cb->commands |= ZERO_STATS_ADAPTATIVE_FILTER_COUNT;"),
+			#(1, "cb->commands |= SHOW_NODES_HEARTBEAT;"),
+			#(1, "cb->commands |= ZERO_NODES_HEARTBEAT;"),
 			(1, "cb->commands |= SHOW_MAX_DEPTH_SEEN;"),
 			(1, "cb->commands |= SHOW_BEST_BOARD_URL;"),
 			] )
@@ -1421,16 +1426,23 @@ class LibBlackwood( external_libs.External_Libs ):
 			#output.append( (3, 'DEBUG_PRINT(("'+" " * depth+' Trying piece : %d\\n", current_piece.info.p))' ))
 			if depth > 0:
 				for i in range(5):
-					if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+					if sum(self.puzzle.scenario.heuristic_patterns_count[i][depth:]) > 0:
 						output.append( (3, "local_cumulative_heuristic_patterns_count_"+str(i)+" = cumulative_heuristic_patterns_count_"+str(i)+"["+d+"-1] + current_piece.info.heuristic_patterns_"+str(i)+";"))
 						if self.puzzle.scenario.heuristic_patterns_count[i][depth] > 0: 
 							output.append( (3, "if (local_cumulative_heuristic_patterns_count_"+str(i)+" < "+str(self.puzzle.scenario.heuristic_patterns_count[i][depth])+" ) { "+ ("cb->stats_heuristic_patterns_break_count[ "+sspace+"]++; " if self.DEBUG>0 else "" )+"break; }"))
+
+			if depth > 0:
 				if self.puzzle.scenario.heuristic_stats16:
 					output.append( (3, "if ((cumulative_heuristic_stats16_count["+d+"-1] + current_piece.info.heuristic_stats16_count) < "+str(self.puzzle.scenario.heuristic_stats16_count[depth])+" ) break;"))
 
-			if len(conflicts_array) > 0:
-				cumul = "" if depth == conflicts_array[0] else "+ cumulative_heuristic_conflicts_count["+d+"-1]"
-				output.append( (3, "if (current_piece.info.heuristic_conflicts "+ cumul +" > "+str(len(conflicts_array))+ ") { "+ ("cb->stats_heuristic_conflicts_break_count[ "+sspace+"]++; " if self.DEBUG>0 else "" )+" break; } // "+str(conflicts_array)))
+			if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
+				conflicts_allowed = self.puzzle.scenario.heuristic_conflicts_count[space]
+				if conflicts_allowed > 0:
+					if self.puzzle.scenario.heuristic_conflicts_count[previous_space] != conflicts_allowed:
+						# if there is an increment in the heuristic, no need to test, it will always pass the test
+						pass
+					else:
+						output.append( (3, "if (current_piece.info.heuristic_conflicts + cumulative_heuristic_conflicts_count["+d+"-1] > "+str(conflicts_allowed)+ ") { "+ ("cb->stats_heuristic_conflicts_break_count[ "+sspace+"]++; " if self.DEBUG>0 else "" )+" break; } // "+str(conflicts_allowed)))
 			
 			output.append( (3, "if (pieces_used[ current_piece.info.p ] != 0) {"))
 			output.append( (4, 'cb->stats_pieces_used_count['+sspace+'] ++;' if self.DEBUG > 0 else "") )
@@ -1440,8 +1452,9 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (3, "board["+sspace+"] = current_piece;"))
 			#output.append( (3, 'DEBUG_PRINT(("'+" "*depth+' Space '+sspace+' - inserting piece : %d \\n", board['+sspace+'].info.p ))'  if self.DEBUG > 1 else "" ))
 			output.append( (3, "pieces_used[ current_piece.info.p ] = 1;" ) )
+
 			for i in range(5):
-				if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+				if sum(self.puzzle.scenario.heuristic_patterns_count[i][depth:]) > 0:
 					#cumul = "" if depth == 0 else "cumulative_heuristic_patterns_count_"+str(i)+"["+d+"-1] +" 
 					#if depth <= self.puzzle.scenario.max_index(self.puzzle.scenario.heuristic_patterns_count[i]): 
 					#output.append( (3, "cumulative_heuristic_patterns_count_"+str(i)+"["+d+"] = "+cumul+" current_piece.info.heuristic_patterns_"+str(i)+";"))
@@ -1449,13 +1462,17 @@ class LibBlackwood( external_libs.External_Libs ):
 						output.append( (3, "cumulative_heuristic_patterns_count_"+str(i)+"["+d+"] = current_piece.info.heuristic_patterns_"+str(i)+";"))
 					else:
 						output.append( (3, "cumulative_heuristic_patterns_count_"+str(i)+"["+d+"] = local_cumulative_heuristic_patterns_count_"+str(i)+";"))
+
 			if self.puzzle.scenario.heuristic_stats16:
 				cumul = "" if depth == 0 else "cumulative_heuristic_stats16_count["+d+"-1] +" 
 				if depth <= self.puzzle.scenario.max_index(self.puzzle.scenario.heuristic_stats16_count): 
 					output.append( (3, "cumulative_heuristic_stats16_count["+d+"] = "+cumul+" current_piece.info.heuristic_stats16_count;"))
-			if len(conflicts_array) > 0:
-				cumul = "" if depth == conflicts_array[0] else "cumulative_heuristic_conflicts_count["+d+"-1] + "
-				output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = "+cumul+" current_piece.info.heuristic_conflicts;"))
+
+			if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
+				conflicts_allowed = self.puzzle.scenario.heuristic_conflicts_count[space]
+				if conflicts_allowed > 0:
+					cumul = "" if depth == self.puzzle.scenario.conflicts_indexes_allowed[0] else "cumulative_heuristic_conflicts_count["+d+"-1] + "
+					output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = "+cumul+" current_piece.info.heuristic_conflicts;"))
 			
 			output.append( (3, "goto depth"+str(depth+1)+";"))
 			output.append( (2, "}"))

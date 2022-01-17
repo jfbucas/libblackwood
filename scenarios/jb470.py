@@ -17,7 +17,7 @@ class JB470( scenario.Scenario ):
 		self.depth_first_notification = 252
 
 		#self.timelimit = 15 # Minutes
-		self.timelimit = 5 # Minutes
+		self.timelimit = 10 # Minutes
 
 		scenario.Scenario.__init__(self)
 

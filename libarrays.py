@@ -196,6 +196,18 @@ class LibArrays( external_libs.External_Libs ):
 					output.append( (2 , "};") )
 					output.append( (0 , "") )
 			
+		# ---------------------
+		if only_signature:
+			if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
+				output.append( (0 , "extern uint64 heuristic_conflicts_count[WH];") )
+		else:
+			if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
+				output.append( (0 , "uint64 heuristic_conflicts_count[] = {") )
+				for y in range(H):
+					output.append( (2 , ",".join([format(n, '3') for n in self.puzzle.scenario.heuristic_conflicts_count[y*W:(y+1)*W]]) + ( "," if y<(H-1) else "" )) )
+				output.append( (2 , "};") )
+				output.append( (0 , "") )
+			
 
 		# ---------------------
 		if only_signature:
@@ -240,7 +252,8 @@ class LibArrays( external_libs.External_Libs ):
 			output.append( (0 , "/* Get Sequence") )
 			tmp = [ " " ] * WH
 			for depth in range(WH):
-				tmp[ self.puzzle.scenario.spaces_sequence[ depth ] ] = "X"
+				#tmp[ self.puzzle.scenario.spaces_sequence[ depth ] ] = "X"
+				tmp[ self.puzzle.scenario.spaces_sequence[ depth ] ] = str(depth)
 				o = self.printArray(tmp, array_w=W, array_h=H, noprint=True)
 				output.append((0, "---[ Sequence " + str(depth) + " ]---\n" + o))
 			output.append( (0 , "*/") )

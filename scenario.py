@@ -25,6 +25,7 @@ class Scenario( defs.Defs ):
 		self.heuristic_patterns_count = []
 		for i in range(5):
 			self.heuristic_patterns_count.append( [0] * self.puzzle.board_wh )
+		self.heuristic_conflicts_count = [0] * self.puzzle.board_wh
 		self.heuristic_stats16_count = [0] * self.puzzle.board_wh
 		self.spaces_order = [None] * self.puzzle.board_wh
 		self.spaces_sequence = [None] * self.puzzle.board_wh
@@ -52,6 +53,7 @@ class Scenario( defs.Defs ):
 				if sum(self.heuristic_patterns_count[i]) > 0:
 					self.printArray(self.heuristic_patterns_count[i], array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
 			#exit()
+		
 		
 		# Init the space order
 		self.prepare_spaces_order()
@@ -84,6 +86,15 @@ class Scenario( defs.Defs ):
 			if self.DEBUG_STATIC > 0:
 				self.info( " * Heuristics for stats16" )
 				self.printArray(self.heuristic_stats16_count, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
+				#exit()
+
+		# Init the conflicts heuristic
+		self.prepare_conflicts_count_heuristics()
+		
+		if self.puzzle.DEBUG_STATIC > 0:
+			self.puzzle.info( " * Conflict count heuristics" )
+			if sum(self.heuristic_conflicts_count) > 0:
+				self.printArray(self.heuristic_conflicts_count, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
 				#exit()
 
 	# ----- Prepare spaces sequence
@@ -182,13 +193,13 @@ class Scenario( defs.Defs ):
 		x = space % self.puzzle.board_w
 		y = space // self.puzzle.board_h
 
-		W=self.puzzle.board_w-1
-		H=self.puzzle.board_h-1
+		W=self.puzzle.board_w
+		H=self.puzzle.board_h
 		WH = W*H
 
 		# From a certain depth, we authorize conflicts (or breaks)
 		conflicts = "" 
-		if depth >= (min(self.conflicts_indexes_allowed) if len(self.conflicts_indexes_allowed) > 0 else WH):
+		if self.heuristic_conflicts_count[space] > 0: 
 			conflicts = "_conflicts"
 
 		master_piece_name = ""
@@ -209,13 +220,13 @@ class Scenario( defs.Defs ):
 		# Is it a corner/border?
 		if master_piece_name == "":
 			if y == 0:
-				if x in [ 0, W ]:
+				if x in [ 0, W-1 ]:
 					master_piece_name = "corner"
 				else:
 					master_piece_name = "border_u"
 
-			elif y == H:
-				if x in [ 0, W ]:
+			elif y == H-1:
+				if x in [ 0, W-1 ]:
 					master_piece_name = "corner"
 				else:
 					master_piece_name = "border_d" + conflicts
@@ -223,7 +234,7 @@ class Scenario( defs.Defs ):
 			else:
 				if x == 0:
 					master_piece_name = "border_l"
-				elif x == W:
+				elif x == W-1:
 					master_piece_name = "border_r" + conflicts
 
 		# Default is center
@@ -234,6 +245,20 @@ class Scenario( defs.Defs ):
 
 		return master_piece_name		
 
+	# ----- Prepare spaces references
+	def prepare_conflicts_count_heuristics( self ):
+		W=self.puzzle.board_w
+		H=self.puzzle.board_h
+		WH = W*H
+		if len(self.conflicts_indexes_allowed) == 0:
+			return
+
+		for depth in range(WH):
+			conflicts_array = [ x for x in self.conflicts_indexes_allowed if x <= depth ]
+			self.heuristic_conflicts_count[ self.spaces_sequence[ depth ] ] = len(conflicts_array)
+
+
+	# ----- The next seed to prepare the pieces
 	def next_seed(self):
 		self.seed = random.randint(0, sys.maxsize)
 
