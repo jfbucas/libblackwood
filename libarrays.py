@@ -60,6 +60,9 @@ class LibArrays( external_libs.External_Libs ):
 		WH=self.puzzle.board_wh
 
 		LAST =  len(self.puzzle.master_lists_of_rotated_pieces)-1
+		if LAST > 65535:
+			self.error("LAST is too big!  => "+str(LAST))
+			exit()
 
 		# ---------------------------------
 		if not only_signature:
@@ -68,10 +71,10 @@ class LibArrays( external_libs.External_Libs ):
 		# ---------------------------------
 		if only_signature:
 			for name,array in self.puzzle.master_index.items():
-				output.append( (0 , "extern uint64 master_index_"+name+"[ "+str(len(array))+" ];") )
+				output.append( (0 , "extern uint16 master_index_"+name+"[ "+str(len(array))+" ];") )
 		else:
 			for name,array in self.puzzle.master_index.items():
-				output.append( (0 , "uint64 master_index_"+name+"[] = {") )
+				output.append( (0 , "uint16 master_index_"+name+"[] = {") )
 			
 				l = len([x for x in self.chunks(array, 1<<self.EDGE_SHIFT_LEFT)])
 				for x in self.chunks(array, 1<<self.EDGE_SHIFT_LEFT):

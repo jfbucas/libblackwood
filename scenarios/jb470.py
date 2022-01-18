@@ -15,6 +15,7 @@ class JB470( scenario.Scenario ):
 		self.conflicts_indexes_allowed = [ 197, 203, 210, 216, 221, 225, 229, 233, 236, 238 ] # + [ 240, 242, 244, 246, 248, 250 ]
 		self.heuristic_stats16 = False
 		self.depth_first_notification = 252
+		#self.use_adaptative_filter_depth = False
 
 		#self.timelimit = 15 # Minutes
 		self.timelimit = 10 # Minutes

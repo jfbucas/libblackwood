@@ -429,7 +429,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				] )
 
 			for name,array in self.puzzle.master_index.items():
-				output.append( (1 , "uint64 master_index_"+name+"[ "+str(len(array))+" ];") )
+				output.append( (1 , "uint16 master_index_"+name+"[ "+str(len(array))+" ];") )
 
 			output.append( (1 , "t_union_rotated_piece master_lists_of_union_rotated_pieces[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
 			output.append( (1 , "t_union_rotated_piece master_lists_of_union_rotated_pieces_for_adaptative_filter[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
@@ -441,10 +441,10 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, "t_union_rotated_piece board[ WH ];"),
 				(0, "" ),
 				(1, "// Time keeping on nodes" ),
-				(1, "uint64 nodes_heartbeat[ WH ];"),
+				(1, "uint16 nodes_heartbeat[ WH ];"),
 				(0, "" ),
 				(1, "// Records at what heartbeat the max_depth_seen have been found" ),
-				(1, "uint64 max_depth_seen_heartbeat[ WH ];"),
+				(1, "uint16 max_depth_seen_heartbeat[ WH ];"),
 				(0, "" ),
 				] )
 
