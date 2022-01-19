@@ -644,8 +644,14 @@ class Puzzle( defs.Defs ):
 				elist = [ (pe[0]) ]
 			elif len(for_ref) == 2:
 				if allow_conflicts:
-					it0 = list(itertools.product([pe[0]],self.colors_no_edge))
-					it1 = list(itertools.product(self.colors_no_edge,[pe[1]]))
+					if pe[0] in self.colors_border:
+						it0 = list(itertools.product([pe[0]],self.colors_center))
+					else:
+						it0 = list(itertools.product([pe[0]],self.colors_no_edge))
+					if pe[1] in self.colors_border:
+						it1 = list(itertools.product(self.colors_center,[pe[1]]))
+					else:
+						it1 = list(itertools.product(self.colors_no_edge,[pe[1]]))
 					elist = list(dict.fromkeys(it0 + it1))
 				else:
 					elist = [ (pe[0], pe[1]) ]
@@ -806,6 +812,8 @@ class Puzzle( defs.Defs ):
 			if (a[i] != None) or (b[i] != None):
 				if (a[i] != None) and (b[i] != None):
 					self.error("Conflict")
+					print( i  % (1<<self.EDGE_SHIFT_LEFT))
+					print( i // (1<<self.EDGE_SHIFT_LEFT))
 					print( a[i] )
 					print( b[i] )
 					exit()
@@ -850,16 +858,16 @@ class Puzzle( defs.Defs ):
 		possible_references_border = list(dict.fromkeys([ self.scenario.spaces_references[s] for s in self.static_spaces_borders]))
 		for (reference, (direction,rotation), conflicts) in itertools.product(possible_references_border, [("u",0),("r",1),("d",2),("l",3)], [False,True]):
 			tmp = self.list_rotated_pieces_to_dict(pieces["border"], rotation=rotation, allow_conflicts=conflicts, reference=reference)
+
+			# Merge the borders u/r/d/l
 			v = self.list_rotated_pieces_to_array(tmp, reference)
-			"""
-			n = "border_"+("_conflicts" if conflicts else "")+"_"+reference
-			print(n)
+			n = "border"+("_conflicts" if conflicts else "")+"_"+reference
 			if n in master_index.keys():
 				master_index[ n ] = self.master_index_array_merge(v, master_index[ n ])
 			else:
 				master_index[ n ] = v
-			"""
-			master_index[ "border_"+direction+("_conflicts" if conflicts else "")+"_"+reference ] = self.list_rotated_pieces_to_array(tmp, reference)
+			
+			#master_index[ "border_"+direction+("_conflicts" if conflicts else "")+"_"+reference ] = self.list_rotated_pieces_to_array(tmp, reference)
 			
 
 		# Center

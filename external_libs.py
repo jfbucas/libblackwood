@@ -43,6 +43,7 @@ class External_Libs( defs.Defs ):
 	LibDep = {}
 	
 	modules_names = None # Library modules names
+	modules_optimize = [] # Library modules names that need to be optimized
 
 	functions_used_list = None
 
@@ -200,14 +201,6 @@ class External_Libs( defs.Defs ):
 			GCC_CMD="/usr/linux-k1om-4.7/bin/x86_64-k1om-linux-gcc"
 
 		GCC_PARAMS  = ""
-
-		
-		if self.DEBUG < 1:
-			GCC_PARAMS += " -Os"
-		else:
-			GCC_PARAMS += " -O0"
-
-
 		#GCC_PARAMS += " -DNL="		# for debugging preprocessor
 		GCC_PARAMS += " -I" + self.LIBFOLDER_PUZZLE + "/"
 		GCC_PARAMS += " "+self.GCC_EXTRA_PARAMS
@@ -215,6 +208,17 @@ class External_Libs( defs.Defs ):
 		GCC_PARAMS += " -s"
 
 		return (GCC_CMD, GCC_PARAMS)
+
+	# ----- Compilation optimization parameter
+	def getGCCOptimize( self, module ):
+
+		gcc_optimize = " -O0"
+		if self.DEBUG < 1:
+			if module in self.modules_optimize: 
+				gcc_optimize = " -Os"
+
+		return gcc_optimize
+
 
 	# ----- Compilation parameters and arguments
 	def getLD( self ):
@@ -274,6 +278,7 @@ class External_Libs( defs.Defs ):
 
 		# Build the list of module to compile
 		for module in self.modules_names:
+			gcc_optimize = self.getGCCOptimize(module)
 
 			# Check that we have something to compile
 			if not os.path.exists( self.getNameC(temp=True, module=module) ):
@@ -303,7 +308,7 @@ class External_Libs( defs.Defs ):
 			output.extend( [ 
 				( 0, self.getNamePrepro( module=module )+": "+self.getNameH()+" "+self.getNameC( module=module ) ),
 				( 1, '@echo ' + self.getNamePrepro( module=module )),
-				( 1, "@" + GCC_CMD + GCC_PARAMS + " -DNL="+NLTAG+" -E " + GCC_FILES ),
+				( 1, "@" + GCC_CMD + GCC_PARAMS + gcc_optimize + " -DNL="+NLTAG+" -E " + GCC_FILES ),
 				( 1, "@sed -i -e 's/"+NLTAG+"/\\n/g' " + self.getNamePrepro( module=module )),
 				] )
 				
@@ -312,7 +317,7 @@ class External_Libs( defs.Defs ):
 			output.extend( [ 
 				( 0, self.getNameASM( module=module )+": "+self.getNameH()+" "+self.getNameC( module=module ) ),
 				( 1, '@echo ' + self.getNameASM( module=module )),
-				( 1, "@" + GCC_CMD + GCC_PARAMS + " -DNL="+NLTAG+" -S -masm=intel " + GCC_FILES),
+				( 1, "@" + GCC_CMD + GCC_PARAMS + gcc_optimize + " -DNL="+NLTAG+" -S -masm=intel " + GCC_FILES),
 				] )
 		
 			# Compile with GCC
@@ -320,7 +325,7 @@ class External_Libs( defs.Defs ):
 			output.extend( [ 
 				( 0, self.getNameO( module=module, arch=arch )+": "+self.getNameH()+" "+self.getNameC( module=module ) ),
 				( 1, '@echo ' + self.getNameO( module=module, arch=arch )),
-				( 1, "@" + GCC_CMD + GCC_PARAMS + GCC_FILES),
+				( 1, "@" + GCC_CMD + GCC_PARAMS + gcc_optimize + GCC_FILES),
 				] )
 
 
@@ -448,12 +453,13 @@ class External_Libs( defs.Defs ):
 	def getHeaderC( self, module=None ):
 
 		(GCC_CMD, GCC_PARAMS) = self.getGCC()
+		gcc_optimize = self.getGCCOptimize(module)
 		#(LD_CMD, LD_PARAMS) = self.getLD()
 		GCC_FILES = " "+self.getNameC(module=module)+" -o "+self.getNameO(module=module, arch=self.ARCH)
 		header = [ 
 			(0, "// This File is Generated"),
 			(0, ""),
-			(0, "/* Compiled with: \n"+ GCC_CMD + "\\\n" + GCC_PARAMS.replace(" ", " \\\n") + GCC_FILES + "\\\n" + "\n*/"),
+			(0, "/* Compiled with: \n"+ GCC_CMD + "\\\n" + GCC_PARAMS.replace(" ", " \\\n") + gcc_optimize.replace(" ", " \\\n") + GCC_FILES + "\\\n" + "\n*/"),
 			#(0, "/* Linked with: \n"+ LD_CMD + "\\\n" + LD_PARAMS.replace(" ", " \\\n") + LD_FILES + "\\\n" + "\n*/"),
 			(0, ""),
 			(0, "#include <"+ self.name +".h>" ),

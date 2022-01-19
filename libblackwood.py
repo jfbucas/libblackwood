@@ -123,6 +123,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		self.GCC_EXTRA_PARAMS = ""
 		self.dependencies = [ "defs", "arrays" ]
 		self.modules_names = self.MACROS_NAMES_A + self.MACROS_NAMES_B
+		self.modules_optimize = [ "generate" ]
 
 		external_libs.External_Libs.__init__( self, skipcompile )
 
@@ -1278,6 +1279,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.extend( [
 				(1, "// ==--==--==--==--[ Reaching depth "+d+" ]--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--== "),
 				(1, '' ),
+				(1, 'asm("# depth '+d+'");' ),
 				(1, 'depth'+d+":  // Labels are ugly, don't do this at home" ),
 				] )
 
@@ -1402,7 +1404,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			if self.puzzle.scenario.use_adaptative_filter_depth:
 				output.append( (2, "index = cb->master_index_"+index_piece_name+"[ "+ref+" ];" ) )
 				#output.append( (2, "if ( "+d+" >= cb->adaptative_filter_depth ) {" ) )
-				output.append( (3, "piece_to_try_next["+d+"] = &(cb->master_lists_of_union_rotated_pieces_for_adaptative_filter[index]);" ) )
+				output.append( (2, "piece_to_try_next["+d+"] = &(cb->master_lists_of_union_rotated_pieces_for_adaptative_filter[index]);" ) )
 				#output.append( (2, "} else {" ) )
 				#output.append( (3, "piece_to_try_next["+d+"] = &(cb->master_lists_of_union_rotated_pieces[index]);" ) )
 				#output.append( (2, "}" ) )
@@ -1412,6 +1414,7 @@ class LibBlackwood( external_libs.External_Libs ):
 
 
 			output.append( (2, "") )
+			output.append( (2, 'asm("# depth_backtrack '+d+'");' ) )
 			output.append( (2, 'depth'+d+"_backtrack:" ) )
 	
 			#if conflicts != "":

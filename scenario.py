@@ -225,18 +225,22 @@ class Scenario( defs.Defs ):
 					master_piece_name = "corner"
 				else:
 					master_piece_name = "border_u"
+					master_piece_name = "border"
 
 			elif y == H-1:
 				if x in [ 0, W-1 ]:
 					master_piece_name = "corner"
 				else:
 					master_piece_name = "border_d" + conflicts
+					master_piece_name = "border" + conflicts
 			    
 			else:
 				if x == 0:
 					master_piece_name = "border_l"
+					master_piece_name = "border"
 				elif x == W-1:
 					master_piece_name = "border_r" + conflicts
+					master_piece_name = "border" + conflicts
 
 		# Default is center
 		if master_piece_name == "":
