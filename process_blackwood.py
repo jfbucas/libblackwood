@@ -1,9 +1,9 @@
-
 # Global libs
 from multiprocessing import Process,Queue
 import threading
 import ctypes
 import time
+import os
 
 # Local libs
 import libblackwood
@@ -79,6 +79,10 @@ class Blackwood_Process( Process ):
 		myLCA = thread_lca.Leave_CPU_Alone_Thread( self.blackwood, period=5, desktop=self.puzzle.DESKTOP )
 		myLCA.start()
 
+		loop_count_limit = 1<<32
+		if os.environ.get('LOOPCOUNTLIMIT') != None:
+			loop_count_limit=int(os.environ.get('LOOPCOUNTLIMIT'))
+			self.puzzle.info("Limiting the number of loops to "+str(loop_count_limit))
 
 		thread_output_filename = ctypes.c_char_p(("generated/"+self.puzzle.HOSTNAME+"/progress_thread_"+'{:0>4d}'.format(self.number)).encode('utf-8'))
 
@@ -90,10 +94,13 @@ class Blackwood_Process( Process ):
 
 		self.queue_child_parent.put("running")
 
-		while not self.blackwood.LibExt.getTTF( self.blackwood.cb ):
+		loop_count = 0
+		while not self.blackwood.LibExt.getTTF( self.blackwood.cb ) and (loop_count < loop_count_limit):
 			self.blackwood.LibExtWrapper( self.blackwood.getFunctionNameFromSignature(l), args, timeit=True )
 			if not self.blackwood.LibExt.getTTF( self.blackwood.cb ):
 				self.blackwood.copy_new_arrays_to_cb()
+			
+			loop_count += 1
 	
 		self.queue_child_parent.put("exit")
 

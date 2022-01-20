@@ -4,6 +4,7 @@ import os
 import time
 import math
 from itertools import combinations
+import subprocess
 
 #
 # Defines various general variables
@@ -138,6 +139,7 @@ class Defs():
 			self.NICE = int(os.environ.get('NICE'))
 		os.nice(self.NICE)
 
+
 		# Generate rainbow colors
 		# For 32 colors
 		nb_rainbow = 32
@@ -156,6 +158,12 @@ class Defs():
 
 		# TRUECOLOR would be better but not available yet in GNU/screen packages
 		#printf "\x1b[38;2;255;100;0mTRUECOLOR\x1b[0m\n"
+
+	# Get the git tag
+	def git( self ):
+		# Get the get version
+		return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
+
 
 	# ----- Debug
 	def printDebug( self, min_debug_level=1, top=0, msg="" ):

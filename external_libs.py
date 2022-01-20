@@ -80,6 +80,8 @@ class External_Libs( defs.Defs ):
 			# Force recompile
 			if os.environ.get('FORCE_COMPILE') != None:
 				self.force_compile = True
+			if os.environ.get('FORCECOMPILE') != None:
+				self.force_compile = True
 
 			if self.force_compile:
 				if os.path.exists(self.getNameSO(arch=self.ARCH)):
@@ -197,6 +199,8 @@ class External_Libs( defs.Defs ):
 
 		if self.ARCH == "":
 			GCC_CMD = "gcc"
+		elif self.ARCH in [ "32", "32b", "32bits" ]:
+			GCC_CMD = "gcc -m32"
 		elif self.ARCH == "k1om":
 			GCC_CMD="/usr/linux-k1om-4.7/bin/x86_64-k1om-linux-gcc"
 

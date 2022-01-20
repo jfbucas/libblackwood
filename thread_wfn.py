@@ -29,6 +29,7 @@ class Wait_For_Notification_Thread(threading.Thread):
 	puzzle = None
 	notification_url = ""
 	stop_wfn_thread = False
+	git = ""
 
 	def __init__(self, libblackwood, puzzle): 
 		threading.Thread.__init__(self)
@@ -45,6 +46,8 @@ class Wait_For_Notification_Thread(threading.Thread):
 			# We do not run if we have no URL to report to
 			self.stop_wfn_thread = True
 			self.puzzle.error(" * Make sure you have defined URL_HOOK to get notifications when a notification is found" )
+
+		self.giturl = "https://github.com/jfbucas/libblackwood/commit/" + self.puzzle.git()
 
 
 	def transmit(self, channel, payload):
@@ -80,6 +83,8 @@ class Wait_For_Notification_Thread(threading.Thread):
 
 		while not self.stop_wfn_thread and not self.libblackwood.LibExt.getTTF(self.libblackwood.cb):
 			if self.libblackwood.LibExt.getWFN(self.libblackwood.cb) != 0:
+
+				
 				self.libblackwood.LibExt.getSolutionURL( self.libblackwood.cb, self.notification_url )
 				if self.puzzle.DEBUG > 3:
 					print(" Now DO SOMETHING with the notification ", self.notification_url.value.decode("utf-8")  )
@@ -110,7 +115,7 @@ class Wait_For_Notification_Thread(threading.Thread):
 				payload="{\"username\":\""+self.puzzle.HOSTNAME+"\","
 				payload+="\"icon_emoji\":\":puzzle:\","
 				payload+="\"channel\":\""+channel+"\","
-				payload+="\"text\":\"@channel [View]("+self.notification_url.value.decode("utf-8")+") "+ str(self.puzzle.scenario)
+				payload+="\"text\":\"@channel [View]("+self.notification_url.value.decode("utf-8")+") "+ "[Git]("+self.giturl+") "+str(self.puzzle.scenario)
 				payload+=" "+str(self.libblackwood.LibExt.getMaxDepthSeen(self.libblackwood.cb))
 				payload+=" "+max_depth_seen_hb
 				payload+="\"}"
