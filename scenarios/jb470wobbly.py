@@ -18,7 +18,7 @@ class JB470Wobbly( scenario.Scenario ):
 		#self.use_adaptative_filter_depth = False
 
 		#self.timelimit = 15 # Minutes
-		self.timelimit = 1 # Minutes
+		self.timelimit = 10 # Minutes
 		
 		new_conflicts_indexes_allowed = self.randomize_index_conflicts_allowed()
 		while len(new_conflicts_indexes_allowed) != len(self.conflicts_indexes_allowed):
