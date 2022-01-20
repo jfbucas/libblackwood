@@ -37,7 +37,7 @@ class JB470Wobbly( scenario.Scenario ):
 		new_conflicts_indexes_allowed = []
 		for i in self.conflicts_indexes_allowed:
 			new_conflicts_indexes_allowed.append( i + random.randint(-2,2) )
-		new_conflicts_indexes_allowed = list(dict.fromkeys(new_conflicts_indexes_allowed))
+		new_conflicts_indexes_allowed = sorted(list(dict.fromkeys(new_conflicts_indexes_allowed)))
 		return new_conflicts_indexes_allowed
 
 	def prepare_patterns_count_heuristics( self ):
