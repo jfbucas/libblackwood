@@ -142,7 +142,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		signatures.extend( self.gen_getSolutionURL_function( only_signature=True ) )
 		signatures.extend( self.gen_getMaxDepthSeenHeartbeat_function( only_signature=True ) )
 		signatures.extend( self.gen_solve_function(only_signature=True) )
-		signatures.extend( self.gen_solveroll_function(only_signature=True) )
+		#signatures.extend( self.gen_solveroll_function(only_signature=True) )
 		signatures.extend( self.gen_do_commands(only_signature=True ) )
 		signatures.extend( self.gen_set_blackwood_arrays_function(only_signature=True ) )
 		
@@ -1736,61 +1736,66 @@ class LibBlackwood( external_libs.External_Libs ):
 		output.append( (2, "") )
 		output.append( (2, 'asm("# depth_backtrack" );' ) )
 		output.append( (2, 'depth_backtrack:' ) )
+		output.append( (2, "if (depth == 0) {"))
 
-		output.append( (2, "while ( piece_to_try_next[depth]->value != 0 ) {"))
-		
-		output.append( (3, 'cb->stats_pieces_tried_count[space] ++;' if self.DEBUG > 0 else "") )
-		
-		output.append( (3, "current_piece = *(piece_to_try_next[depth]);" ))
-		output.append( (3, "piece_to_try_next[depth] ++;"))
-		output.append( (3, "if (depth > 0) {"))
-		for i in range(5):
-			if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
-				output.append( (4, "local_cumulative_heuristic_patterns_count_"+str(i)+" = cumulative_heuristic_patterns_count_"+str(i)+"[depth-1] + current_piece.info.heuristic_patterns_"+str(i)+";"))
-				output.append( (4, "if (local_cumulative_heuristic_patterns_count_"+str(i)+" < heuristic_patterns_count_"+str(i)+"[depth] ) { "+ ("cb->stats_heuristic_patterns_break_count[ space ]++; " if self.DEBUG>0 else "" )+ "break; }"))
+		for depth_zero in [ True, False ]:
+			
+			output.append( (2, "} else {" if not depth_zero else "" ))
 
-		if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
-			output.append( (4, "local_cumulative_heuristic_conflicts_count = cumulative_heuristic_conflicts_count[depth-1] + current_piece.info.heuristic_conflicts;"))
-			output.append( (4, "if (local_cumulative_heuristic_conflicts_count > heuristic_conflicts_count[space]) { "+ ("cb->stats_heuristic_conflicts_break_count[ space ]++; " if self.DEBUG>0 else "" )+" break; }"))
-		output.append( (3, "}"))
+			output.append( (3, "while ( piece_to_try_next[depth]->value != 0 ) {"))
+			
+			output.append( (4, 'cb->stats_pieces_tried_count[space] ++;' if self.DEBUG > 0 else "") )
+			
+			output.append( (4, "current_piece = *(piece_to_try_next[depth]);" ))
+			output.append( (4, "piece_to_try_next[depth] ++;"))
+			if not depth_zero:
+				for i in range(5):
+					if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+						output.append( (4, "local_cumulative_heuristic_patterns_count_"+str(i)+" = cumulative_heuristic_patterns_count_"+str(i)+"[depth-1] + current_piece.info.heuristic_patterns_"+str(i)+";"))
+						output.append( (4, "if (local_cumulative_heuristic_patterns_count_"+str(i)+" < heuristic_patterns_count_"+str(i)+"[depth] ) { "+ ("cb->stats_heuristic_patterns_break_count[ space ]++; " if self.DEBUG>0 else "" )+ "break; }"))
 
-		
-		output.append( (3, "if (pieces_used[ current_piece.info.p ] != 0) {"))
-		output.append( (4, 'cb->stats_pieces_used_count[space] ++;' if self.DEBUG > 0 else "") )
-		output.append( (4, "continue;"))
-		output.append( (3, "}"))
-		
-		output.append( (3, "board[space] = current_piece;"))
-		output.append( (3, "pieces_used[ current_piece.info.p ] = 1;" ) )
+				if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
+					output.append( (4, "local_cumulative_heuristic_conflicts_count = cumulative_heuristic_conflicts_count[depth-1] + current_piece.info.heuristic_conflicts;"))
+					output.append( (4, "if (local_cumulative_heuristic_conflicts_count > heuristic_conflicts_count[space]) { "+ ("cb->stats_heuristic_conflicts_break_count[ space ]++; " if self.DEBUG>0 else "" )+" break; }"))
+			
+			output.append( (4, "if (pieces_used[ current_piece.info.p ] != 0) {"))
+			output.append( (5, 'cb->stats_pieces_used_count[space] ++;' if self.DEBUG > 0 else "") )
+			output.append( (5, "continue;"))
+			output.append( (4, "}"))
+			
+			output.append( (4, "board[space] = current_piece;"))
+			output.append( (4, "pieces_used[ current_piece.info.p ] = 1;" ) )
 
-		output.append( (3, "if (depth > 0) {"))
-		for i in range(5):
-			if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
-				output.append( (4, "cumulative_heuristic_patterns_count_"+str(i)+"[depth] = local_cumulative_heuristic_patterns_count_"+str(i)+";"))
-		if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
-			output.append( (4, "cumulative_heuristic_conflicts_count[ depth ] = local_cumulative_heuristic_conflicts_count;"))
-		output.append( (3, "} else {"))
-		for i in range(5):
-			if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
-				output.append( (4, "cumulative_heuristic_patterns_count_"+str(i)+"[depth] = current_piece.info.heuristic_patterns_"+str(i)+";"))
-		if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
-			output.append( (4, "cumulative_heuristic_conflicts_count[ depth ] = current_piece.info.heuristic_conflicts;"))
-		output.append( (3, "}"))
+			if depth_zero:
+				for i in range(5):
+					if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+						output.append( (4, "cumulative_heuristic_patterns_count_"+str(i)+"[depth] = current_piece.info.heuristic_patterns_"+str(i)+";"))
+				if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
+					output.append( (4, "cumulative_heuristic_conflicts_count[ depth ] = current_piece.info.heuristic_conflicts;"))
+			else:
+				for i in range(5):
+					if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+						output.append( (4, "cumulative_heuristic_patterns_count_"+str(i)+"[depth] = local_cumulative_heuristic_patterns_count_"+str(i)+";"))
+				if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
+					output.append( (4, "cumulative_heuristic_conflicts_count[ depth ] = local_cumulative_heuristic_conflicts_count;"))
 
-		output.append( (3, "depth ++;"))
-		output.append( (3, 'space = spaces_sequence[ depth ];') )
-		output.append( (3, "goto depth_loop;"))
+			output.append( (4, "depth ++;"))
+			output.append( (4, 'space = spaces_sequence[ depth ];') )
+			output.append( (4, "goto depth_loop;"))
+			output.append( (3, "}"))
+
+
+			if not depth_zero:
+				output.append( (3, "depth --;"))
+				output.append( (3, 'space = spaces_sequence[ depth ];') )
+				output.append( (3, 'pieces_used[ board[ space ].info.p ] = 0;' ))
+				output.append( (3, 'board[ space ].value = 0;' ))
+				output.append( (3, "goto depth_backtrack;" ))
+			else:
+				output.append( (3, "goto depth_end;" ))
+
 		output.append( (2, "}"))
 
-		output.append( (2, "if ( depth > 0 ) {"))
-		output.append( (3, "depth --;"))
-		output.append( (3, 'space = spaces_sequence[ depth ];') )
-		output.append( (3, 'pieces_used[ board[ space ].info.p ] = 0;' ))
-		output.append( (3, 'board[ space ].value = 0;' ))
-		output.append( (3, "goto depth_backtrack;" ))
-		output.append( (2, "}"))
-		output.append( (2, ""))
-		output.append( (2, "goto depth_end;" ))
 
 		output.extend( [
 			(1, 'depth_timelimit:' ),
@@ -1891,7 +1896,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		self.writeGen( gen, self.gen_print_functions(only_signature=True) )
 		self.writeGen( gen, self.gen_filter_function( only_signature=True ) )
 		self.writeGen( gen, self.gen_solve_function(only_signature=True) )
-		self.writeGen( gen, self.gen_solveroll_function(only_signature=True) )
+		#self.writeGen( gen, self.gen_solveroll_function(only_signature=True) )
 
 		self.writeGen( gen, self.getFooterH() )
 
@@ -1934,7 +1939,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		elif macro_name == "generate":
 			self.writeGen( gen, self.gen_filter_function( only_signature=False ) )
 			self.writeGen( gen, self.gen_solve_function(only_signature=False) )
-			self.writeGen( gen, self.gen_solveroll_function(only_signature=False) )
+			#self.writeGen( gen, self.gen_solveroll_function(only_signature=False) )
 
 
 		elif macro_name == "main":
