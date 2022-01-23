@@ -142,6 +142,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		signatures.extend( self.gen_getSolutionURL_function( only_signature=True ) )
 		signatures.extend( self.gen_getMaxDepthSeenHeartbeat_function( only_signature=True ) )
 		signatures.extend( self.gen_solve_function(only_signature=True) )
+		signatures.extend( self.gen_solveroll_function(only_signature=True) )
 		signatures.extend( self.gen_do_commands(only_signature=True ) )
 		signatures.extend( self.gen_set_blackwood_arrays_function(only_signature=True ) )
 		
@@ -431,6 +432,7 @@ class LibBlackwood( external_libs.External_Libs ):
 
 			for name,array in self.puzzle.master_index.items():
 				output.append( (1 , "uint16 master_index_"+name+"[ "+str(len(array))+" ];") )
+			output.append( (1 , "uint16 * spaces_master_index[ WH ];") )
 
 			output.append( (1 , "t_union_rotated_piece master_lists_of_union_rotated_pieces[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
 			output.append( (1 , "t_union_rotated_piece master_lists_of_union_rotated_pieces_for_adaptative_filter[ "+str(len(self.puzzle.master_lists_of_rotated_pieces))+" ];") )
@@ -683,6 +685,9 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		for name,array in self.puzzle.master_index.items():
 			output.append( (1 , "for(i=0; i<"+str(len(array))+"; i++) b->master_index_"+name+"[i] = master_index_"+name+"[i];") )
+
+		for space in range(self.puzzle.board_wh):
+			output.append( (1 , "b->spaces_master_index["+str(space)+"] = b->master_index_"+self.puzzle.scenario.get_index_piece_name(space)+";") )
 
 		output.append( (1 , "for(i=0; i<"+str(len(self.puzzle.master_lists_of_rotated_pieces))+"; i++) b->master_lists_of_union_rotated_pieces[i] = master_lists_of_union_rotated_pieces[i];") )
 
@@ -1138,8 +1143,6 @@ class LibBlackwood( external_libs.External_Libs ):
 
 
 
-
-
 	# ----- Generate Scoriste function
 	def gen_solve_function( self, only_signature=False):
 
@@ -1367,9 +1370,6 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (0, '' ), )
 
 
-			index_piece_name = self.puzzle.scenario.get_index_piece_name(depth)
-			conflicts_array = [ x for x in self.puzzle.scenario.conflicts_indexes_allowed if x <= depth ]
-			conflicts = "_conflicts" if len(conflicts_array) > 0 else ""
 			
 			Side = {}
 			Side["u"] = "0" if space < W          else "board["+sspace+"-W].info.d";
@@ -1400,6 +1400,7 @@ class LibBlackwood( external_libs.External_Libs ):
 					total_hp += 'cumulative_heuristic_patterns_count_'+str(i)+'['+d+'-1] + '
 
 			# Unlikely we need the master_lists_of_union_rotated_pieces_hp before reaching the max_index
+			index_piece_name = self.puzzle.scenario.get_index_piece_name(depth)
 			#output.append( (2, "piece_to_try_next["+d+"] = &(cb->"+master_lists_of_union_rotated_pieces+"[cb->master_index_"+index_piece_name+"[ "+ref+" ] ]);" ) )
 			if self.puzzle.scenario.use_adaptative_filter_depth:
 				output.append( (2, "index = cb->master_index_"+index_piece_name+"[ "+ref+" ];" ) )
@@ -1481,9 +1482,315 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (2, "}"))
 
 			output.append( (2, 'pieces_used[ board['+sprevious_space+'].info.p ] = 0;' if depth > 0 else "" ))
-			output.append( (2, 'board['+sprevious_space+'].value = 0;' if depth > 0 else "" ))
+			#output.append( (2, 'board['+sprevious_space+'].value = 0;' if depth > 0 else "" ))
 			output.append( (2, ""))
 			output.append( (2, "goto depth"+str(depth-1)+"_backtrack;" if depth > 0 else "goto depth_end;" ))
+
+		output.extend( [
+			(1, 'depth_timelimit:' ),
+			(2, 'DEBUG_PRINT(("x-]'+self.XTermInfo+'  Time Limit Reached  '+self.XTermNormal+'[-x\\n"));' ),
+			(2, 'cb->wait_for_notification = 1;' ),
+			(2, 'sleep(5); // Wait for the WFN thread' ),
+			] )
+
+		output.extend( [
+			(1, '// Where we find ourselves again' ),
+			(1, 'depth_end:' ),
+			(2, 'DEBUG_PRINT(("x-]'+self.XTermInfo+'  End of Solve  '+self.XTermNormal+'[-x\\n"));' ),
+			] )
+
+
+		output.extend( [
+			(1, 'fdo_commands(output, cb);' ),
+			(1, 'if (output != stdout) {' ),
+			(2, 'fclose(output);' ),
+			(1, '}' ),
+
+			(1, 'if (was_allocated) {'), 
+			(1, 'DEBUG_PRINT(("Free Memory\\n"));'), 
+			(2, 'cb = free_blackwood(cb);'), 
+			(2, 'global_blackwood = NULL;'), 
+			(1, '}'), 
+
+			(0, '}' ),
+			] )
+
+		return output
+
+
+	# ----- Generate Scoriste function
+	def gen_solveroll_function( self, only_signature=False):
+
+		output = []
+
+		output.extend( [ 
+			(0, "int solveroll("),
+			(1, "charp thread_output_filename,"),
+			(1, "p_blackwood cb"),
+			] )
+
+		if only_signature:
+			output.append( (1, ');') )
+			return output
+
+		W=self.puzzle.board_w
+		H=self.puzzle.board_h
+		WH=self.puzzle.board_wh
+
+		output.append( (1, ") {") )
+		output.extend( [
+			(1, 'uint64 i, index, previous_score, depth, previous_depth, space, previous_space;' ),
+			(1, 'FILE * output;' ),
+			(1, 'uint16 ref, ref_u, ref_r;' ),
+			(1, 'uint8 was_allocated;' ),
+			(1, 'uint8 pieces_used[WH];' ),
+			(1, "uint8 local_cumulative_heuristic_conflicts_count;" ),
+			] )
+
+		for i in range(5):
+			if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+				output.append( (1, "uint8 local_cumulative_heuristic_patterns_count_"+str(i)+";" ) )
+				output.append( (1, "uint8 cumulative_heuristic_patterns_count_"+str(i)+"[WH];" ) )
+
+		output.extend( [
+			(1, 'uint8 cumulative_heuristic_conflicts_count[WH];' ),
+			(1, 'p_union_rotated_piece piece_to_try_next[WH];' ),
+			(1, 't_union_rotated_piece current_piece;' ),
+			(1, 't_union_rotated_piece board['+str(WH)+'];' ),
+			(1, '' ),
+			
+			(1, 'was_allocated = 0;' ),
+			(1, 'if (cb == NULL) {' ),
+			#(2, 'DEBUG_PRINT(("Allocating Memory\\n"));'), 
+			(2, 'cb = (p_blackwood)allocate_blackwood();'), 
+			(2, 'was_allocated = 1;' ),
+			(1, '}'), 
+			(1, 'global_blackwood = cb;'), 
+			(1, '' ),
+			] )
+
+		output.append( (1, "// Clear blackwood structure") )
+		for (c, n, s) in self.FLAGS:
+			if c == "Seed":
+				continue
+			output.append( (1, "cb->"+n+" = 0;") )
+
+		output.extend( [
+			(1, "cb->heartbeat = 1; // We start at 1 for the adaptative filter "),
+			(1, "cb->heartbeat_limit = heartbeat_time_bonus[ 0 ];"),
+			] )
+
+		if self.DEBUG > 0:
+ 			output.extend( [
+			(1, "cb->commands |= CLEAR_SCREEN;"),
+			(1, "cb->commands |= SHOW_TITLE;"),
+			(1, "cb->commands |= SHOW_SEED;"),
+			(1, "cb->commands |= SHOW_HEARTBEAT;"),
+			(1, "cb->commands |= SHOW_ADAPTATIVE_FILTER;"),
+			(1, "cb->commands |= SHOW_STATS_NODES_COUNT;"),
+			(1, "cb->commands |= ZERO_STATS_NODES_COUNT;"),
+			(1, "cb->commands |= SHOW_STATS_PIECES_TRIED_COUNT;"),
+			(1, "cb->commands |= ZERO_STATS_PIECES_TRIED_COUNT;"),
+			#(1, "cb->commands |= SHOW_STATS_PIECES_USED_COUNT;"),
+			#(1, "cb->commands |= ZERO_STATS_PIECES_USED_COUNT;"),
+			#(1, "cb->commands |= SHOW_STATS_HEURISTIC_PATTERNS_BREAK_COUNT;"),
+			#(1, "cb->commands |= ZERO_STATS_HEURISTIC_PATTERNS_BREAK_COUNT;"),
+			#(1, "cb->commands |= SHOW_STATS_HEURISTIC_CONFLICTS_BREAK_COUNT;"),
+			#(1, "cb->commands |= ZERO_STATS_HEURISTIC_CONFLICTS_BREAK_COUNT;"),
+			(1, "cb->commands |= SHOW_STATS_ADAPTATIVE_FILTER_COUNT;"),
+			(1, "cb->commands |= ZERO_STATS_ADAPTATIVE_FILTER_COUNT;"),
+			#(1, "cb->commands |= SHOW_NODES_HEARTBEAT;"),
+			#(1, "cb->commands |= ZERO_NODES_HEARTBEAT;"),
+			(1, "cb->commands |= SHOW_MAX_DEPTH_SEEN;"),
+			(1, "cb->commands |= SHOW_BEST_BOARD_URL;"),
+			] )
+
+		output.extend( [
+			(1, 'for(i=0;i<WH;i++) cb->board[i].value = 0;' ),
+			(1, 'for(i=0;i<WH;i++) cb->stats_nodes_count[i] = 0;' ),
+			(1, 'for(i=0;i<WH;i++) cb->stats_pieces_tried_count[i] = 0;' ),
+			(1, 'for(i=0;i<WH;i++) cb->stats_pieces_used_count[i] = 0;' ),
+			(1, 'for(i=0;i<WH;i++) cb->stats_heuristic_patterns_break_count[i] = 0;' ),
+			(1, 'for(i=0;i<WH;i++) cb->stats_heuristic_conflicts_break_count[i] = 0;' ),
+			(1, 'for(i=0;i<WH;i++) cb->nodes_heartbeat[i] = 0;' ),
+			(1, 'for(i=0;i<WH;i++) cb->max_depth_seen_heartbeat[i] = 0;' ),
+			(1, 'cb->adaptative_filter_depth = WH;' ),
+			(2, ""),
+
+			(1, '// Output' ),
+			(1, 'output = stdout;' ),
+			(1, 'if (thread_output_filename != NULL) {' ),
+			(2, 'output = fopen( thread_output_filename, "a" );' ),
+			(2, 'if (!output) { printf("Can\'t open %s\\n", thread_output_filename); return -1; }' ),
+			(1, '}' ),
+			(1, '' ),
+			(1, '// Local variables' ),
+			(1, 'for(i=0;i<WH;i++){' ),
+			(2, 'pieces_used[i] = 0;' ),
+			] )
+
+		for i in range(5):
+			if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+				output.append( (2, 'cumulative_heuristic_patterns_count_'+str(i)+'[i] = 0;' ) )
+
+		output.extend( [
+			(2, 'cumulative_heuristic_conflicts_count[i] = 0;' ),
+			(2, 'piece_to_try_next[i] = &(cb->master_lists_of_union_rotated_pieces['+self.xffff+']);' ),
+			(2, 'board[i].value = 0;' ),
+			(1, '}' ),
+			(1, '' ),
+			(1, 'DEBUG_PRINT(("x-]'+self.XTermInfo+'  Starting Solve  '+self.XTermNormal+'[-x\\n"));' ),
+			(1, '' ),
+			])
+
+		output.extend( [
+			(1, 'depth = 0;' ),
+			(1, 'space = spaces_sequence[ depth ];'),
+			(1, 'depth_loop:' ),
+			] )
+
+		output.append( (2, 'if (cb->max_depth_seen < depth) {') )
+		output.append( (3, 'cb->max_depth_seen = depth;' ) )
+		output.append( (3, 'cb->max_depth_seen_heartbeat[depth] = cb->heartbeat;') )
+		if self.DEBUG > 0:
+			output.append( (3, 'for(i=0;i<WH;i++) cb->board[i] = board[i];') )
+
+		output.append( (3, 'if (cb->max_depth_seen > '+str(self.puzzle.scenario.depth_first_notification)+') {' ) )
+		output.append( (4, 'cb->heartbeat_limit += heartbeat_time_bonus[ depth ];') )
+		output.append( (4, 'for(i=0;i<WH;i++) cb->board[i] = board[i];') )
+		output.append( (4, 'cb->wait_for_notification = 1;' ) )
+		output.append( (4, 'cb->commands |= SAVE_MAX_DEPTH_SEEN_ONCE;' ) )
+		output.append( (4, 'cb->commands |= SHOW_MAX_DEPTH_SEEN_ONCE;' ) )
+		output.append( (4, 'cb->commands |= SHOW_BEST_BOARD_URL_ONCE;' ) )
+		output.append( (4, 'fdo_commands(output, cb);' ) )
+		output.append( (4, 'if (cb->max_depth_seen == WH) {' ) )
+		output.append( (5, '// We have a complete puzzle !!' ) )
+		output.append( (5, 'for(i=0;(i<3000000) && (!cb->time_to_finish);i++) {') )
+		output.append( (6, 'fdo_commands(output, cb);' ) )
+		output.append( (6, 'sleep(1); // Wait for the WFN thread' ) )
+		output.append( (6, "goto depth_end;"))
+		output.append( (5, '}' ) )
+		output.append( (4, '}' ) )
+		output.append( (3, '}' ) )
+		output.append( (2, '}' ) )
+		output.append( (0, '' ) )
+
+		output.append( (2, 'cb->stats_nodes_count[space] ++;') )
+		output.append( (2, '' ), )
+
+		output.append( (2, 'cb->nodes_heartbeat[depth] = cb->heartbeat;') )
+		if self.puzzle.scenario.use_adaptative_filter_depth:
+			output.append( (2, "// if we backtrack further than the current adaptative_filter_depth, we reset" ) )
+			output.append( (2, "if ((cb->adaptative_filter_depth > depth) && (depth < WH/2)) {") )
+			output.append( (3, 'cb->adaptative_filter_depth = WH;'), )
+			output.append( (3, 'cb->stats_adaptative_filter_count[space] ++;' if self.DEBUG > 0 else "") )
+			output.append( (3, 'do_adaptative_filter(cb, board);') )
+			output.append( (2, '}'), )
+			output.append( (2, '' ), )
+
+		output.append( (2, '' ) )
+		output.append( (2, 'if (cb->check_commands) {') )
+		output.append( (3, 'cb->check_commands = 0;' ), )
+		output.append( (0, '' ) )
+		output.append( (3, 'if (cb->time_to_finish) goto depth_end;' ) )
+		output.append( (0, '' ) )
+		output.append( (3, 'if (cb->heartbeat > cb->heartbeat_limit) goto depth_timelimit;' ) )
+		output.append( (0, '' ) )
+		if self.puzzle.scenario.use_adaptative_filter_depth:
+			output.append( (3, '// Adaptive Filter when a command is received, usually the heartbeat' ) )
+			output.append( (3, 'cb->stats_adaptative_filter_count[space] ++;' if self.DEBUG > 0 else "") )
+			output.append( (3, 'do_adaptative_filter(cb, board);') )
+		output.append( (0, '' ) )
+		output.append( (3, 'fdo_commands(output, cb);' ), )
+		output.append( (0, '' ) )
+		output.append( (3, 'while ((cb->leave_cpu_alone || cb->pause) && !cb->time_to_finish) {' ) )
+		output.append( (4, 'fdo_commands(output, cb);' ), )
+		output.append( (4, 'sleep(1);' ), )
+		output.append( (3, '}' ), )
+		output.append( (0, '' ), )
+		output.append( (3, 'if (cb->send_a_notification) {' ), )
+		output.append( (4, 'if (cb->max_depth_seen == 0) for(i=0;i<WH;i++) cb->board[i] = board[i];') )
+		output.append( (4, 'cb->wait_for_notification = 1;' ) )
+		output.append( (4, 'cb->send_a_notification = 0;' ), )
+		output.append( (3, '}' ), )
+		output.append( (2, '}' ), )
+		output.append( (0, '' ), )
+
+		for r in self.puzzle.scenario.spaces_references:
+			if r not in [ "ur" ]:
+				print("Must have only Up-Right references")
+				exit()
+
+		output.append( (2, "if (space      <    W) {ref_u = 0;} else {ref_u = board[space-W].info.d;}" ) )
+		output.append( (2, "if (space % W == W -1) {ref_r = 0;} else {ref_r = board[space+1].info.l;}" ) )
+		output.append( (2, "ref = (ref_u << EDGE_SHIFT_LEFT) + ref_r;" ) )
+
+		if self.puzzle.scenario.use_adaptative_filter_depth:
+			output.append( (2, "index = cb->spaces_master_index[ space ][ ref ];" ) )
+			output.append( (2, "piece_to_try_next[depth] = &(cb->master_lists_of_union_rotated_pieces_for_adaptative_filter[index]);" ) )
+		else:
+			output.append( (2, "index = cb->spaces_master_index[ space ][ ref ];" ) )
+			output.append( (2, "piece_to_try_next[depth] = &(cb->master_lists_of_union_rotated_pieces[index]);" ) )
+
+
+		output.append( (2, "") )
+		output.append( (2, 'asm("# depth_backtrack" );' ) )
+		output.append( (2, 'depth_backtrack:' ) )
+
+		output.append( (2, "while ( piece_to_try_next[depth]->value != 0 ) {"))
+		
+		output.append( (3, 'cb->stats_pieces_tried_count[space] ++;' if self.DEBUG > 0 else "") )
+		
+		output.append( (3, "current_piece = *(piece_to_try_next[depth]);" ))
+		output.append( (3, "piece_to_try_next[depth] ++;"))
+		output.append( (3, "if (depth > 0) {"))
+		for i in range(5):
+			if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+				output.append( (4, "local_cumulative_heuristic_patterns_count_"+str(i)+" = cumulative_heuristic_patterns_count_"+str(i)+"[depth-1] + current_piece.info.heuristic_patterns_"+str(i)+";"))
+				output.append( (4, "if (local_cumulative_heuristic_patterns_count_"+str(i)+" < heuristic_patterns_count_"+str(i)+"[depth] ) { "+ ("cb->stats_heuristic_patterns_break_count[ space ]++; " if self.DEBUG>0 else "" )+ "break; }"))
+
+		if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
+			output.append( (4, "local_cumulative_heuristic_conflicts_count = cumulative_heuristic_conflicts_count[depth-1] + current_piece.info.heuristic_conflicts;"))
+			output.append( (4, "if (local_cumulative_heuristic_conflicts_count > heuristic_conflicts_count[space]) { "+ ("cb->stats_heuristic_conflicts_break_count[ space ]++; " if self.DEBUG>0 else "" )+" break; }"))
+		output.append( (3, "}"))
+
+		
+		output.append( (3, "if (pieces_used[ current_piece.info.p ] != 0) {"))
+		output.append( (4, 'cb->stats_pieces_used_count[space] ++;' if self.DEBUG > 0 else "") )
+		output.append( (4, "continue;"))
+		output.append( (3, "}"))
+		
+		output.append( (3, "board[space] = current_piece;"))
+		output.append( (3, "pieces_used[ current_piece.info.p ] = 1;" ) )
+
+		output.append( (3, "if (depth > 0) {"))
+		for i in range(5):
+			if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+				output.append( (4, "cumulative_heuristic_patterns_count_"+str(i)+"[depth] = local_cumulative_heuristic_patterns_count_"+str(i)+";"))
+		if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
+			output.append( (4, "cumulative_heuristic_conflicts_count[ depth ] = local_cumulative_heuristic_conflicts_count;"))
+		output.append( (3, "} else {"))
+		for i in range(5):
+			if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+				output.append( (4, "cumulative_heuristic_patterns_count_"+str(i)+"[depth] = current_piece.info.heuristic_patterns_"+str(i)+";"))
+		if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
+			output.append( (4, "cumulative_heuristic_conflicts_count[ depth ] = current_piece.info.heuristic_conflicts;"))
+		output.append( (3, "}"))
+
+		output.append( (3, "depth ++;"))
+		output.append( (3, 'space = spaces_sequence[ depth ];') )
+		output.append( (3, "goto depth_loop;"))
+		output.append( (2, "}"))
+
+		output.append( (2, "if ( depth > 0 ) {"))
+		output.append( (3, "depth --;"))
+		output.append( (3, 'space = spaces_sequence[ depth ];') )
+		output.append( (3, 'pieces_used[ board[ space ].info.p ] = 0;' ))
+		output.append( (3, 'board[ space ].value = 0;' ))
+		output.append( (3, "goto depth_backtrack;" ))
+		output.append( (2, "}"))
+		output.append( (2, ""))
+		output.append( (2, "goto depth_end;" ))
 
 		output.extend( [
 			(1, 'depth_timelimit:' ),
@@ -1539,6 +1846,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			(1, 'if (signal(SIGUSR1, sig_handler) == SIG_ERR) printf("\\nUnable to catch SIGUSR1\\n");' ),
 			(1, 'if (signal(SIGUSR2, sig_handler) == SIG_ERR) printf("\\nUnable to catch SIGUSR2\\n");' ),
 			(1, '' ),
+			#(1, 'return solveroll(NULL, NULL);'), 
 			(1, 'return solve(NULL, NULL);'), 
 			(1, '' ),
 			(0, '}' ),
@@ -1583,6 +1891,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		self.writeGen( gen, self.gen_print_functions(only_signature=True) )
 		self.writeGen( gen, self.gen_filter_function( only_signature=True ) )
 		self.writeGen( gen, self.gen_solve_function(only_signature=True) )
+		self.writeGen( gen, self.gen_solveroll_function(only_signature=True) )
 
 		self.writeGen( gen, self.getFooterH() )
 
@@ -1625,6 +1934,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		elif macro_name == "generate":
 			self.writeGen( gen, self.gen_filter_function( only_signature=False ) )
 			self.writeGen( gen, self.gen_solve_function(only_signature=False) )
+			self.writeGen( gen, self.gen_solveroll_function(only_signature=False) )
 
 
 		elif macro_name == "main":
@@ -1672,6 +1982,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		self.copy_new_arrays_to_cb()
 
 		l = self.gen_solve_function( only_signature=True )
+		#l = self.gen_solveroll_function( only_signature=True )
 		args = []
 		loc = locals()
 		for pname in self.getParametersNamesFromSignature(l):

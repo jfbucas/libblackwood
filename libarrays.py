@@ -225,19 +225,19 @@ class LibArrays( external_libs.External_Libs ):
 			
 
 		# ---------------------
-		if not only_signature:
-
-			output.append( (0 , "/* Get Index Piece Name") )
+		if only_signature:
+			output.append( (0 , "extern uint16 * spaces_master_index[WH];") )
+		else:
+			output.append( (0 , "uint16 * spaces_master_index[] = {") )
 			array = [ "" ] * WH
 			for y in range(H):
-				l = "// "
 				for x in range(W):
 					d = x+y*W
-					array[ self.puzzle.scenario.spaces_sequence[d] ] += format(self.puzzle.scenario.get_index_piece_name(x+y*W), "19")
+					array[ self.puzzle.scenario.spaces_sequence[d] ] += format("master_index_"+self.puzzle.scenario.get_index_piece_name(x+y*W)+",", "19")
 			for y in range(H):
-				l = "// "+" ".join(array[y*W:(y+1)*W])
-				output.append( (0 , l) )
-			output.append( (0 , "*/") )
+				l = " ".join(array[y*W:(y+1)*W])
+				output.append( (1, l) )
+			output.append( (0 , "};") )
 			output.append( (0 , "") )
 			
 
