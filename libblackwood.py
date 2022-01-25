@@ -895,23 +895,25 @@ class LibBlackwood( external_libs.External_Libs ):
 				(2, "if (b->board[ space ].value == 0) continue;"),
 				] )
 
+			(u_unshift, r_unshift, d_unshift, l_unshift) = self.puzzle.scenario.edges_unshift_from_references()
+
 			if self.puzzle.upside_down:
 				output.extend( [
 					(2, "// Insert the piece upside-down"),
 					(2, "url_pieces[ WH-1-space ] = b->board[ space ].info.p+1;"), # Real pieces are numbered from 1 
-					(2, "patterns[ (WH-1-space)*4 + 0 ] = b->board[ space ].info.d; // Down"),
-					(2, "patterns[ (WH-1-space)*4 + 1 ] = b->board[ space ].info.l; // Left"),
-					(2, "patterns[ (WH-1-space)*4 + 2 ] = b->board[ space ].info.u; // Up"),
-					(2, "patterns[ (WH-1-space)*4 + 3 ] = b->board[ space ].info.r; // Right"),
+					(2, "patterns[ (WH-1-space)*4 + 0 ] = b->board[ space ].info.d"+d_unshift+"; // Down"),
+					(2, "patterns[ (WH-1-space)*4 + 1 ] = b->board[ space ].info.l"+l_unshift+"; // Left"),
+					(2, "patterns[ (WH-1-space)*4 + 2 ] = b->board[ space ].info.u"+u_unshift+"; // Up"),
+					(2, "patterns[ (WH-1-space)*4 + 3 ] = b->board[ space ].info.r"+r_unshift+"; // Right"),
 					] )
 			else:
 				output.extend( [
 					(2, "// Insert the piece"),
 					(2, "url_pieces[ space ] = b->board[ space ].info.p+1;"), # Real pieces are numbered from 1 
-					(2, "patterns[ space*4 + 0 ] = b->board[ space ].info.u; // Up"),
-					(2, "patterns[ space*4 + 1 ] = b->board[ space ].info.r; // Right"),
-					(2, "patterns[ space*4 + 2 ] = b->board[ space ].info.d; // Down"),
-					(2, "patterns[ space*4 + 3 ] = b->board[ space ].info.l; // Left"),
+					(2, "patterns[ space*4 + 0 ] = b->board[ space ].info.u"+u_unshift+"; // Up"),
+					(2, "patterns[ space*4 + 1 ] = b->board[ space ].info.r"+r_unshift+"; // Right"),
+					(2, "patterns[ space*4 + 2 ] = b->board[ space ].info.d"+d_unshift+"; // Down"),
+					(2, "patterns[ space*4 + 3 ] = b->board[ space ].info.l"+l_unshift+"; // Left"),
 					] )
 
 			output.extend( [
@@ -1385,13 +1387,15 @@ class LibBlackwood( external_libs.External_Libs ):
 				ref = Side[for_ref[0]]
 				strref = Side[for_ref[0]]+ ", 0"
 			elif len(for_ref) == 2:
-				ref = "("+Side[for_ref[0]]+" << EDGE_SHIFT_LEFT) + "+Side[for_ref[1]]
+				ref = "("+Side[for_ref[0]]+" << EDGE_SHIFT_LEFT) | "+Side[for_ref[1]]
+				if len(self.puzzle.scenario.possible_references) == 1:
+					ref = Side[for_ref[0]]+" | "+Side[for_ref[1]]
 				strref = Side[for_ref[0]]+" , "+Side[for_ref[1]]
 			elif len(for_ref) == 3:
-				ref = "((("+Side[for_ref[0]]+" << EDGE_SHIFT_LEFT) + "+Side[for_ref[1]]+") << EDGE_SHIFT_LEFT) + "+Side[for_ref[2]]
+				ref = "((("+Side[for_ref[0]]+" << EDGE_SHIFT_LEFT) | "+Side[for_ref[1]]+") << EDGE_SHIFT_LEFT) | "+Side[for_ref[2]]
 				strref = "0, 0"
 			elif len(for_ref) == 4:
-				ref = "((("+Side[for_ref[0]]+" << EDGE_SHIFT_LEFT) + "+Side[for_ref[1]]+") << EDGE_SHIFT_LEFT) + "+Side[for_ref[2]]
+				ref = "((("+Side[for_ref[0]]+" << EDGE_SHIFT_LEFT) | "+Side[for_ref[1]]+") << EDGE_SHIFT_LEFT) | "+Side[for_ref[2]]
 				strref = "0, 0"
 
 			total_hp = ""

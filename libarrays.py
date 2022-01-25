@@ -89,13 +89,15 @@ class LibArrays( external_libs.External_Libs ):
 			output.append( (0, "// master_all_rotated_pieces") )
 			output.append( (1 , "#define MAURPNULL { .value = 0 }" )) 
 
+			(u_shift, r_shift, d_shift, l_shift) = self.puzzle.scenario.edges_shift_from_references()
+
 			total_heuristic_patterns = [0] * self.puzzle.board_wh
 			l = sorted(self.puzzle.master_all_rotated_pieces.keys())
 			n = 0
 			for y in l:
 				x = self.puzzle.master_all_rotated_pieces[y]
 
-				edges = ", .u ="+format(x.u, "3")+ ", .r ="+format(x.r, "3")+ ", .d ="+format(x.d, "3")+ ",  .l ="+format(x.l, "3")
+				edges = ", .u ="+format(x.u, "3")+u_shift+ ", .r ="+format(x.r, "3")+r_shift+ ", .d ="+format(x.d, "3")+d_shift+ ",  .l ="+format(x.l, "3")+l_shift
 
 				heuristic_patterns = ""
 				total_heuristic_patterns[ x.p ] = 0
@@ -286,15 +288,18 @@ class LibArrays( external_libs.External_Libs ):
 			if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
 				heuristic_patterns += "uint8 heuristic_patterns_"+str(i)+";"
 
+
+		(u_type, r_type, d_type, l_type) = self.puzzle.scenario.edges_types_from_references()
+
 		output.extend( [
 			( 0, "// Rotated Piece Union" ),
 			( 0, "union union_rotated_piece {" ),
 			( 1,	"struct {" ),
+			( 2,		u_type + " u;" ),
+			( 2,		r_type + " r;" ),
+			( 2,		d_type + " d;" ),
+			( 2,		l_type + " l;" ),
 			( 2,		"uint8 p;" ),
-			( 2,		"uint8 u;" ),
-			( 2,		"uint8 r;" ),
-			( 2,		"uint8 d;" ),
-			( 2,		"uint8 l;" ),
 			( 2,		heuristic_stats16 ),
 			( 2,		heuristic_patterns ),
 			( 2,		"uint8 heuristic_conflicts;" ),

@@ -75,6 +75,7 @@ class Scenario( defs.Defs ):
 		if self.DEBUG_STATIC > 0:
 			self.info( " * Spaces references" )
 			self.printArray(self.spaces_references, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
+		self.possible_references = list(dict.fromkeys(self.spaces_references))
 		
 		# Once we have the sequence, we can determine the pieces Weights, based on stats
 		if self.heuristic_stats16:
@@ -262,6 +263,52 @@ class Scenario( defs.Defs ):
 			conflicts_array = [ x for x in self.conflicts_indexes_allowed if x <= depth ]
 			self.heuristic_conflicts_count[ self.spaces_sequence[ depth ] ] = len(conflicts_array)
 
+	# ----- 
+	def edges_types_from_references( self ):
+		u_type = r_type = d_type = l_type = "uint8"
+		if len(self.possible_references) == 1:
+			if self.possible_references[0] == "ur":
+				d_type = "uint16"
+			elif self.possible_references[0] == "rd":
+				l_type = "uint16"
+			elif self.possible_references[0] == "dl":
+				u_type = "uint16"
+			elif self.possible_references[0] == "lu":
+				r_type = "uint16"
+
+		return (u_type, r_type, d_type, l_type)
+
+	# ----- 
+	def edges_shift_from_references( self ):
+		u_shift = r_shift = d_shift = l_shift = ""
+		if len(self.possible_references) == 1:
+			if self.possible_references[0] == "ur":
+				d_shift = " << EDGE_SHIFT_LEFT"
+			elif self.possible_references[0] == "rd":
+				l_shift = " << EDGE_SHIFT_LEFT"
+			elif self.possible_references[0] == "dl":
+				u_shift = " << EDGE_SHIFT_LEFT"
+			elif self.possible_references[0] == "lu":
+				r_shift = " << EDGE_SHIFT_LEFT"
+
+		return (u_shift, r_shift, d_shift, l_shift)
+
+	# ----- 
+	def edges_unshift_from_references( self ):
+		u_shift = r_shift = d_shift = l_shift = ""
+		if len(self.possible_references) == 1:
+			if self.possible_references[0] == "ur":
+				d_shift = " >> EDGE_SHIFT_LEFT"
+			elif self.possible_references[0] == "rd":
+				l_shift = " >> EDGE_SHIFT_LEFT"
+			elif self.possible_references[0] == "dl":
+				u_shift = " >> EDGE_SHIFT_LEFT"
+			elif self.possible_references[0] == "lu":
+				r_shift = " >> EDGE_SHIFT_LEFT"
+
+		return (u_shift, r_shift, d_shift, l_shift)
+
+	
 
 	# ----- The next seed to prepare the pieces
 	def next_seed(self):
