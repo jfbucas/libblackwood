@@ -1,0 +1,58 @@
+#!/bin/bash
+
+SERVERS="$(cat cluster)" 
+
+screen_head() {
+	echo '# This file helps monitoring using GNU/screen -- GENERATED'
+	echo 'hardstatus alwayslastline'
+	echo "hardstatus string '%{= kG}[ %{G}%H %{g}][%= %{=kw}%?%-Lw%?%{r}(%{W}%n*%f%t%?(%u)%?%{r})%{w}%?%+Lw%?%?%= %{g}][%{B}%Y-%m-%d %{W}%c %{g}]'"
+	echo 'vbell_msg "Beep beep ...................wwwwwwwwwwwwwwwwwwwwwwwwaaaaaaaaaaaaaaaaaaaaaoommmm."'
+}
+
+
+(
+screen_head
+
+i=1
+for m in $SERVERS; do
+	echo "screen $i ssh -t $m \"cd libblackwood; screen bash -c 'while :; do git pull; killall -9 main.py; FORCE_COMPILE=1 SCENARIO=jb470 ./main.py; sleep 5; done'\""
+	((i++))
+done
+
+) > generated/screen.run
+
+
+#########################################################################################################################
+
+(
+screen_head
+
+i=1
+for m in $SERVERS; do
+	echo "screen $i ssh -t $m \"screen -r\""
+	((i++))
+done
+
+) > generated/screen.moins-aire
+
+#########################################################################################################################
+
+(
+screen_head
+
+i=1
+for m in $SERVERS; do
+	echo "screen $i ssh -t $m \"screen -x\""
+	((i++))
+done
+
+) > generated/screen.moins-ikse
+
+
+#########################################################################################################################
+
+case "$1" in
+	"-r" ) screen -c generated/screen.moins-aire;;
+	"-x" ) screen -c generated/screen.moins-ikse;;
+	"" ) screen -c generated/screen.run;;
+esac
