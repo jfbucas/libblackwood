@@ -15,7 +15,8 @@ screen_head
 
 i=1
 for m in $SERVERS; do
-	echo "screen $i ssh -t $m \"cd libblackwood; screen bash -c 'while :; do git pull; killall -9 main.py; FORCE_COMPILE=1 SCENARIO=jb470 ./main.py; sleep 5; done'\""
+	s="${m##*160.6.}"
+	echo "screen -t $s $i ssh -t $m \"cd libblackwood; screen bash -c 'while :; do git pull; killall -9 main.py; FORCE_COMPILE=1 SCENARIO=jb470 ./main.py; sleep 5; done'\""
 	((i++))
 done
 
@@ -29,7 +30,8 @@ screen_head
 
 i=1
 for m in $SERVERS; do
-	echo "screen $i ssh -t $m \"screen -r\""
+	s="${m##*160.6.}"
+	echo "screen -t $s $i ssh -t $m \"screen -r\""
 	((i++))
 done
 
@@ -42,7 +44,8 @@ screen_head
 
 i=1
 for m in $SERVERS; do
-	echo "screen $i ssh -t $m \"screen -x\""
+	s="${m##*160.6.}"
+	echo "screen -t $s $i ssh -t $m \"screen -x\""
 	((i++))
 done
 
