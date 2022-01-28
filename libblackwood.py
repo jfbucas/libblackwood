@@ -1487,7 +1487,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.extend( [ (1, 'printf("'+str(self.LibDep['arrays'].getStruct())+'\\n");'), ] )
 			for (fname, vname, uname, flag)  in self.STATS:
 				vtname = vname.replace("stats_", "stats_total_")
-				output.extend( [ (1, 'if (cb->'+vtname+' > 0) { printf("%llu '+uname+'\\n", cb->'+vtname+'); }'), ] )
+				output.extend( [ (1, 'if (cb->'+vtname+' > 0) { printf("%llu '+uname+'\\n", cb->'+vtname+' / cb->heartbeat); }'), ] )
 
 		output.extend( [
 			(1, 'fdo_commands(output, cb);' ),

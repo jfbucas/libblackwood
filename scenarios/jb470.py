@@ -17,7 +17,7 @@ class JB470( scenario.Scenario ):
 		self.depth_first_notification = 252
 		#self.use_adaptative_filter_depth = False
 
-		self.timelimit = 1 # Minutes
+		self.timelimit = 15 # Minutes
 		#self.timelimit = 10 # Minutes
 
 		scenario.Scenario.__init__(self)
