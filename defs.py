@@ -18,6 +18,7 @@ class Defs():
 	DEBUG = 0
 	DEBUG_STATIC = 0
 	DEBUG_TIME = 0
+	DEBUG_STATS = 0
 
 	NICE = 19
 	
@@ -122,6 +123,12 @@ class Defs():
 			self.DEBUG_STATIC = int(os.environ.get('DEBUG_STATIC'))
 			if self.DEBUG_STATIC > 0:
 				print(self.XTermEnv+'[ Debug Static Data:', self.DEBUG_STATIC, ']', self.XTermNormal)
+
+		self.DEBUG_STATS = self.DEBUG
+		if os.environ.get('DEBUG_STATS') != None:
+			self.DEBUG_STATS = int(os.environ.get('DEBUG_STATS'))
+			if self.DEBUG_STATS > 0:
+				print(self.XTermEnv+'[ Debug Stats mode enabled :', self.DEBUG_STATS, ']', self.XTermNormal)
 
 		if os.environ.get('HOSTNAME') != None:
 			self.HOSTNAME = os.environ.get('HOSTNAME')

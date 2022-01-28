@@ -93,6 +93,19 @@ class LibBlackwood( external_libs.External_Libs ):
 			[ "Seed",			"seed",				"Seed" ],
 		]
 
+	STATS =	[
+			("StatsNodesCount", "stats_nodes_count", "nodes/s", "STATS_NODES_COUNT"),
+			("StatsPiecesTriedCount", "stats_pieces_tried_count", "pieces tried/s", "STATS_PIECES_TRIED_COUNT"),
+			("StatsPiecesUsedCount", "stats_pieces_used_count", "pieces already in use/s", "STATS_PIECES_USED_COUNT"),
+			("StatsHeuristicPatternsBreakCount", "stats_heuristic_patterns_break_count", "heuristic patterns breaks/s", "STATS_HEURISTIC_PATTERNS_BREAK_COUNT"),
+			("StatsHeuristicConflictsBreakCount", "stats_heuristic_conflicts_break_count", "heuristic conflicts breaks/s", "STATS_HEURISTIC_CONFLICTS_BREAK_COUNT"),
+			("StatsAdaptativeFilterCount", "stats_adaptative_filter_count", "adaptative filters/s", "STATS_ADAPTATIVE_FILTER_COUNT"),
+		]
+
+	ARRAYS = STATS + [
+			("NodesHeartbeat", "nodes_heartbeat", "heartbeats", "NODES_HEARTBEAT"),
+		]
+
 	def __init__( self, puzzle, extra_name="", skipcompile=False ):
 
 		self.name = "libblackwood"
@@ -287,72 +300,24 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, 'if (b->commands & SHOW_ADAPTATIVE_FILTER)' ),
 				(2, prefix+'printf( '+out+' "Adaptative Filter Depth: %llu '+ ("(filtered=%llu)" if self.DEBUG>0 else "")+ '\\n", b->adaptative_filter_depth'+ (', b->stats_last_adaptative_filter_rejected' if self.DEBUG>0 else "") + ');' ),
 				(0, '' ),
+				] )
 
+			for (fname, vname, uname, flag)  in self.STATS:
+				vtname = vname.replace("stats_", "stats_total_")
 
-				# SHOW/ZERO NODES_COUNT
-				(1, 'if (b->commands & SHOW_STATS_NODES_COUNT)' ),
-				(2, prefix+'printStatsNodesCount( '+out+' b );' ),
+				output.extend( [
+				(1, 'if (b->commands & SHOW_'+flag+')' ),
+				(2, prefix+'print'+fname+'( '+out+' b );' ),
 				(0, '' ),
 
-				(1, 'if (b->commands & ZERO_STATS_NODES_COUNT)' ),
-				(2, 'for(i=0;i<WH;i++) b->stats_nodes_count[i] = 0;' ),
+				(1, 'if (b->commands & ZERO_'+flag+')' ),
+				(2, 'for(i=0;i<WH;i++) { b->'+vtname+' += b->'+vname+'[i]; b->'+vname+'[i] = 0; }' ),
 				(0, '' ),
-
-				# SHOW/ZERO PIECES_COUNT
-				(1, 'if (b->commands & SHOW_STATS_PIECES_TRIED_COUNT)' ),
-				(2, prefix+'printStatsPiecesTriedCount( '+out+' b );' ),
-				(0, '' ),
-
-				(1, 'if (b->commands & ZERO_STATS_PIECES_TRIED_COUNT)' ),
-				(2, 'for(i=0;i<WH;i++) b->stats_pieces_tried_count[i] = 0;' ),
-				(0, '' ),
-
-				# SHOW/ZERO PIECES_USED_COUNT
-				(1, 'if (b->commands & SHOW_STATS_PIECES_USED_COUNT)' ),
-				(2, prefix+'printStatsPiecesUsedCount( '+out+' b );' ),
-				(0, '' ),
-
-				(1, 'if (b->commands & ZERO_STATS_PIECES_USED_COUNT)' ),
-				(2, 'for(i=0;i<WH;i++) b->stats_pieces_used_count[i] = 0;' ),
-				(0, '' ),
-
-				# SHOW/ZERO HEURISTIC_PATTERNS_BREAK_COUNT
-				(1, 'if (b->commands & SHOW_STATS_HEURISTIC_PATTERNS_BREAK_COUNT)' ),
-				(2, prefix+'printStatsHeuristicPatternsBreakCount( '+out+' b );' ),
-				(0, '' ),
-
-				(1, 'if (b->commands & ZERO_STATS_HEURISTIC_PATTERNS_BREAK_COUNT)' ),
-				(2, 'for(i=0;i<WH;i++) b->stats_heuristic_patterns_break_count[i] = 0;' ),
-				(0, '' ),
-
-				# SHOW/ZERO HEURISTIC_CONFLICTS_BREAK_COUNT
-				(1, 'if (b->commands & SHOW_STATS_HEURISTIC_CONFLICTS_BREAK_COUNT)' ),
-				(2, prefix+'printStatsHeuristicConflictsBreakCount( '+out+' b );' ),
-				(0, '' ),
-
-				(1, 'if (b->commands & ZERO_STATS_HEURISTIC_CONFLICTS_BREAK_COUNT)' ),
-				(2, 'for(i=0;i<WH;i++) b->stats_heuristic_conflicts_break_count[i] = 0;' ),
-				(0, '' ),
-
-				# SHOW/ZERO ADAPTATIVE_FILTER_COUNT
-				(1, 'if (b->commands & SHOW_STATS_ADAPTATIVE_FILTER_COUNT)' ),
-				(2, prefix+'printStatsAdaptativeFilterCount( '+out+' b );' ),
-				(0, '' ),
-
-				(1, 'if (b->commands & ZERO_STATS_ADAPTATIVE_FILTER_COUNT)' ),
-				(2, 'for(i=0;i<WH;i++) b->stats_adaptative_filter_count[i] = 0;' ),
-				(0, '' ),
-
-				# SHOW/ZERO NODES_HEARTBEAT
-				(1, 'if (b->commands & SHOW_NODES_HEARTBEAT)' ),
-				(2, prefix+'printNodesHeartbeat( '+out+' b );' ),
-				(0, '' ),
-
-				(1, 'if (b->commands & ZERO_NODES_HEARTBEAT)' ),
-				(2, 'for(i=0;i<WH;i++) b->nodes_heartbeat[i] = 0;' ),
-				(0, '' ),
+				] )
 
 
+
+			output.extend( [
 				# SHOW BEST_BOARD
 				(1, 'if (b->commands & (SHOW_BEST_BOARD_URL | SHOW_BEST_BOARD_URL_ONCE) ) {' ),
 				(2, 'if (b->max_depth_seen > 0)' ),
@@ -451,14 +416,17 @@ class LibBlackwood( external_libs.External_Libs ):
 				(0, "" ),
 				] )
 
+
+			for (fname, vname, uname, flag)  in self.STATS:
+				vtname = vname.replace("stats_", "stats_total_")
+				output.extend( [
+				(1, "// Statistics "+uname ),
+				(1, "uint64 "+vtname+";"),
+				(1, "uint64 "+vname+"[ WH ];"),
+				(0, "" ),
+				] )
+
 			output.extend( [
-				(1, "// Statistics" ),
-				(1, "uint64 stats_nodes_count[ WH ];"),
-				(1, "uint64 stats_pieces_tried_count[ WH ];"),
-				(1, "uint64 stats_pieces_used_count[ WH ];"),
-				(1, "uint64 stats_heuristic_patterns_break_count[ WH ];"),
-				(1, "uint64 stats_heuristic_conflicts_break_count[ WH ];"),
-				(1, "uint64 stats_adaptative_filter_count[ WH ];"),
 				(1, "uint64 stats_last_adaptative_filter_rejected;"),
 				(0, "" ),
 				] )
@@ -941,14 +909,7 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		output = []
 
-		for (prefix, (fname, vname, uname))  in itertools.product([ "", "s", "f" ], [
-			("StatsNodesCount", "stats_nodes_count", "nodes/s"),
-			("StatsPiecesTriedCount", "stats_pieces_tried_count", "pieces tried/s"),
-			("StatsPiecesUsedCount", "stats_pieces_used_count", "pieces already in use/s"),
-			("StatsHeuristicPatternsBreakCount", "stats_heuristic_patterns_break_count", "heuristic patterns breaks/s"),
-			("StatsHeuristicConflictsBreakCount", "stats_heuristic_conflicts_break_count", "heuristic conflicts breaks/s"),
-			("StatsAdaptativeFilterCount", "stats_adaptative_filter_count", "adaptative filters/s"),
-			("NodesHeartbeat", "nodes_heartbeat", "heartbeats") ]):
+		for (prefix, (fname, vname, uname, flag))  in itertools.product([ "", "s", "f" ], self.ARRAYS):
 
 			if prefix == "":
 				out = ""
@@ -1177,9 +1138,6 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (1, "uint8 local_cumulative_heuristic_patterns_count_"+str(i)+";" ) )
 				output.append( (1, "uint8 cumulative_heuristic_patterns_count_"+str(i)+"[WH];" ) )
 
-		if self.puzzle.scenario.heuristic_stats16:
-			output.append( (1, 'uint8 cumulative_heuristic_stats16_count[WH];' ) )
-
 		output.extend( [
 			(1, 'uint8 cumulative_heuristic_conflicts_count[WH];' ),
 			(1, 'p_union_rotated_piece piece_to_try_next[WH];' ),
@@ -1210,6 +1168,16 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		if self.DEBUG > 0:
  			output.extend( [
+			(1, "cb->commands |= ZERO_STATS_NODES_COUNT;"),
+			(1, "cb->commands |= ZERO_STATS_PIECES_TRIED_COUNT;"),
+			(1, "cb->commands |= ZERO_STATS_PIECES_USED_COUNT;"),
+			(1, "cb->commands |= ZERO_STATS_HEURISTIC_PATTERNS_BREAK_COUNT;"),
+			(1, "cb->commands |= ZERO_STATS_HEURISTIC_CONFLICTS_BREAK_COUNT;"),
+			(1, "cb->commands |= ZERO_STATS_ADAPTATIVE_FILTER_COUNT;"),
+			] )
+
+		if self.DEBUG > 1:
+ 			output.extend( [
 			(1, "cb->commands |= CLEAR_SCREEN;"),
 			(1, "cb->commands |= SHOW_TITLE;"),
 			(1, "cb->commands |= SHOW_SEED;"),
@@ -1235,16 +1203,22 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		output.extend( [
 			(1, 'for(i=0;i<WH;i++) cb->board[i].value = 0;' ),
-			(1, 'for(i=0;i<WH;i++) cb->stats_nodes_count[i] = 0;' ),
-			(1, 'for(i=0;i<WH;i++) cb->stats_pieces_tried_count[i] = 0;' ),
-			(1, 'for(i=0;i<WH;i++) cb->stats_pieces_used_count[i] = 0;' ),
-			(1, 'for(i=0;i<WH;i++) cb->stats_heuristic_patterns_break_count[i] = 0;' ),
-			(1, 'for(i=0;i<WH;i++) cb->stats_heuristic_conflicts_break_count[i] = 0;' ),
 			(1, 'for(i=0;i<WH;i++) cb->nodes_heartbeat[i] = 0;' ),
 			(1, 'for(i=0;i<WH;i++) cb->max_depth_seen_heartbeat[i] = 0;' ),
 			(1, 'cb->adaptative_filter_depth = WH;' ),
 			(2, ""),
+			] )
 
+		for (fname, vname, uname, flag)  in self.STATS:
+			vtname = vname.replace("stats_", "stats_total_")
+			output.extend( [
+				(1, 'cb->'+vtname+" = 0;"),
+				(1, 'for(i=0;i<WH;i++) cb->'+vname+'[i] = 0;' ),
+				(0, "" ),
+				] )
+
+
+		output.extend( [
 			(1, '// Output' ),
 			(1, 'output = stdout;' ),
 			(1, 'if (thread_output_filename != NULL) {' ),
@@ -1260,9 +1234,6 @@ class LibBlackwood( external_libs.External_Libs ):
 		for i in range(5):
 			if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
 				output.append( (2, 'cumulative_heuristic_patterns_count_'+str(i)+'[i] = 0;' ) )
-
-		if self.puzzle.scenario.heuristic_stats16:
-			output.append( (2, 'cumulative_heuristic_stats16_count[i] = 0;' ) )
 
 		output.extend( [
 			(2, 'cumulative_heuristic_conflicts_count[i] = 0;' ),
@@ -1328,7 +1299,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			space = self.puzzle.scenario.spaces_sequence[ depth ]
 			sspace = str(space)
 
-			output.append( (2, 'cb->stats_nodes_count['+sspace+'] ++;' if self.DEBUG > 0 else "") )
+			output.append( (2, 'cb->stats_nodes_count['+sspace+'] ++;' if self.DEBUG_STATS > 0 else "") )
 			output.append( (2, '' ), )
 
 			output.append( (2, 'cb->nodes_heartbeat['+d+'] = cb->heartbeat;' if (self.DEBUG > 0) or (depth < (WH//2)) else "") )
@@ -1336,7 +1307,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (2, "// if we backtrack further than the current adaptative_filter_depth, we reset" ) )
 				output.append( (2, "if (cb->adaptative_filter_depth > "+d+") {") )
 				output.append( (3, 'cb->adaptative_filter_depth = WH;'), )
-				output.append( (3, 'cb->stats_adaptative_filter_count['+sspace+'] ++;' if self.DEBUG > 0 else "") )
+				output.append( (3, 'cb->stats_adaptative_filter_count['+sspace+'] ++;' if self.DEBUG_STATS > 0 else "") )
 				output.append( (3, 'do_adaptative_filter(cb, board);') )
 				output.append( (2, '}'), )
 				output.append( (2, '' ), )
@@ -1353,7 +1324,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (0, '' ) )
 				if self.puzzle.scenario.use_adaptative_filter_depth:
 					output.append( (3, '// Adaptive Filter when a command is received, usually the heartbeat' ) )
-					output.append( (3, 'cb->stats_adaptative_filter_count['+sspace+'] ++;' if self.DEBUG > 0 else "") )
+					output.append( (3, 'cb->stats_adaptative_filter_count['+sspace+'] ++;' if self.DEBUG_STATS > 0 else "") )
 					output.append( (3, 'do_adaptative_filter(cb, board);') )
 					output.append( (0, '' ) )
 				output.append( (3, 'fdo_commands(output, cb);' ), )
@@ -1427,7 +1398,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			#output.append( (2, 'DEBUG_PRINT(("'+ " "*depth +str(depth)+'\\n"))' ))
 			output.append( (2, "while ( piece_to_try_next["+d+"]->value != 0 ) {"))
 			
-			output.append( (3, 'cb->stats_pieces_tried_count['+sspace+'] ++;' if self.DEBUG > 0 else "") )
+			output.append( (3, 'cb->stats_pieces_tried_count['+sspace+'] ++;' if self.DEBUG_STATS > 0 else "") )
 			
 			output.append( (3, "current_piece = *(piece_to_try_next["+d+"]);" ))
 			output.append( (3, "piece_to_try_next["+d+"] ++;"))
@@ -1437,11 +1408,8 @@ class LibBlackwood( external_libs.External_Libs ):
 					if sum(self.puzzle.scenario.heuristic_patterns_count[i][depth:]) > 0:
 						output.append( (3, "local_cumulative_heuristic_patterns_count_"+str(i)+" = cumulative_heuristic_patterns_count_"+str(i)+"["+d+"-1] + current_piece.info.heuristic_patterns_"+str(i)+";"))
 						if self.puzzle.scenario.heuristic_patterns_count[i][depth] > 0: 
-							output.append( (3, "if (local_cumulative_heuristic_patterns_count_"+str(i)+" < "+str(self.puzzle.scenario.heuristic_patterns_count[i][depth])+" ) { "+ ("cb->stats_heuristic_patterns_break_count[ "+sspace+"]++; " if self.DEBUG>0 else "" )+"break; }"))
+							output.append( (3, "if (local_cumulative_heuristic_patterns_count_"+str(i)+" < "+str(self.puzzle.scenario.heuristic_patterns_count[i][depth])+" ) { "+ ("cb->stats_heuristic_patterns_break_count[ "+sspace+"]++; " if self.DEBUG_STATS > 0 else "" )+"break; }"))
 
-			if depth > 0:
-				if self.puzzle.scenario.heuristic_stats16:
-					output.append( (3, "if ((cumulative_heuristic_stats16_count["+d+"-1] + current_piece.info.heuristic_stats16_count) < "+str(self.puzzle.scenario.heuristic_stats16_count[depth])+" ) break;"))
 
 			if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
 				conflicts_allowed = self.puzzle.scenario.heuristic_conflicts_count[space]
@@ -1450,10 +1418,10 @@ class LibBlackwood( external_libs.External_Libs ):
 						# if there is an increment in the heuristic, no need to test, it will always pass the test
 						pass
 					else:
-						output.append( (3, "if (current_piece.info.heuristic_conflicts + cumulative_heuristic_conflicts_count["+d+"-1] > "+str(conflicts_allowed)+ ") { "+ ("cb->stats_heuristic_conflicts_break_count[ "+sspace+"]++; " if self.DEBUG>0 else "" )+" break; } // "+str(conflicts_allowed)))
+						output.append( (3, "if (current_piece.info.heuristic_conflicts + cumulative_heuristic_conflicts_count["+d+"-1] > "+str(conflicts_allowed)+ ") { "+ ("cb->stats_heuristic_conflicts_break_count[ "+sspace+"]++; " if self.DEBUG_STATS>0 else "" )+" break; } // "+str(conflicts_allowed)))
 			
 			output.append( (3, "if (pieces_used[ current_piece.info.p ] != 0) {"))
-			output.append( (4, 'cb->stats_pieces_used_count['+sspace+'] ++;' if self.DEBUG > 0 else "") )
+			output.append( (4, 'cb->stats_pieces_used_count['+sspace+'] ++;' if self.DEBUG_STATS > 0 else "") )
 			output.append( (4, "continue;"))
 			output.append( (3, "}"))
 			
@@ -1470,11 +1438,6 @@ class LibBlackwood( external_libs.External_Libs ):
 						output.append( (3, "cumulative_heuristic_patterns_count_"+str(i)+"["+d+"] = current_piece.info.heuristic_patterns_"+str(i)+";"))
 					else:
 						output.append( (3, "cumulative_heuristic_patterns_count_"+str(i)+"["+d+"] = local_cumulative_heuristic_patterns_count_"+str(i)+";"))
-
-			if self.puzzle.scenario.heuristic_stats16:
-				cumul = "" if depth == 0 else "cumulative_heuristic_stats16_count["+d+"-1] +" 
-				if depth <= self.puzzle.scenario.max_index(self.puzzle.scenario.heuristic_stats16_count): 
-					output.append( (3, "cumulative_heuristic_stats16_count["+d+"] = "+cumul+" current_piece.info.heuristic_stats16_count;"))
 
 			if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
 				conflicts_allowed = self.puzzle.scenario.heuristic_conflicts_count[space]
@@ -1493,6 +1456,9 @@ class LibBlackwood( external_libs.External_Libs ):
 		output.extend( [
 			(1, 'depth_timelimit:' ),
 			(2, 'DEBUG_PRINT(("x-]'+self.XTermInfo+'  Time Limit Reached  '+self.XTermNormal+'[-x\\n"));' ),
+			] )
+		if os.environ.get('NOTIFY_END') != None:
+			output.extend( [
 			(2, 'cb->wait_for_notification = 1;' ),
 			(2, 'sleep(5); // Wait for the WFN thread' ),
 			] )
@@ -1504,12 +1470,33 @@ class LibBlackwood( external_libs.External_Libs ):
 			] )
 
 
+		if self.DEBUG_STATS > 0:
+			# Sum the stats
+			output.extend( [
+				(1, "cb->commands = 0;"),
+				] )
+			for (fname, vname, uname, flag)  in self.STATS:
+				output.extend( [
+					(1, "cb->commands |= ZERO_"+flag+";"),
+					] )
+
+			output.extend( [
+				(1, 'fdo_commands(output, cb);' ),
+				(1, "cb->commands = 0;"),
+				] )
+			output.extend( [ (1, 'printf("'+str(self.LibDep['arrays'].getStruct())+'\\n");'), ] )
+			for (fname, vname, uname, flag)  in self.STATS:
+				vtname = vname.replace("stats_", "stats_total_")
+				output.extend( [ (1, 'if (cb->'+vtname+' > 0) { printf("%llu '+uname+'\\n", cb->'+vtname+'); }'), ] )
+
 		output.extend( [
 			(1, 'fdo_commands(output, cb);' ),
 			(1, 'if (output != stdout) {' ),
 			(2, 'fclose(output);' ),
 			(1, '}' ),
+			] )
 
+		output.extend( [
 			(1, 'if (was_allocated) {'), 
 			(1, 'DEBUG_PRINT(("Free Memory\\n"));'), 
 			(2, 'cb = free_blackwood(cb);'), 

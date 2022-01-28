@@ -4,6 +4,7 @@ import sys
 import ctypes
 import multiprocessing
 import math
+import itertools
 
 # Local Libs
 import external_libs
@@ -268,6 +269,52 @@ class LibArrays( external_libs.External_Libs ):
 		return output
 
 
+	# ----- get Struct
+	def getStruct( self ):
+
+		output = []
+
+		heuristic_patterns = ""
+		for i in range(5):
+			if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
+				heuristic_patterns += "uint8 heuristic_patterns_"+str(i)+";"
+
+		(u_type, r_type, d_type, l_type) = self.puzzle.scenario.edges_types_from_references()
+
+		
+		output = [
+			"uint8 p;",
+			u_type + " u;",
+			r_type + " r;",
+			d_type + " d;",
+			l_type + " l;",
+			"uint8 heuristic_conflicts;",
+			heuristic_patterns,
+			]
+
+
+		if os.environ.get('STRUCT') != None:
+			self.struct = int(os.environ.get('STRUCT'))
+			print("Using Struct = "+str(self.struct))
+			i = 0
+			for o in itertools.permutations( output ):
+				if i == self.struct:
+					output = o
+					break
+				i+=1
+		else:
+			# Permutation 703
+			output = [
+				"uint8 p;",
+				heuristic_patterns,
+				"uint8 heuristic_conflicts;",
+				r_type + " r;",
+				u_type + " u;",
+				l_type + " l;",
+				d_type + " d;",
+				]
+
+		return output
 	
 	# ----- generate LibGen Header
 	def GenerateH( self ):
@@ -279,31 +326,16 @@ class LibArrays( external_libs.External_Libs ):
 		
 		output = []
 		
-		heuristic_stats16 = ""
-		if self.puzzle.scenario.heuristic_stats16:
-			heuristic_stats16 = "uint8 heuristic_stats16_count;"
-
-		heuristic_patterns = ""
-		for i in range(5):
-			if sum(self.puzzle.scenario.heuristic_patterns_count[i]) > 0:
-				heuristic_patterns += "uint8 heuristic_patterns_"+str(i)+";"
-
-
-		(u_type, r_type, d_type, l_type) = self.puzzle.scenario.edges_types_from_references()
-
 		output.extend( [
 			( 0, "// Rotated Piece Union" ),
 			( 0, "union union_rotated_piece {" ),
 			( 1,	"struct {" ),
-			( 2,		u_type + " u;" ),
-			( 2,		r_type + " r;" ),
-			( 2,		d_type + " d;" ),
-			( 2,		l_type + " l;" ),
-			( 2,		"uint8 p;" ),
-			( 2,		heuristic_stats16 ),
-			( 2,		heuristic_patterns ),
-			( 2,		"uint8 heuristic_conflicts;" ),
-			#( 2,		"uint8 padding;" ),
+			] )
+
+		for f in self.getStruct():
+			output.extend( [ (2, f), ] )
+
+		output.extend( [
 			( 1,	"} info;" ),
 			( 1,	"uint64 value;" ),
 			( 0, "};" ),
@@ -321,7 +353,6 @@ class LibArrays( external_libs.External_Libs ):
 			( 0, "};" ),
 			( 0, "typedef struct st_piece t_piece;" ),
 			] )
-
 
 
 		self.writeGen( gen, output )

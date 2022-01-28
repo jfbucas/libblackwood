@@ -95,7 +95,7 @@ class Wait_For_Notification_Thread(threading.Thread):
 				if self.libblackwood.LibExt.getMaxDepthSeen(self.libblackwood.cb) < self.puzzle.board_wh:
 					# Have we reached the time limit?
 					if self.libblackwood.LibExt.getHB(self.libblackwood.cb) > self.libblackwood.LibExt.getHBLimit(self.libblackwood.cb):
-						if (os.environ.get('NOTIFY_END') == None) and (self.puzzle.DEBUG == 0):
+						if os.environ.get('NOTIFY_END') == None:
 							self.libblackwood.LibExt.setWFN(self.libblackwood.cb, 0)
 							continue
 						channel = "end"

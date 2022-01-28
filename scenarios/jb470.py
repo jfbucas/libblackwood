@@ -17,7 +17,7 @@ class JB470( scenario.Scenario ):
 		self.depth_first_notification = 252
 		#self.use_adaptative_filter_depth = False
 
-		self.timelimit = 15 # Minutes
+		self.timelimit = 1 # Minutes
 		#self.timelimit = 10 # Minutes
 
 		scenario.Scenario.__init__(self)
@@ -73,6 +73,8 @@ class JB470( scenario.Scenario ):
 			self.seed = int(os.environ.get('SEED'))
 			if self.seed == 18:
 				self.seed = 3316111202040243245 # 253 in 18 sec! with PUZZLE=E2ncud
+			if self.seed == 85:
+				self.seed = 3957753796008984024 # 253 in 85 sec! with PUZZLE=E2ncud
 			if self.seed == 244:
 				self.seed = 8192406586059670907 # 253 in 244 sec! with PUZZLE=E2ncud
 
