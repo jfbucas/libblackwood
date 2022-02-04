@@ -3,7 +3,7 @@ import random
 import sys
 import os
 
-# start=0; end=419; for i in {0..11}; do (for STRUCT in {$start..$end}; do NOLCA=1 QUIET=1 FORCE_COMPILE=1 SEED=3957547024 DEBUG_PERF=1 SCENARIO=jb470struct PUZZLE=E2ncud  python3 ./libblackwood.py >> STRUCT_$i.txt; done &); start=$((start+420)); end=$((end+420)); sleep 20; done
+# for i in {0..11}; do (for j in {0..419}; do STRUCT=$((i*420+j)) NOLCA=1 QUIET=1 FORCE_COMPILE=1 SEED=3957547024 DEBUG_PERF=1 SCENARIO=jb470struct PUZZLE=E2ncud  python3 ./libblackwood.py >> STRUCT_$i.txt; done &); sleep 30; done
 
 class JB470Struct( scenario.Scenario ):
 	"""Assessing structure order's influence on performance"""
