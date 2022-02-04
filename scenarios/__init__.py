@@ -12,7 +12,8 @@ def loadScenario( puzzle, name = "JB470" ):
 
 	if os.environ.get('SCENARIO') != None:
 		name = os.environ.get('SCENARIO')
-		print('[ Env SCENARIO found :', name, ' ]')
+		if os.environ.get('QUIET') == None:
+			print('[ Env SCENARIO found :', name, ' ]')
 
 
 	# Try to match the name with one of the classes imported

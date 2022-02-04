@@ -374,8 +374,10 @@ class External_Libs( defs.Defs ):
 			if self.DEBUG > 0:
 				os.system( CMD )
 			else:
-				print( " o Compiling",self.name,"... ", end="" )
-				sys.stdout.flush()
+				if not self.QUIET:
+					print( " o Compiling",self.name,"... ", end="" )
+					sys.stdout.flush()
+
 				(val, output) = subprocess.getstatusoutput( CMD )
 
 				if val != 0:
@@ -389,7 +391,8 @@ class External_Libs( defs.Defs ):
 						print(output)
 						print()
 					else:
-						print( "Done." )
+						if not self.QUIET:
+							print( "Done." )
 
 	
 
@@ -610,7 +613,8 @@ class External_Libs( defs.Defs ):
 			r = random.randint(0, sys.maxsize)
 			self.top( functionName+str(r) )
 			result = f(*args)
-			print( functionName, "took", self.top( functionName+str(r) ), "to execute" )
+			if not self.QUIET:
+				print( functionName, "took", self.top( functionName+str(r) ), "to execute" )
 		else:
 			result = f(*args)
 			

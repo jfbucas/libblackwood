@@ -295,7 +295,7 @@ class LibArrays( external_libs.External_Libs ):
 
 		if os.environ.get('STRUCT') != None:
 			self.struct = int(os.environ.get('STRUCT'))
-			print("Using Struct = "+str(self.struct))
+			print(" -> Using Struct = "+str(self.struct))
 			i = 0
 			for o in itertools.permutations( output ):
 				if i == self.struct:
@@ -313,6 +313,18 @@ class LibArrays( external_libs.External_Libs ):
 				l_type + " l;",
 				d_type + " d;",
 				]
+
+			# Permutation 2335
+			output = [
+				d_type + " d;",
+				u_type + " u;",
+				l_type + " l;",
+				r_type + " r;",
+				"uint8 p;",
+				heuristic_patterns,
+				"uint8 heuristic_conflicts;",
+				]
+
 
 		return output
 	

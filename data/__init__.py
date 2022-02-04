@@ -10,7 +10,8 @@ def loadPuzzle( puzzlename = "E2ncud" ):
 
 	if os.environ.get('PUZZLE') != None:
 		puzzlename = os.environ.get('PUZZLE')
-		print('[ Env PUZZLE found :', puzzlename, ' ]')
+		if os.environ.get('QUIET') == None:
+			print('[ Env PUZZLE found :', puzzlename, ' ]')
 
 	p = None
 

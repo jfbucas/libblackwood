@@ -19,6 +19,8 @@ class Defs():
 	DEBUG_STATIC = 0
 	DEBUG_TIME = 0
 	DEBUG_STATS = 0
+	DEBUG_PERF = 0
+	QUIET = False
 
 	NICE = 19
 	
@@ -113,6 +115,8 @@ class Defs():
 	def __init__( self ):
 
 
+		if os.environ.get('QUIET') != None:
+			self.QUIET = True
 
 		if os.environ.get('DEBUG') != None:
 			self.DEBUG = int(os.environ.get('DEBUG'))
@@ -121,14 +125,19 @@ class Defs():
 
 		if os.environ.get('DEBUG_STATIC') != None:
 			self.DEBUG_STATIC = int(os.environ.get('DEBUG_STATIC'))
-			if self.DEBUG_STATIC > 0:
+			if self.DEBUG_STATIC > 1:
 				print(self.XTermEnv+'[ Debug Static Data:', self.DEBUG_STATIC, ']', self.XTermNormal)
 
 		self.DEBUG_STATS = self.DEBUG
 		if os.environ.get('DEBUG_STATS') != None:
 			self.DEBUG_STATS = int(os.environ.get('DEBUG_STATS'))
-			if self.DEBUG_STATS > 0:
+			if self.DEBUG_STATS > 1:
 				print(self.XTermEnv+'[ Debug Stats mode enabled :', self.DEBUG_STATS, ']', self.XTermNormal)
+
+		if os.environ.get('DEBUG_PERF') != None:
+			self.DEBUG_PERF = int(os.environ.get('DEBUG_PERF'))
+			if self.DEBUG_PERF > 1:
+				print(self.XTermEnv+'[ Debug Perf mode enabled :', self.DEBUG_PERF, ']', self.XTermNormal)
 
 		if os.environ.get('HOSTNAME') != None:
 			self.HOSTNAME = os.environ.get('HOSTNAME')
@@ -201,12 +210,12 @@ class Defs():
 		print( self.XTermInfo + msg + self.XTermNormal )
 
 	# ----- Chronos is the key
-	def top( self, n=0 ):
+	def top( self, n=0, unit=True ):
 		"""Chronos is the key"""
 
 		if not n in self.topTime:
 			self.topTime[ n ] = 0
-		r = "%.2f" % (time.time() - self.topTime[ n ] ) + "s"
+		r = "%.2f" % (time.time() - self.topTime[ n ] ) + ("s" if unit else "")
 		self.topTime[ n ] = time.time()
 		return r
 
