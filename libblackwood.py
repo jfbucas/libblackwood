@@ -1631,8 +1631,8 @@ class LibBlackwood( external_libs.External_Libs ):
 			print( "Self-Test execution time: ", top )
 
 		if self.DEBUG_STATS > 0 or self.DEBUG_PERF > 0:
-			if os.environ.get('STRUCT') != None:
-				print(self.LibDep['arrays'].getStruct())
+			#if os.environ.get('STRUCT') != None:
+			print(self.LibDep['arrays'].getStruct())
 			for (fname, vname, uname, flag) in self.STATS:
 				#vtname = vname.replace("stats_", "stats_total_")
 				f = getattr( self.LibExt, "get"+fname )
