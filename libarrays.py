@@ -303,26 +303,33 @@ class LibArrays( external_libs.External_Libs ):
 					break
 				i+=1
 		else:
-			# Permutation 703
-			output = [
-				"uint8 p;",
-				heuristic_patterns,
-				"uint8 heuristic_conflicts;",
-				r_type + " r;",
-				u_type + " u;",
-				l_type + " l;",
-				d_type + " d;",
-				]
+			"""
+		 -> Using Struct = 3190
+		 ('uint8 l;', 'uint8 r;', 'uint16 d;', 'uint8 heuristic_patterns_0;', 'uint8 heuristic_conflicts;', 'uint8 p;', 'uint8 u;')
+		 50484560 nodes/s => 3044218994 in 60.30 seconds
+		 200143642 pieces tried/s => 12068661651 in 60.30 seconds
+		 123809830 pieces already in use/s => 7465732798 in 60.30 seconds
+		 15763336 heuristic patterns breaks/s => 950529191 in 60.30 seconds
+		 10085914 heuristic conflicts breaks/s => 608180669 in 60.30 seconds
 
-			# Permutation 2335
+		 -> Using Struct = 3234
+		 ('uint8 l;', 'uint8 r;', 'uint8 heuristic_patterns_0;', 'uint8 heuristic_conflicts;', 'uint8 p;', 'uint8 u;', 'uint16 d;')
+		 50484560 nodes/s => 3044218994 in 60.30 seconds
+		 200143642 pieces tried/s => 12068661651 in 60.30 seconds
+		 123809830 pieces already in use/s => 7465732798 in 60.30 seconds
+		 15763336 heuristic patterns breaks/s => 950529191 in 60.30 seconds
+		 10085914 heuristic conflicts breaks/s => 608180669 in 60.30 seconds
+			"""
+
+			# Permutation 3190
 			output = [
-				d_type + " d;",
-				u_type + " u;",
 				l_type + " l;",
 				r_type + " r;",
-				"uint8 p;",
+				d_type + " d;",
 				heuristic_patterns,
 				"uint8 heuristic_conflicts;",
+				"uint8 p;",
+				u_type + " u;",
 				]
 
 
