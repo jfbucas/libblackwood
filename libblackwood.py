@@ -1034,7 +1034,6 @@ class LibBlackwood( external_libs.External_Libs ):
 				] )
 
 			output.extend( [
-				(1, 'printf("Filtering from depth %llu\\n", b->adaptative_filter_depth);' ),
 				#(1, 'DEBUG_PRINT(("Filtering from depth %llu\\n", b->adaptative_filter_depth));' ),
 				(1, "if (b->adaptative_filter_depth < WH) {" ),
 				(2, "dst = 0;" ),
