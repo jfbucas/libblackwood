@@ -189,9 +189,15 @@ class Scenario( defs.Defs ):
 		return index
 
 	# ----- Provide the index name for the space
-	def get_index_piece_name(self, depth):
+	def get_index_piece_name(self, space=None, depth=None):
 
-		space = self.spaces_sequence[ depth ]
+		if space == None and depth == None:
+				print("space and depth cannot be None")
+				exit()
+
+		if space == None:
+			space = self.spaces_sequence[ depth ]
+
 		x = space % self.puzzle.board_w
 		y = space // self.puzzle.board_h
 

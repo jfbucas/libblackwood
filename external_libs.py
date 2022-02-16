@@ -143,7 +143,11 @@ class External_Libs( defs.Defs ):
 
 	# ----- 
 	def getNameC( self, temp=False, module=None ):
-		return "./"+self.LIBFOLDER_PUZZLE+"/"+self.name+self.getModuleStr(module)+".c"+ (".tmp" if temp else "")
+		ext=".c"
+		if module != None:
+			if module.find("_asm") != -1:
+				ext=".s"
+		return "./"+self.LIBFOLDER_PUZZLE+"/"+self.name+self.getModuleStr(module)+ext+ (".tmp" if temp else "")
 
 	# ----- 
 	def getNamesC( self, temp=False ):
@@ -321,7 +325,7 @@ class External_Libs( defs.Defs ):
 			output.extend( [ 
 				( 0, self.getNameASM( module=module )+": "+self.getNameH()+" "+self.getNameC( module=module ) ),
 				( 1, '@echo ' + self.getNameASM( module=module )),
-				( 1, "@" + GCC_CMD + GCC_PARAMS + gcc_optimize + " -DNL="+NLTAG+" -S -masm=intel " + GCC_FILES),
+				( 1, "@" + GCC_CMD + GCC_PARAMS + gcc_optimize + " -DNL="+NLTAG+" -S -masm=intel -fverbose-asm " + GCC_FILES),
 				] )
 		
 			# Compile with GCC
@@ -472,16 +476,36 @@ class External_Libs( defs.Defs ):
 			(0, "#include <"+ self.name +".h>" ),
 			(0, ""),
 		]
+
+		if module != None:
+			if module.find("_asm") != -1:
+				header = [ 
+					(0, "# This File is Generated"),
+					(0, "#"),
+					(0, "# Compiled with: "+ GCC_CMD + GCC_PARAMS + gcc_optimize + GCC_FILES ),
+					(0, "#"),
+					(0, "#"),
+					(0, ".intel_syntax noprefix"),
+					(0, ".text"),
+				]
 		return header
 
 	# ----- get some generic Footer for C
-	def getFooterC( self ):
+	def getFooterC( self, module=None ):
 
 		footer = [ 
 			(0, ""),
 			(0, ""),
 			(0, "/* Lapin */"),
 		]
+
+		if module != None:
+			if module.find("_asm") != -1:
+				footer = [ 
+					(0, '.ident  "JFBucas libblackwood ('+self.git()+')"'),
+					(0, '.section        .note.GNU-stack,"",@progbits'),
+					(0, "# Lapin "),
+				]
 
 		return footer
 
@@ -495,6 +519,8 @@ class External_Libs( defs.Defs ):
 					return l.replace("voidp ","").rstrip("(")
 				elif l.startswith("p_blackwood "):
 					return l.replace("p_blackwood ","").rstrip("(")
+				elif l.startswith("p_funky "):
+					return l.replace("p_funky ","").rstrip("(")
 				elif l.startswith("int "):
 					return l.replace("int ","").rstrip("(")
 				elif l.startswith("uint64 "):
@@ -510,6 +536,8 @@ class External_Libs( defs.Defs ):
 				elif l.startswith("voidp "):
 					return ctypes.c_void_p
 				elif l.startswith("p_blackwood "):
+					return ctypes.c_void_p
+				elif l.startswith("p_funky "):
 					return ctypes.c_void_p
 				elif l.startswith("int "):
 					return ctypes.c_int
@@ -528,6 +556,8 @@ class External_Libs( defs.Defs ):
 					t.append( ctypes.c_void_p )
 				elif l.startswith("p_blackwood "):
 					t.append( ctypes.c_void_p )
+				elif l.startswith("p_funky "):
+					t.append( ctypes.c_void_p )
 				elif l.startswith("voidp "):
 					t.append( ctypes.c_void_p )
 				elif l.startswith("FILEp "):
@@ -544,6 +574,7 @@ class External_Libs( defs.Defs ):
 				if (l.startswith("uint64 ") or
 				    l.startswith("uint64p ") or
 				    l.startswith("p_blackwood ") or
+				    l.startswith("p_funky ") or
 				    l.startswith("voidp ") or
 				    l.startswith("charp ")):
 					t.append( l.split(" ")[-1].rstrip(",") )

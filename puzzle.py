@@ -97,6 +97,14 @@ class RotatedPiece():
 		self.heuristic_patterns_count = h
 		self.heuristic_stats16_count = w
 
+		(ma, mb, mc, md) = (0, 0, 0, 0)
+		if   p <  64: ma = ma | (1 << (p -   0))
+		elif p < 128: mb = mb | (1 << (p -  64))
+		elif p < 192: mc = mc | (1 << (p - 128))
+		elif p < 256: md = md | (1 << (p - 192))
+		self.masks = [ma, mb, mc, md]
+
+
 	def __str__(self):
 		return str(self.p).zfill(3)+"["+str(self.conflicts_count)+"/"+str(self.heuristic_patterns_count)+":"+chr(ord('a')+self.u)+chr(ord('a')+self.r)+chr(ord('a')+self.d)+chr(ord('a')+self.l)+"]"
 

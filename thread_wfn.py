@@ -29,7 +29,7 @@ class Wait_For_Notification_Thread(threading.Thread):
 	puzzle = None
 	notification_url = ""
 	stop_wfn_thread = False
-	git = ""
+	giturl = ""
 
 	def __init__(self, libblackwood, puzzle): 
 		threading.Thread.__init__(self)

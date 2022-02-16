@@ -30,7 +30,7 @@ class LibBlackwood( external_libs.External_Libs ):
 
 	cb = None
 
-	MACROS_NAMES_A = [ "utils", "generate", "main" ]
+	MACROS_NAMES_A = [ "utils", "generate", "funky_asm", "main" ]
 	MACROS_NAMES_B = [ ]
 
 	DEPTH_COLORS = {}
@@ -140,7 +140,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		signatures.extend( self.gen_allocate_blackwood_function( only_signature=True ) )
 		signatures.extend( self.gen_getSolutionURL_function( only_signature=True ) )
 		signatures.extend( self.gen_getMaxDepthSeenHeartbeat_function( only_signature=True ) )
-		signatures.extend( self.gen_solve_function(only_signature=True) )
+		#signatures.extend( self.gen_solve_function(only_signature=True) )
 		signatures.extend( self.gen_do_commands(only_signature=True ) )
 		signatures.extend( self.gen_set_blackwood_arrays_function(only_signature=True ) )
 		
@@ -346,6 +346,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (0, '#define '+str(n)+' '+str(v) ), )
 			output.append( (0 , "") )
 
+		# Blackwood
 		if only_signature:
 
 			output.extend( [
@@ -390,17 +391,12 @@ class LibBlackwood( external_libs.External_Libs ):
 				(0, "" ),
 				] )
 
-			output.extend( [
-				(0, "" ),
-				(1, "// ----- Flags -------" ),
-				] )
-
 			for (c, n, s) in self.FLAGS:
 				output.extend( [
-					(1, "// "+c+" -- "+s+" for short"),
-					(1, "uint64	"+n+";"),
-					(0, "" ),
-					] )
+				(1, "// Flag "+c+" -- "+s+" for short"),
+				(1, "uint64	"+n+";"),
+				(0, "" ),
+				] )
 
 			output.extend( [
 				(0, ""),
@@ -420,6 +416,71 @@ class LibBlackwood( external_libs.External_Libs ):
 		else:
 			output.append( (0 , "// A global pointer") )
 			output.append( (0 , "p_blackwood global_blackwood;") )
+			output.append( (0 , "") )
+
+
+		# Funky
+		if only_signature:
+
+			output.extend( [
+				(0, "// Structure Funky"),
+				(0, "struct st_funky {"),
+				(0, "" ),
+				] )
+
+			output.extend( [
+				(0, "" ),
+				(1, "// The Board" ),
+				(1, "t_union_rotated_piece board[ WH ];"),
+				(0, "" ),
+				#(1, "// Masks" ),
+				#(1, "uint64 pieces_used[4];" ),
+				(0, "" ),
+				#(1, "// Patterns_down"),
+				#(1, "uint8 patterns_down["+str(self.puzzle.board_w)+"];" ),
+				(0, "" ),
+				#(1, "// Heuristic" ),
+				#(1, "uint64 cumulative_heuristic_patterns_count;" ),
+				#(1, "uint64 cumulative_heuristic_conflicts_count;" ),
+				(0, "" ),
+				(1, "// Records at what heartbeat the max_depth_seen have been found" ),
+				(1, "uint16 max_depth_seen_heartbeat[ WH ];"),
+				] )
+
+			for (fname, vname, uname, flag)  in self.STATS:
+				vtname = vname.replace("stats_", "stats_total_")
+				output.extend( [
+				(1, "// Statistics "+uname ),
+				(1, "uint64 "+vtname+";"),
+				(1, "uint64 "+vname+"[ WH ];"),
+				(0, "" ),
+				] )
+
+			for (c, n, s) in self.FLAGS:
+				output.extend( [
+				(1, "// Flag "+c+" -- "+s+" for short"),
+				(1, "uint64	"+n+";"),
+				(0, "" ),
+				] )
+
+			output.extend( [
+				(0, ""),
+				(0 , "};"),
+				(0, ""),
+				] )
+
+			output.append( (0 , "") )
+			output.append( (0 , "typedef struct st_funky   t_funky;") )
+			output.append( (0 , "typedef t_funky *         p_funky;") )
+			output.append( (0 , "") )
+			output.append( (0 , "") )
+
+			output.append( (0 , "// A global pointer") )
+			output.append( (0 , "extern p_funky global_funky;") )
+			output.append( (0 , "") )
+		else:
+			output.append( (0 , "// A global pointer") )
+			output.append( (0 , "p_funky global_funky;") )
 			output.append( (0 , "") )
 
 		return output
@@ -614,7 +675,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (1 , "for(i=0; i<"+str(len(array))+"; i++) b->master_index_"+name+"[i] = master_index_"+name+"[i];") )
 
 		for space in range(self.puzzle.board_wh):
-			output.append( (1 , "b->spaces_master_index["+str(space)+"] = b->master_index_"+self.puzzle.scenario.get_index_piece_name(space)+";") )
+			output.append( (1 , "b->spaces_master_index["+str(space)+"] = b->master_index_"+self.puzzle.scenario.get_index_piece_name(space=space)+";") )
 
 		output.append( (1 , "for(i=0; i<"+str(len(self.puzzle.master_lists_of_rotated_pieces))+"; i++) b->master_lists_of_union_rotated_pieces[i] = master_lists_of_union_rotated_pieces[i];") )
 
@@ -1327,7 +1388,7 @@ class LibBlackwood( external_libs.External_Libs ):
 					total_hp += 'cumulative_heuristic_patterns_count_'+str(i)+'['+d+'-1] + '
 
 			# Unlikely we need the master_lists_of_union_rotated_pieces_hp before reaching the max_index
-			index_piece_name = self.puzzle.scenario.get_index_piece_name(depth)
+			index_piece_name = self.puzzle.scenario.get_index_piece_name(depth=depth)
 			#output.append( (2, "piece_to_try_next["+d+"] = &(cb->"+master_lists_of_union_rotated_pieces+"[cb->master_index_"+index_piece_name+"[ "+ref+" ] ]);" ) )
 			if self.puzzle.scenario.use_adaptative_filter_depth:
 				output.append( (2, "index = cb->master_index_"+index_piece_name+"[ "+ref+" ];" ) )
@@ -1457,6 +1518,272 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		return output
 
+	# ----- Generate Funky functions
+	def gen_solve_funky_functions( self, only_signature=False):
+
+		W=self.puzzle.board_w
+		H=self.puzzle.board_h
+		WH=self.puzzle.board_wh
+
+		output = []
+	
+		# rax 
+		# rbx 
+		#  cl heuristic patterns  count
+		#  ch heuristic conflicts count
+		# rdx
+		# rsi
+		# rdi &(cf->check_command)
+		# r8  pieces_used[0]
+		# r9  pieces_used[1] 
+		# r10 pieces_used[2] 
+		# r11 pieces_used[3]
+		# r12 patterns_down[0-7]
+		# r13 patterns_down[8-15]
+		# r14 board[WH]
+		# r15 cf->
+		# xmm0 1
+		# xmm1 stats_total_nodes_count
+		# xmm2 stats_pieces_tried_count
+		# xmm3 stats_total_heuristic_patterns_break_count 
+		# xmm4 stats_total_heuristic_conflicts_break_count
+		# xmm5 stats_pieces_used_count 
+		# xmm6
+		# xmm7 
+		
+		MARP = []
+		tmp = sorted(self.puzzle.master_all_rotated_pieces.keys())
+		for t in tmp:
+			MARP.append(self.puzzle.master_all_rotated_pieces[t])
+
+		#for depth in range(WH-1):
+		for depth in range(WH-W*2,WH-W):
+			space = {}
+			space[ "" ]         = self.puzzle.scenario.spaces_sequence[ depth   ]
+			space[ "previous" ] = self.puzzle.scenario.spaces_sequence[ depth-1 ]
+			space[ "next" ]     = self.puzzle.scenario.spaces_sequence[ depth+1 ]
+			space[ "u" ]        = self.puzzle.static_space_up[ space[""] ]
+			space[ "r" ]        = self.puzzle.static_space_right[ space[""] ]
+			space[ "d" ]        = self.puzzle.static_space_down[ space[""] ]
+			space[ "l" ]        = self.puzzle.static_space_left[ space[""] ]
+
+			sspace = {}
+			for k in space.keys():
+				sspace[ k ] = str(space[ k ])
+
+			x = {}
+			for k in space.keys():
+				if space[ k ] != None:
+					x[ k ] = str(space[ k ] % W)
+			
+			heuristic_patterns  = heuristic_conflicts = False
+
+			heuristic_patterns  = self.puzzle.scenario.heuristic_patterns_count[0][depth] > 0
+			if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
+				heuristic_conflicts = self.puzzle.scenario.heuristic_conflicts_count[depth] > 0
+
+			#output.append((0, "# ---------------------------------------------------------------------" ))
+			#output.append((0, "# patterns:"+str(self.puzzle.scenario.heuristic_patterns_count[0][depth])+"  conflicts:"+str(self.puzzle.scenario.heuristic_conflicts_count[depth]) ))
+
+			# Get all the possible sides around the current space
+			Side = {}
+			for d in [ "u", "r", "d", "l" ]:
+				Side[ d ] = []
+				if space[d] == None:
+					Side[d] = [ 0 ]
+				else:
+					Side[d] = self.puzzle.colors_center
+					if self.puzzle.static_spaces_type[ space[d] ] in [ "corner", "border" ]:
+						if self.puzzle.static_spaces_type[ space[""] ] in [ "corner", "border" ]:
+							Side[d] = self.puzzle.colors_border_no_edge
+					
+			print(space[""], Side)
+
+
+			for_ref = self.puzzle.scenario.spaces_references[ space[""] ]
+			"""
+			if len(for_ref) == 0:
+				ref = "0"
+				strref = "0, 0"
+			elif len(for_ref) == 1:
+				ref = Side[for_ref[0]]
+				strref = Side[for_ref[0]]+ ", 0"
+			elif len(for_ref) == 2:
+				ref = "("+Side[for_ref[0]]+" << EDGE_SHIFT_LEFT) | "+Side[for_ref[1]]
+				if len(self.puzzle.scenario.possible_references) == 1:
+					ref = Side[for_ref[0]]+" | "+Side[for_ref[1]]
+				strref = Side[for_ref[0]]+" , "+Side[for_ref[1]]
+			elif len(for_ref) == 3:
+				ref = "((("+Side[for_ref[0]]+" << EDGE_SHIFT_LEFT) | "+Side[for_ref[1]]+") << EDGE_SHIFT_LEFT) | "+Side[for_ref[2]]
+				strref = "0, 0"
+			elif len(for_ref) == 4:
+				ref = "((("+Side[for_ref[0]]+" << EDGE_SHIFT_LEFT) | "+Side[for_ref[1]]+") << EDGE_SHIFT_LEFT) | "+Side[for_ref[2]]
+				strref = "0, 0"
+			"""
+
+			# Storing the patterns_down into 2x 64bits reg
+			patterns_down_reg = ""
+			patterns_down_rotate = ""
+			if int(x[""]) in [0,1,2,3,4,5,6,7]:
+				patterns_down_reg = "r12"
+				patterns_down_rotate = str(int(x[""])*8)
+			elif int(x[""]) in [8,9,10,11,12,13,14,15]:
+				patterns_down_reg = "r13"
+				patterns_down_rotate = str((int(x[""])-8)*8)
+				
+
+			for ref_up, ref_right in itertools.product(Side["d"], Side["l"]):
+
+				funk_name = "solve_funky_space_"+sspace[""]+"_ref_up_"+str(ref_up)+"_ref_right_"+str(ref_right)
+				if only_signature:
+					output.append( (0, "void "+funk_name+"();") )
+					continue
+
+				output.extend( [
+					(0, ".globl  "+funk_name ),
+					(0, ".type   "+funk_name+", @function"),
+					(0, funk_name+":"),
+					(0, ".cfi_startproc"),
+					] )
+
+
+				#output.append( (2, 'cf->stats_nodes_count['+sspace[""]+'] ++;' if self.DEBUG_STATS > 0 else "") )
+				output.append( (2, 'paddq xmm1, xmm0 # cf->stats_total_nodes_count ++;' if self.DEBUG_PERF > 0 else "") )
+
+				index_piece_name = self.puzzle.scenario.get_index_piece_name(depth=depth)
+				ref = (ref_up << self.EDGE_SHIFT_LEFT) | ref_right
+				index = self.puzzle.master_index[index_piece_name][ ref ]
+
+
+				rpl = []
+				while index != None and self.puzzle.master_lists_of_rotated_pieces[index] != None:
+					rpi = self.puzzle.master_lists_of_rotated_pieces[index]
+					rpl.append( MARP[rpi] )
+					index += 1
+
+				# The piece scoring ensure pieces are sorted by conflict, then by pattern
+				# We only check heuristic patterns when the piece doesn't contribute
+				heuristic_patterns_already_checked_once = False
+				heuristic_conflicts_already_checked_once = False
+				piece_index = 0
+				for rp in rpl:
+					output.append( (3, "# "+ str(rp) ) )
+
+					if heuristic_patterns and not heuristic_patterns_already_checked_once:
+						if (rp.heuristic_patterns_count[0] == 0):
+							output.append( (2, "# if (cf->cumulative_heuristic_patterns_count < "+str(self.puzzle.scenario.heuristic_patterns_count[0][depth])+" ) { "))
+							output.append( (2, "cmp cl, "+str(self.puzzle.scenario.heuristic_patterns_count[0][depth])+" #  Heuristic patterns count"))
+							output.append( (2, "jae "+funk_name+"__heuristic_patterns_ok"))
+							#output.append( (3, "cf->stats_heuristic_patterns_break_count[ "+sspace[""]+" ]++; " if self.DEBUG_STATS > 0 else "" ))
+							output.append( (3, "paddq xmm3, xmm0 # cf->stats_total_heuristic_patterns_break_count ++; " if self.DEBUG_PERF > 0 else "" ))
+							output.append( (3, "# cf->patterns_down[ "+x[""]+"] = "+str(ref_up)+";" ) )
+							output.append( (3, "ror "+patterns_down_reg+", "+patterns_down_rotate ) )
+							output.append( (3, "movb "+patterns_down_reg+"b, "+str(ref_up) ) )
+							output.append( (3, "rol "+patterns_down_reg+", "+patterns_down_rotate ) )
+							output.append( (3, "ret" ))
+							output.append( (2, funk_name+"__heuristic_patterns_ok:"))
+
+							#output.append( (2, "if (cf->cumulative_heuristic_patterns_count < "+str(self.puzzle.scenario.heuristic_patterns_count[0][depth]-rp.heuristic_patterns_count[0])+" ) { "))
+							#output.append( (2, "if (cf->cumulative_heuristic_patterns_count < "+str(self.puzzle.scenario.heuristic_patterns_count[0][depth])+" ) { "))
+							#output.append( (3, "cf->stats_heuristic_patterns_break_count[ "+sspace[""]+" ]++; " if self.DEBUG_STATS > 0 else "" ))
+							#output.append( (3, "cf->stats_total_heuristic_patterns_break_count ++; " if self.DEBUG_PERF > 0 else "" ))
+							#output.append( (3, "cf->patterns_down[ "+x[""]+"] = "+str(ref_up)+";" ) )
+							#output.append( (3, "return;" ))
+							#output.append( (2, "}"))
+							heuristic_patterns_already_checked_once = True
+
+					if heuristic_conflicts and not heuristic_conflicts_already_checked_once:
+						conflicts_allowed = self.puzzle.scenario.heuristic_conflicts_count[space[""]]
+						if self.puzzle.scenario.heuristic_conflicts_count[space["previous"]] != conflicts_allowed:
+							# if there is an increment in the heuristic, no need to test, it will always pass the test
+							pass
+						else:
+							output.append( (2, "# if (cf->cumulative_heuristic_conflicts_count > "+str(conflicts_allowed)+" ) { "))
+							output.append( (2, "cmp ch, "+str(conflicts_allowed)+" #  Heuristic conflicts count"))
+							output.append( (2, "jae "+funk_name+"__heuristic_conflicts_ok"))
+							#output.append( (3, "cf->stats_heuristic_patterns_break_count[ "+sspace[""]+" ]++; " if self.DEBUG_STATS > 0 else "" ))
+							output.append( (3, "paddq xmm4, xmm0 # cf->stats_total_heuristic_conflicts_break_count ++; " if self.DEBUG_PERF > 0 else "" ))
+							output.append( (3, "# cf->patterns_down[ "+x[""]+"] = "+str(ref_up)+";" ) )
+							output.append( (3, "ror "+patterns_down_reg+", "+patterns_down_rotate ) )
+							output.append( (3, "movb "+patterns_down_reg+"b, "+str(ref_up) ) )
+							output.append( (3, "rol "+patterns_down_reg+", "+patterns_down_rotate ) )
+							output.append( (3, "ret" ))
+							output.append( (2, funk_name+"__heuristic_conflicts_ok:"))
+
+							#output.append( (2, "if (cf->cumulative_heuristic_conflicts_count > "+str(conflicts_allowed)+ ") { "))
+							#output.append( (3, "cf->stats_heuristic_conflicts_break_count[ "+sspace[""]+" ]++; " if self.DEBUG_STATS > 0 else "" ))
+							#output.append( (3, "cf->stats_total_heuristic_conflicts_break_count ++; " if self.DEBUG_PERF > 0 else "" ))
+							#output.append( (3, "cf->patterns_down[ "+x[""]+"] = "+str(ref_up)+";" ))
+							#output.append( (3, "return;" ))
+							#output.append( (2, "}" ))
+							heuristic_conflicts_already_checked_once = True
+
+
+
+					mask_index = rp.p // 64
+					mask_reg = "r"+str(8+mask_index)
+					#output.append( (2, 'cf->stats_pieces_tried_count['+sspace[""]+'] ++;' if self.DEBUG_STATS > 0 else "") )
+					output.append( (2, 'paddq xmm2, xmm0 # cf->stats_total_pieces_tried_count ++;' if self.DEBUG_PERF > 0 else "") )
+					output.append( (2, "# if ( ! (cf->pieces_used["+str(mask_index)+"] & "+'0b'+'{0:064b}'.format(rp.masks[mask_index]) +" ) ) {" ))
+
+					output.append( (2, "movq rax, "+'0b'+('{0:064b}').format(rp.masks[mask_index]) ))
+					output.append( (2, "andq rax, "+mask_reg ))
+					#for (bitshift, subop, subreg) in [ (8, "b", "b"), (16, "w", "w"), (32, "d", "d"), (64, "q", "") ]:
+					#	if (bitshift==64) or (rp.masks[mask_index] < (1<<bitshift)):
+					#		output.append( (2, "and"+subop+" "+mask_reg+subreg+", "+'0b'+('{0:0'+str(bitshift)+'b}').format(rp.masks[mask_index]) ))
+					#		break
+					
+					output.append( (2, "jnz "+funk_name+"__skip_piece_"+str(piece_index) ))
+	
+					output.append( (3, "# cf->pieces_used["+str(mask_index)+"] |= "+'0b'+'{0:064b}'.format(rp.masks[mask_index])+ ";" ))
+					output.append( (3, "movq rax, "+'0b'+('{0:064b}').format(rp.masks[mask_index]) ))
+					output.append( (3, "orq "+mask_reg+", rax" ))
+
+					output.append( (3, "# cf->patterns_down[ "+x[""]+"] = "+str(rp.d)+";" ))
+					output.append( (3, "ror "+patterns_down_reg+", "+patterns_down_rotate ) )
+					output.append( (3, "movb "+patterns_down_reg+"b, "+str(rp.d) ) )
+					output.append( (3, "rol "+patterns_down_reg+", "+patterns_down_rotate ) )
+
+					output.append( (3, "inc cl # cf->cumulative_heuristic_patterns_count ++;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 0 else "" ))
+					output.append( (3, "inc cl # cf->cumulative_heuristic_patterns_count ++;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 1 else "" ))
+					output.append( (3, "inc ch # cf->cumulative_heuristic_conflicts_count ++;" if rp.conflicts_count > 0 else "" ))
+
+					#	output solve_funky_space_+next_space+"_ref_up_"+pattern_down[next_x]++"_ref_right"+x.l,
+					#	(1, "cf," )
+
+					output.append( (3, "dec ch # cf->cumulative_heuristic_conflicts_count --;" if rp.conflicts_count > 0 else "" ))
+					output.append( (3, "dec cl # cf->cumulative_heuristic_patterns_count --;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 0 else "" ))
+					output.append( (3, "dec cl # cf->cumulative_heuristic_patterns_count --;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 1 else "" ))
+
+					output.append( (3, "# cf->pieces_used["+str(mask_index)+"] &= !"+'0b'+'{0:064b}'.format(rp.masks[mask_index])+ ";" ))
+					output.append( (3, "movq rax, "+'~0b'+('{0:064b}').format(rp.masks[mask_index]) ))
+					output.append( (3, "andq "+mask_reg+", rax" ))
+
+					output.append( (2, "jmp "+funk_name+"__end_piece_"+str(piece_index) ))
+					#output.append( (2, "} else {" if self.DEBUG_STATS + self.DEBUG_PERF > 0 else "") )
+					output.append( (2, funk_name+"__skip_piece_"+str(piece_index)+":" ))
+					#output.append( (3, 'cf->stats_pieces_used_count['+sspace[""]+'] ++;' if self.DEBUG_STATS > 0 else "") )
+					output.append( (3, 'paddq xmm5, xmm0  # cf->stats_total_pieces_used_count ++;' if self.DEBUG_PERF > 0 else "") )
+					output.append( (2, funk_name+"__end_piece_"+str(piece_index)+":" ))
+
+					piece_index += 1
+
+
+				# Restore the previous patterns_down
+				output.append( (2, "# cf->patterns_down[ "+x[""]+"] = "+str(ref_up)+";" ))
+				output.append( (2, "ror "+patterns_down_reg+", "+patterns_down_rotate ) )
+				output.append( (2, "movb "+patterns_down_reg+"b, "+str(ref_up) ) )
+				output.append( (2, "rol "+patterns_down_reg+", "+patterns_down_rotate ) )
+
+				output.append( (2, "ret") )
+				output.append( (1, ".cfi_endproc") )
+				output.append( (1, ".size "+funk_name+", .-"+funk_name ))
+				output.append( (1, ".align 8192" ))
+
+
+
+		return output
+
 
 	# ----- Generate Scoriste function
 	def gen_main_function( self, only_signature=False):
@@ -1480,7 +1807,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			(1, 'if (signal(SIGUSR1, sig_handler) == SIG_ERR) printf("\\nUnable to catch SIGUSR1\\n");' ),
 			(1, 'if (signal(SIGUSR2, sig_handler) == SIG_ERR) printf("\\nUnable to catch SIGUSR2\\n");' ),
 			(1, '' ),
-			(1, 'return solve(NULL, NULL);'), 
+			#(1, 'return solve(NULL, NULL);'), 
 			(1, '' ),
 			(0, '}' ),
 			] )
@@ -1523,7 +1850,8 @@ class LibBlackwood( external_libs.External_Libs ):
 		self.writeGen( gen, self.gen_do_commands(only_signature=True) )
 		self.writeGen( gen, self.gen_print_functions(only_signature=True) )
 		self.writeGen( gen, self.gen_filter_function( only_signature=True ) )
-		self.writeGen( gen, self.gen_solve_function(only_signature=True) )
+		#self.writeGen( gen, self.gen_solve_function(only_signature=True) )
+		self.writeGen( gen, self.gen_solve_funky_functions(only_signature=True) )
 
 		self.writeGen( gen, self.getFooterH() )
 
@@ -1565,7 +1893,10 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		elif macro_name == "generate":
 			self.writeGen( gen, self.gen_filter_function( only_signature=False ) )
-			self.writeGen( gen, self.gen_solve_function(only_signature=False) )
+			#self.writeGen( gen, self.gen_solve_function(only_signature=False) )
+
+		elif macro_name == "funky_asm":
+			self.writeGen( gen, self.gen_solve_funky_functions(only_signature=False) )
 
 
 		elif macro_name == "main":
@@ -1573,7 +1904,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			self.writeGen( gen, self.gen_main_function(only_signature=False) )
 
 
-		self.writeGen( gen, self.getFooterC() )
+		self.writeGen( gen, self.getFooterC( module=module ) )
 
 	# ----- Self test
 	def SelfTest( self ):
@@ -1612,12 +1943,12 @@ class LibBlackwood( external_libs.External_Libs ):
 		cb = self.cb
 		self.copy_new_arrays_to_cb()
 
-		l = self.gen_solve_function( only_signature=True )
-		args = []
-		loc = locals()
-		for pname in self.getParametersNamesFromSignature(l):
-			args.append( loc[ pname ] )
-		self.LibExtWrapper( self.getFunctionNameFromSignature(l), args, timeit=True )
+		#l = self.gen_solve_function( only_signature=True )
+		#args = []
+		#loc = locals()
+		#for pname in self.getParametersNamesFromSignature(l):
+		#	args.append( loc[ pname ] )
+		#self.LibExtWrapper( self.getFunctionNameFromSignature(l), args, timeit=True )
 
 		myLCA.stop_lca_thread = True	
 		myWFN.stop_wfn_thread = True	
