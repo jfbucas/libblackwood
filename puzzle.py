@@ -104,6 +104,13 @@ class RotatedPiece():
 		elif p < 256: md = md | (1 << (p - 192))
 		self.masks = [ma, mb, mc, md]
 
+		(mia, mib, mic, mid) = (0, 0, 0, 0)
+		if   p <  64: mia = p -   0
+		elif p < 128: mib = p -  64
+		elif p < 192: mic = p - 128
+		elif p < 256: mid = p - 192
+		self.masks_bit_index = [mia, mib, mic, mid]
+
 
 	def __str__(self):
 		return str(self.p).zfill(3)+"["+str(self.conflicts_count)+"/"+str(self.heuristic_patterns_count)+":"+chr(ord('a')+self.u)+chr(ord('a')+self.r)+chr(ord('a')+self.d)+chr(ord('a')+self.l)+"]"

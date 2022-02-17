@@ -1556,8 +1556,46 @@ class LibBlackwood( external_libs.External_Libs ):
 		for t in tmp:
 			MARP.append(self.puzzle.master_all_rotated_pieces[t])
 
+
+		# Get the lists for each space and each references
+		rpl_lists_space = []
+		for depth in range(WH):
+			space = self.puzzle.scenario.spaces_sequence[ depth ]
+			rpl_lists = {}
+			for ref_up, ref_right in itertools.product(self.puzzle.colors, self.puzzle.colors):
+				index_piece_name = self.puzzle.scenario.get_index_piece_name(space=space)
+				ref = (ref_up << self.EDGE_SHIFT_LEFT) | ref_right
+				index = self.puzzle.master_index[index_piece_name][ ref ]
+
+				rpl = []
+				while index != None and self.puzzle.master_lists_of_rotated_pieces[index] != None:
+					rpi = self.puzzle.master_lists_of_rotated_pieces[index]
+					rpl.append( MARP[rpi] )
+					index += 1
+
+				rpl_lists[ format(ref_up,"02")+"_"+format(ref_right,"02") ] = rpl
+
+
+			longest = 0
+			for (key, rpl) in rpl_lists.items():
+				if len(rpl) > longest:
+					longest = len(rpl)
+			rpl_lists_space.append( (rpl_lists, longest) )
+
+
+		# Print the list longest
+		for space in range(WH):
+			(r, l) = rpl_lists_space[space]
+			print(format(l, "2"), end=" ")
+			if space % W == W-1:
+				print()
+		print()
+		
+
+
 		#for depth in range(WH-1):
 		for depth in range(WH-W*2,WH-W):
+			
 			space = {}
 			space[ "" ]         = self.puzzle.scenario.spaces_sequence[ depth   ]
 			space[ "previous" ] = self.puzzle.scenario.spaces_sequence[ depth-1 ]
@@ -1576,6 +1614,40 @@ class LibBlackwood( external_libs.External_Libs ):
 				if space[ k ] != None:
 					x[ k ] = str(space[ k ] % W)
 			
+			# List of pieces and alignment required
+			rpl_lists = {}
+			longest = {}
+			align_shift = {}
+			for k in space.keys():
+				if space[ k ] != None:
+					(rpl_lists[k], longest[k]) = rpl_lists_space[ space[k] ]
+
+					if longest[k] in [ 1, 2 ]:
+						align_shift[k] = 6
+					elif longest[k] in [ 4, 6, 7 ]:
+						align_shift[k] = 7
+					elif longest[k] in [ 12 ]:
+						align_shift[k] = 10
+					elif longest[k] in [ 96 ]:
+						align_shift[k] = 13
+					else:
+						align_shift[k] = 14
+
+
+			# Storing the patterns_down into 2x 64bits reg
+			patterns_down_reg = {}
+			patterns_down_rotate = {}
+			for k in space.keys():
+				if space[ k ] != None:
+					if int(x[k]) in [0,1,2,3,4,5,6,7]:
+						patterns_down_reg[k] = "r12"
+						patterns_down_rotate[k] = str(int(x[k])*8)
+					elif int(x[k]) in [8,9,10,11,12,13,14,15]:
+						patterns_down_reg[k] = "r13"
+						patterns_down_rotate[k] = str((int(x[k])-8)*8)
+				
+
+
 			heuristic_patterns  = heuristic_conflicts = False
 
 			heuristic_patterns  = self.puzzle.scenario.heuristic_patterns_count[0][depth] > 0
@@ -1621,21 +1693,16 @@ class LibBlackwood( external_libs.External_Libs ):
 				strref = "0, 0"
 			"""
 
-			# Storing the patterns_down into 2x 64bits reg
-			patterns_down_reg = ""
-			patterns_down_rotate = ""
-			if int(x[""]) in [0,1,2,3,4,5,6,7]:
-				patterns_down_reg = "r12"
-				patterns_down_rotate = str(int(x[""])*8)
-			elif int(x[""]) in [8,9,10,11,12,13,14,15]:
-				patterns_down_reg = "r13"
-				patterns_down_rotate = str((int(x[""])-8)*8)
-				
 
-			for ref_up, ref_right in itertools.product(Side["d"], Side["l"]):
+			#for ref_up, ref_right in itertools.product(Side["d"], Side["l"]):
+			#for ref_up, ref_right in itertools.product(self.puzzle.colors, self.puzzle.colors):
+			for ref_up, ref_right in itertools.product(range(32), range(32)):
 
-				funk_name = "solve_funky_space_"+sspace[""]+"_ref_up_"+str(ref_up)+"_ref_right_"+str(ref_right)
+				funk_name_next_0 = "solve_funky_space_"+format(space["next"], "03")+"_ref_up_"+format(0,"02")+"_ref_right_"+format(0,"02")
+				funk_name = "solve_funky_space_"+format(space[""], "03")+"_ref_up_"+format(ref_up,"02")+"_ref_right_"+format(ref_right,"02")
+
 				if only_signature:
+					# Signature for .h file
 					output.append( (0, "void "+funk_name+"();") )
 					continue
 
@@ -1647,19 +1714,21 @@ class LibBlackwood( external_libs.External_Libs ):
 					] )
 
 
+				rpl = []
+				if format(ref_up,"02")+"_"+format(ref_right,"02") in rpl_lists[""].keys():
+					rpl = rpl_lists[""][ format(ref_up,"02")+"_"+format(ref_right,"02") ]
+
+
+				# No piece? => function is empty
+				if len(rpl) == 0:
+					output.append( (2, "ret") )
+					output.append( (1, ".cfi_endproc") )
+					output.append( (1, ".size "+funk_name+", .-"+funk_name ))
+					output.append( (1, ".align "+str(1 << align_shift[""]) ))
+					continue
+
 				#output.append( (2, 'cf->stats_nodes_count['+sspace[""]+'] ++;' if self.DEBUG_STATS > 0 else "") )
 				output.append( (2, 'paddq xmm1, xmm0 # cf->stats_total_nodes_count ++;' if self.DEBUG_PERF > 0 else "") )
-
-				index_piece_name = self.puzzle.scenario.get_index_piece_name(depth=depth)
-				ref = (ref_up << self.EDGE_SHIFT_LEFT) | ref_right
-				index = self.puzzle.master_index[index_piece_name][ ref ]
-
-
-				rpl = []
-				while index != None and self.puzzle.master_lists_of_rotated_pieces[index] != None:
-					rpi = self.puzzle.master_lists_of_rotated_pieces[index]
-					rpl.append( MARP[rpi] )
-					index += 1
 
 				# The piece scoring ensure pieces are sorted by conflict, then by pattern
 				# We only check heuristic patterns when the piece doesn't contribute
@@ -1677,9 +1746,9 @@ class LibBlackwood( external_libs.External_Libs ):
 							#output.append( (3, "cf->stats_heuristic_patterns_break_count[ "+sspace[""]+" ]++; " if self.DEBUG_STATS > 0 else "" ))
 							output.append( (3, "paddq xmm3, xmm0 # cf->stats_total_heuristic_patterns_break_count ++; " if self.DEBUG_PERF > 0 else "" ))
 							output.append( (3, "# cf->patterns_down[ "+x[""]+"] = "+str(ref_up)+";" ) )
-							output.append( (3, "ror "+patterns_down_reg+", "+patterns_down_rotate ) )
-							output.append( (3, "movb "+patterns_down_reg+"b, "+str(ref_up) ) )
-							output.append( (3, "rol "+patterns_down_reg+", "+patterns_down_rotate ) )
+							output.append( (3, "ror "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
+							output.append( (3, "movb "+patterns_down_reg[""]+"b, "+str(ref_up) ) )
+							output.append( (3, "rol "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
 							output.append( (3, "ret" ))
 							output.append( (2, funk_name+"__heuristic_patterns_ok:"))
 
@@ -1704,9 +1773,9 @@ class LibBlackwood( external_libs.External_Libs ):
 							#output.append( (3, "cf->stats_heuristic_patterns_break_count[ "+sspace[""]+" ]++; " if self.DEBUG_STATS > 0 else "" ))
 							output.append( (3, "paddq xmm4, xmm0 # cf->stats_total_heuristic_conflicts_break_count ++; " if self.DEBUG_PERF > 0 else "" ))
 							output.append( (3, "# cf->patterns_down[ "+x[""]+"] = "+str(ref_up)+";" ) )
-							output.append( (3, "ror "+patterns_down_reg+", "+patterns_down_rotate ) )
-							output.append( (3, "movb "+patterns_down_reg+"b, "+str(ref_up) ) )
-							output.append( (3, "rol "+patterns_down_reg+", "+patterns_down_rotate ) )
+							output.append( (3, "ror "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
+							output.append( (3, "movb "+patterns_down_reg[""]+"b, "+str(ref_up) ) )
+							output.append( (3, "rol "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
 							output.append( (3, "ret" ))
 							output.append( (2, funk_name+"__heuristic_conflicts_ok:"))
 
@@ -1724,29 +1793,42 @@ class LibBlackwood( external_libs.External_Libs ):
 					mask_reg = "r"+str(8+mask_index)
 					#output.append( (2, 'cf->stats_pieces_tried_count['+sspace[""]+'] ++;' if self.DEBUG_STATS > 0 else "") )
 					output.append( (2, 'paddq xmm2, xmm0 # cf->stats_total_pieces_tried_count ++;' if self.DEBUG_PERF > 0 else "") )
-					output.append( (2, "# if ( ! (cf->pieces_used["+str(mask_index)+"] & "+'0b'+'{0:064b}'.format(rp.masks[mask_index]) +" ) ) {" ))
+					#output.append( (2, "# if ( ! (cf->pieces_used["+str(mask_index)+"] & "+'0b'+'{0:064b}'.format(rp.masks[mask_index]) +" ) ) {" ))
 
-					output.append( (2, "movq rax, "+'0b'+('{0:064b}').format(rp.masks[mask_index]) ))
-					output.append( (2, "andq rax, "+mask_reg ))
+					#output.append( (2, "movq rax, "+'0b'+('{0:064b}').format(rp.masks[mask_index]) ))
+					output.append( (2, "bt "+mask_reg+", "+str(rp.masks_bit_index[mask_index]) ))
+					#output.append( (2, "xor rax, rax" ))
+					#output.append( (2, "bts rax, "+str(rp.masks_bit_index[mask_index]) ))
+					#output.append( (2, "andq rax, "+mask_reg ))
 					#for (bitshift, subop, subreg) in [ (8, "b", "b"), (16, "w", "w"), (32, "d", "d"), (64, "q", "") ]:
 					#	if (bitshift==64) or (rp.masks[mask_index] < (1<<bitshift)):
 					#		output.append( (2, "and"+subop+" "+mask_reg+subreg+", "+'0b'+('{0:0'+str(bitshift)+'b}').format(rp.masks[mask_index]) ))
 					#		break
 					
-					output.append( (2, "jnz "+funk_name+"__skip_piece_"+str(piece_index) ))
+					output.append( (2, "jc "+funk_name+"__skip_piece_"+str(piece_index) ))
 	
-					output.append( (3, "# cf->pieces_used["+str(mask_index)+"] |= "+'0b'+'{0:064b}'.format(rp.masks[mask_index])+ ";" ))
-					output.append( (3, "movq rax, "+'0b'+('{0:064b}').format(rp.masks[mask_index]) ))
-					output.append( (3, "orq "+mask_reg+", rax" ))
+					#output.append( (3, "# cf->pieces_used["+str(mask_index)+"] |= "+'0b'+'{0:064b}'.format(rp.masks[mask_index])+ ";" ))
+					output.append( (3, "bts "+mask_reg+", "+str(rp.masks_bit_index[mask_index]) ))
+					#output.append( (3, "movq rax, "+'0b'+('{0:064b}').format(rp.masks[mask_index]) ))
+					#output.append( (3, "orq "+mask_reg+", rax" ))
 
 					output.append( (3, "# cf->patterns_down[ "+x[""]+"] = "+str(rp.d)+";" ))
-					output.append( (3, "ror "+patterns_down_reg+", "+patterns_down_rotate ) )
-					output.append( (3, "movb "+patterns_down_reg+"b, "+str(rp.d) ) )
-					output.append( (3, "rol "+patterns_down_reg+", "+patterns_down_rotate ) )
+					output.append( (3, "ror "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
+					output.append( (3, "movb "+patterns_down_reg[""]+"b, "+str(ref_up) ) )
+					output.append( (3, "rol "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
 
 					output.append( (3, "inc cl # cf->cumulative_heuristic_patterns_count ++;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 0 else "" ))
 					output.append( (3, "inc cl # cf->cumulative_heuristic_patterns_count ++;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 1 else "" ))
 					output.append( (3, "inc ch # cf->cumulative_heuristic_conflicts_count ++;" if rp.conflicts_count > 0 else "" ))
+					
+					output.append( (3, "# Call the next function by calculating its address" ))
+					output.append( (3, "movq rbx, "+patterns_down_reg["next"] ) )
+					output.append( (3, "ror rbx, "+patterns_down_rotate["next"] ) )
+					output.append( (3, "movzx rax, bl" ) )
+					output.append( (3, "shl  ax, 5" ))
+					output.append( (3, "add  ax, "+str(rp.l) ))
+					output.append( (3, "shl  eax, "+str(align_shift["next"]) ))
+					output.append( (3, "call [ rax + "+funk_name_next_0+"@PLT ]" ))
 
 					#	output solve_funky_space_+next_space+"_ref_up_"+pattern_down[next_x]++"_ref_right"+x.l,
 					#	(1, "cf," )
@@ -1755,9 +1837,10 @@ class LibBlackwood( external_libs.External_Libs ):
 					output.append( (3, "dec cl # cf->cumulative_heuristic_patterns_count --;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 0 else "" ))
 					output.append( (3, "dec cl # cf->cumulative_heuristic_patterns_count --;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 1 else "" ))
 
-					output.append( (3, "# cf->pieces_used["+str(mask_index)+"] &= !"+'0b'+'{0:064b}'.format(rp.masks[mask_index])+ ";" ))
-					output.append( (3, "movq rax, "+'~0b'+('{0:064b}').format(rp.masks[mask_index]) ))
-					output.append( (3, "andq "+mask_reg+", rax" ))
+					#output.append( (3, "# cf->pieces_used["+str(mask_index)+"] &= !"+'0b'+'{0:064b}'.format(rp.masks[mask_index])+ ";" ))
+					#output.append( (3, "movq rax, "+'~0b'+('{0:064b}').format(rp.masks[mask_index]) ))
+					#output.append( (3, "andq "+mask_reg+", rax" ))
+					output.append( (3, "btr "+mask_reg+", "+str(rp.masks_bit_index[mask_index]) ))
 
 					output.append( (2, "jmp "+funk_name+"__end_piece_"+str(piece_index) ))
 					#output.append( (2, "} else {" if self.DEBUG_STATS + self.DEBUG_PERF > 0 else "") )
@@ -1771,14 +1854,14 @@ class LibBlackwood( external_libs.External_Libs ):
 
 				# Restore the previous patterns_down
 				output.append( (2, "# cf->patterns_down[ "+x[""]+"] = "+str(ref_up)+";" ))
-				output.append( (2, "ror "+patterns_down_reg+", "+patterns_down_rotate ) )
-				output.append( (2, "movb "+patterns_down_reg+"b, "+str(ref_up) ) )
-				output.append( (2, "rol "+patterns_down_reg+", "+patterns_down_rotate ) )
+				output.append( (2, "ror "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
+				output.append( (2, "movb "+patterns_down_reg[""]+"b, "+str(ref_up) ) )
+				output.append( (2, "rol "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
 
 				output.append( (2, "ret") )
 				output.append( (1, ".cfi_endproc") )
 				output.append( (1, ".size "+funk_name+", .-"+funk_name ))
-				output.append( (1, ".align 8192" ))
+				output.append( (1, ".align "+str(1 << align_shift[""]) ))
 
 
 
