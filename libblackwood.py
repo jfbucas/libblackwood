@@ -68,7 +68,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			[ "Check for Commands",		"check_commands",		"CheckCommands" ],
 			[ "Commands for Interactivity",	"commands",			"Commands" ],
 			[ "Show help",			"help",				"Help" ],
-			[ "Max Depth Seen",		"max_depth_seen",		"MaxDepthSeen" ],
+			[ "Max Depth Seen",		"best_depth_seen",		"BestDepth" ],
 			[ "Seed",			"seed",				"Seed" ],
 		]
 
@@ -139,8 +139,9 @@ class LibBlackwood( external_libs.External_Libs ):
 		signatures.extend( self.gen_getter_setter_function( only_signature=True ) )
 		signatures.extend( self.gen_allocate_blackwood_function( only_signature=True ) )
 		signatures.extend( self.gen_getSolutionURL_function( only_signature=True ) )
-		signatures.extend( self.gen_getMaxDepthSeenHeartbeat_function( only_signature=True ) )
+		signatures.extend( self.gen_getBestDepthHeartbeat_function( only_signature=True ) )
 		#signatures.extend( self.gen_solve_function(only_signature=True) )
+		signatures.extend( self.gen_solve_funky_bootstrap_c(only_signature=True) )
 		signatures.extend( self.gen_do_commands(only_signature=True ) )
 		signatures.extend( self.gen_set_blackwood_arrays_function(only_signature=True ) )
 		
@@ -168,10 +169,10 @@ class LibBlackwood( external_libs.External_Libs ):
 			elif command in [ "b", "best", "show_best_board", "url" ]:
 				self.LibExt.xorCommands( self.cb, self.COMMANDS[ 'SHOW_BEST_BOARD_URL_ONCE' ] )
 				command_found = True
-			elif command in [ "m", "max", "show_max_depth_seen" ]:
+			elif command in [ "m", "max", "show_best_depth_seen" ]:
 				self.LibExt.xorCommands( self.cb, self.COMMANDS[ 'SHOW_MAX_DEPTH_SEEN' ] )
 				command_found = True
-			elif command in [ "s", "save", "save_max_depth_seen" ]:
+			elif command in [ "s", "save", "save_best_depth_seen" ]:
 				self.LibExt.xorCommands( self.cb, self.COMMANDS[ 'SAVE_MAX_DEPTH_SEEN_ONCE' ] )
 				command_found = True
 			elif command in [ "", "print", "cc", "check_commands" ]:
@@ -281,7 +282,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.extend( [
 				# SHOW BEST_BOARD
 				(1, 'if (b->commands & (SHOW_BEST_BOARD_URL | SHOW_BEST_BOARD_URL_ONCE) ) {' ),
-				(2, 'if (b->max_depth_seen > 0)' ),
+				(2, 'if (b->best_depth_seen > 0)' ),
 				(3, prefix+'printBoardURL( '+out+' b);' ),
 				(2, 'b->commands &= ~SHOW_BEST_BOARD_URL_ONCE;' ),
 				(1, '}' ),
@@ -290,13 +291,13 @@ class LibBlackwood( external_libs.External_Libs ):
 
 				# SHOW/SAVE MAX_DEPTH
 				(1, 'if (b->commands & (SHOW_MAX_DEPTH_SEEN | SHOW_MAX_DEPTH_SEEN_ONCE) ) {' ),
-				(2, "".join( [ 'if (b->max_depth_seen == '+str(k)+' ) '+prefix+'printf( '+out+' "Max Depth Seen = '+self.DEPTH_COLORS[k]+str(k)+self.XTermNormal+'\\n\\n'+'");' for k in self.DEPTH_COLORS] ) ),
+				(2, "".join( [ 'if (b->best_depth_seen == '+str(k)+' ) '+prefix+'printf( '+out+' "Max Depth Seen = '+self.DEPTH_COLORS[k]+str(k)+self.XTermNormal+'\\n\\n'+'");' for k in self.DEPTH_COLORS] ) ),
 				(2, 'b->commands &= ~SHOW_MAX_DEPTH_SEEN_ONCE;' ),
 				(1, '}' ),
 				(0, '' ),
 
 				(1, 'if (b->commands & SAVE_MAX_DEPTH_SEEN_ONCE) {' ),
-				(2, ''.join( [ 'if (b->max_depth_seen == '+str(k)+' ) save_max_depth_seen_'+str(k)+'(b);' for k in self.DEPTH_COLORS] ) ),
+				(2, ''.join( [ 'if (b->best_depth_seen == '+str(k)+' ) save_best_depth_seen_'+str(k)+'(b);' for k in self.DEPTH_COLORS] ) ),
 				(2, 'b->commands &= ~SAVE_MAX_DEPTH_SEEN_ONCE;' ),
 				(1, '}' ),
 				(0, '' ),
@@ -371,8 +372,8 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, "// Time keeping on nodes" ),
 				(1, "uint16 nodes_heartbeat[ WH ];"),
 				(0, "" ),
-				(1, "// Records at what heartbeat the max_depth_seen have been found" ),
-				(1, "uint16 max_depth_seen_heartbeat[ WH ];"),
+				(1, "// Records at what heartbeat the best_depth_seen have been found" ),
+				(1, "uint16 best_depth_seen_heartbeat[ WH ];"),
 				(0, "" ),
 				] )
 
@@ -418,70 +419,6 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (0 , "p_blackwood global_blackwood;") )
 			output.append( (0 , "") )
 
-
-		# Funky
-		if only_signature:
-
-			output.extend( [
-				(0, "// Structure Funky"),
-				(0, "struct st_funky {"),
-				(0, "" ),
-				] )
-
-			output.extend( [
-				(0, "" ),
-				(1, "// The Board" ),
-				(1, "t_union_rotated_piece board[ WH ];"),
-				(0, "" ),
-				#(1, "// Masks" ),
-				#(1, "uint64 pieces_used[4];" ),
-				(0, "" ),
-				#(1, "// Patterns_down"),
-				#(1, "uint8 patterns_down["+str(self.puzzle.board_w)+"];" ),
-				(0, "" ),
-				#(1, "// Heuristic" ),
-				#(1, "uint64 cumulative_heuristic_patterns_count;" ),
-				#(1, "uint64 cumulative_heuristic_conflicts_count;" ),
-				(0, "" ),
-				(1, "// Records at what heartbeat the max_depth_seen have been found" ),
-				(1, "uint16 max_depth_seen_heartbeat[ WH ];"),
-				] )
-
-			for (fname, vname, uname, flag)  in self.STATS:
-				vtname = vname.replace("stats_", "stats_total_")
-				output.extend( [
-				(1, "// Statistics "+uname ),
-				(1, "uint64 "+vtname+";"),
-				(1, "uint64 "+vname+"[ WH ];"),
-				(0, "" ),
-				] )
-
-			for (c, n, s) in self.FLAGS:
-				output.extend( [
-				(1, "// Flag "+c+" -- "+s+" for short"),
-				(1, "uint64	"+n+";"),
-				(0, "" ),
-				] )
-
-			output.extend( [
-				(0, ""),
-				(0 , "};"),
-				(0, ""),
-				] )
-
-			output.append( (0 , "") )
-			output.append( (0 , "typedef struct st_funky   t_funky;") )
-			output.append( (0 , "typedef t_funky *         p_funky;") )
-			output.append( (0 , "") )
-			output.append( (0 , "") )
-
-			output.append( (0 , "// A global pointer") )
-			output.append( (0 , "extern p_funky global_funky;") )
-			output.append( (0 , "") )
-		else:
-			output.append( (0 , "// A global pointer") )
-			output.append( (0 , "p_funky global_funky;") )
-			output.append( (0 , "") )
 
 		return output
 
@@ -633,10 +570,10 @@ class LibBlackwood( external_libs.External_Libs ):
 		return output
 
 	# ----- Generate the solution into a string for WFN
-	def gen_getMaxDepthSeenHeartbeat_function( self, only_signature=False ):
+	def gen_getBestDepthHeartbeat_function( self, only_signature=False ):
 
 		output = [ 
-			(0, "uint64 getMaxDepthSeenHeartbeat("),
+			(0, "uint64 getBestDepthHeartbeat("),
 			(1, "voidp b,"),
 			(1, "uint64 index"),
 			]
@@ -647,7 +584,7 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		output.extend( [
 			(1, ") {"),
-			(2, 'return ((p_blackwood)b)->max_depth_seen_heartbeat[index];' ),
+			(2, 'return ((p_blackwood)b)->best_depth_seen_heartbeat[index];' ),
 			(0, "}"),
 			])
 
@@ -688,6 +625,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			] )
 			
 		return output
+
 
 	# ----- Free blackwood memory
 	def gen_free_blackwood_function( self, only_signature=False ):
@@ -792,12 +730,12 @@ class LibBlackwood( external_libs.External_Libs ):
 
 
 	# ----- Save best results
-	def gen_save_max_depth_seen_function( self, only_signature=False ):
+	def gen_save_best_depth_seen_function( self, only_signature=False ):
 
 		output = [] 
 		for k in self.DEPTH_COLORS.keys():
 			output.extend( [ 
-				(0, "void save_max_depth_seen_"+str(k)+"("),
+				(0, "void save_best_depth_seen_"+str(k)+"("),
 				(1, "p_blackwood b"),
 				] )
 
@@ -1214,7 +1152,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		output.extend( [
 			(1, 'for(i=0;i<WH;i++) cb->board[i].value = 0;' ),
 			(1, 'for(i=0;i<WH;i++) cb->nodes_heartbeat[i] = 0;' ),
-			(1, 'for(i=0;i<WH;i++) cb->max_depth_seen_heartbeat[i] = 0;' ),
+			(1, 'for(i=0;i<WH;i++) cb->best_depth_seen_heartbeat[i] = 0;' ),
 			(1, 'cb->adaptative_filter_depth = WH;' ),
 			(2, ""),
 			] )
@@ -1270,17 +1208,17 @@ class LibBlackwood( external_libs.External_Libs ):
 				] )
 
 			if ((self.DEBUG > 0 and depth > WH//2) or (depth > self.puzzle.scenario.depth_first_notification-7)) and depth < self.puzzle.scenario.depth_first_notification:
-				output.append( (2, 'if (cb->max_depth_seen < '+d+') {') )
-				output.append( (3, 'cb->max_depth_seen = '+d+';') )
-				output.append( (3, 'cb->max_depth_seen_heartbeat['+d+'] = cb->heartbeat;') )
+				output.append( (2, 'if (cb->best_depth_seen < '+d+') {') )
+				output.append( (3, 'cb->best_depth_seen = '+d+';') )
+				output.append( (3, 'cb->best_depth_seen_heartbeat['+d+'] = cb->heartbeat;') )
 				if self.DEBUG > 0:
 					output.append( (3, 'for(i=0;i<WH;i++) cb->board[i] = board[i];') )
 				output.append( (2, '}' ))
 
 			if depth >= self.puzzle.scenario.depth_first_notification:
-				output.append( (2, 'if (cb->max_depth_seen < '+d+') {' if depth < WH else '') )
-				output.append( (3, 'cb->max_depth_seen = '+d+';') )
-				output.append( (3, 'cb->max_depth_seen_heartbeat['+d+'] = cb->heartbeat;' if depth < WH else '') )
+				output.append( (2, 'if (cb->best_depth_seen < '+d+') {' if depth < WH else '') )
+				output.append( (3, 'cb->best_depth_seen = '+d+';') )
+				output.append( (3, 'cb->best_depth_seen_heartbeat['+d+'] = cb->heartbeat;' if depth < WH else '') )
 				output.append( (3, 'cb->heartbeat_limit += heartbeat_time_bonus[ '+d+' ];') )
 				output.append( (3, 'for(i=0;i<WH;i++) cb->board[i] = board[i];') )
 				output.append( (3, 'cb->wait_for_notification = 1;' ) )
@@ -1348,7 +1286,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (3, '}' ), )
 				output.append( (0, '' ), )
 				output.append( (3, 'if (cb->send_a_notification) {' ), )
-				output.append( (4, 'if (cb->max_depth_seen == 0) for(i=0;i<WH;i++) cb->board[i] = board[i];') )
+				output.append( (4, 'if (cb->best_depth_seen == 0) for(i=0;i<WH;i++) cb->board[i] = board[i];') )
 				output.append( (4, 'cb->wait_for_notification = 1;' ) )
 				output.append( (4, 'cb->send_a_notification = 0;' ), )
 				output.append( (3, '}' ), )
@@ -1525,31 +1463,43 @@ class LibBlackwood( external_libs.External_Libs ):
 		H=self.puzzle.board_h
 		WH=self.puzzle.board_wh
 
+		registers = [ "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15" ]
 		output = []
-	
-		# rax 
-		# rbx 
+
+		# https://renenyffenegger.ch/notes/development/languages/assembler/x86/registers/index
+		# rax tmp
+		# rbx tmp
 		#  cl heuristic patterns  count
 		#  ch heuristic conflicts count
-		# rdx
-		# rsi
-		# rdi &(cf->check_command)
+		#  dl best_depth_seen
+		#  dh 
+		# rsi board[WH]
+		# rdi cf->
 		# r8  pieces_used[0]
 		# r9  pieces_used[1] 
 		# r10 pieces_used[2] 
 		# r11 pieces_used[3]
 		# r12 patterns_down[0-7]
 		# r13 patterns_down[8-15]
-		# r14 board[WH]
-		# r15 cf->
-		# xmm0 1
-		# xmm1 stats_total_nodes_count
-		# xmm2 stats_pieces_tried_count
-		# xmm3 stats_total_heuristic_patterns_break_count 
-		# xmm4 stats_total_heuristic_conflicts_break_count
-		# xmm5 stats_pieces_used_count 
-		# xmm6
-		# xmm7 
+		# r14 
+		# r15 &(cf->check_commands)
+		# mm0 0
+		# mm1 1
+		# mm2 stats_total_nodes_count
+		# mm3 stats_pieces_tried_count
+		# mm4 stats_total_heuristic_patterns_break_count 
+		# mm5 stats_total_heuristic_conflicts_break_count
+		# mm6 stats_pieces_used_count 
+		# mm7
+
+		# Calling 
+		# First Argument  : RDI
+		# Second Argument : RSI
+		# Third Argument  : RDX
+		# Fourth Argument : RCX
+		# Fifth Argument  : R8
+		# Sixth Argument  : R9
+
 		
 		MARP = []
 		tmp = sorted(self.puzzle.master_all_rotated_pieces.keys())
@@ -1593,13 +1543,20 @@ class LibBlackwood( external_libs.External_Libs ):
 		
 
 
-		#for depth in range(WH-1):
-		for depth in range(WH-W*2,WH-W):
+		for depth in range(WH):
+		#for depth in range(WH-W*2,WH-W):
 			
 			space = {}
 			space[ "" ]         = self.puzzle.scenario.spaces_sequence[ depth   ]
-			space[ "previous" ] = self.puzzle.scenario.spaces_sequence[ depth-1 ]
-			space[ "next" ]     = self.puzzle.scenario.spaces_sequence[ depth+1 ]
+			if depth > 0:
+				space[ "previous" ] = self.puzzle.scenario.spaces_sequence[ depth-1 ]
+			else:
+				space[ "previous" ] = None
+			if depth < WH-1:
+				space[ "next" ]     = self.puzzle.scenario.spaces_sequence[ depth+1 ]
+			else:
+				space[ "next" ]     = None
+
 			space[ "u" ]        = self.puzzle.static_space_up[ space[""] ]
 			space[ "r" ]        = self.puzzle.static_space_right[ space[""] ]
 			space[ "d" ]        = self.puzzle.static_space_down[ space[""] ]
@@ -1627,7 +1584,7 @@ class LibBlackwood( external_libs.External_Libs ):
 					elif longest[k] in [ 4, 6, 7 ]:
 						align_shift[k] = 7
 					elif longest[k] in [ 12 ]:
-						align_shift[k] = 10
+						align_shift[k] = 9
 					elif longest[k] in [ 96 ]:
 						align_shift[k] = 13
 					else:
@@ -1669,7 +1626,7 @@ class LibBlackwood( external_libs.External_Libs ):
 						if self.puzzle.static_spaces_type[ space[""] ] in [ "corner", "border" ]:
 							Side[d] = self.puzzle.colors_border_no_edge
 					
-			print(space[""], Side)
+			#print(space[""], Side)
 
 
 			for_ref = self.puzzle.scenario.spaces_references[ space[""] ]
@@ -1698,7 +1655,10 @@ class LibBlackwood( external_libs.External_Libs ):
 			#for ref_up, ref_right in itertools.product(self.puzzle.colors, self.puzzle.colors):
 			for ref_up, ref_right in itertools.product(range(32), range(32)):
 
-				funk_name_next_0 = "solve_funky_space_"+format(space["next"], "03")+"_ref_up_"+format(0,"02")+"_ref_right_"+format(0,"02")
+				if depth != WH-1:
+					funk_name_next = "solve_funky_space_"+format(space["next"], "03")+"_ref_up_"+format(0,"02")+"_ref_right_"+format(0,"02")
+				else:
+					funk_name_next = "solve_funky_we_have_a_solution_c"
 				funk_name = "solve_funky_space_"+format(space[""], "03")+"_ref_up_"+format(ref_up,"02")+"_ref_right_"+format(ref_right,"02")
 
 				if only_signature:
@@ -1713,22 +1673,31 @@ class LibBlackwood( external_libs.External_Libs ):
 					(0, ".cfi_startproc"),
 					] )
 
-
 				rpl = []
 				if format(ref_up,"02")+"_"+format(ref_right,"02") in rpl_lists[""].keys():
 					rpl = rpl_lists[""][ format(ref_up,"02")+"_"+format(ref_right,"02") ]
 
-
 				# No piece? => function is empty
 				if len(rpl) == 0:
 					output.append( (2, "ret") )
-					output.append( (1, ".cfi_endproc") )
-					output.append( (1, ".size "+funk_name+", .-"+funk_name ))
-					output.append( (1, ".align "+str(1 << align_shift[""]) ))
+					output.append( (0, ".cfi_endproc") )
+					output.append( (0, ".size "+funk_name+", .-"+funk_name ))
+					output.append( (0, ".align "+str(1 << align_shift[""]) ))
 					continue
 
+				if ((self.DEBUG > 0 and depth > WH//2) or (depth > self.puzzle.scenario.depth_first_notification-7)) and depth < self.puzzle.scenario.depth_first_notification:
+					output.append( (2, "cmp dl, "+str(depth) ) )
+					output.append( (2, "jae "+funk_name+"__end") )
+					output.append( (2, "mov dl, "+str(depth)) )
+					output.append( (2, "call solve_funky_best_depth_seen@PLT") )
+					output.append( (2, funk_name+"__not_best_depth_seen:"))
+
+				if depth in (range(0, WH, W*4) if self.DEBUG == 0 else range(0, WH, W*2)):
+					output.append( (2, "call solve_funky_check_commands@PLT") )
+					output.append( (2, "jc "+funk_name+"__end # TTF") )
+
 				#output.append( (2, 'cf->stats_nodes_count['+sspace[""]+'] ++;' if self.DEBUG_STATS > 0 else "") )
-				output.append( (2, 'paddq xmm1, xmm0 # cf->stats_total_nodes_count ++;' if self.DEBUG_PERF > 0 else "") )
+				output.append( (2, 'paddq mm2, mm1 # cf->stats_total_nodes_count ++;' if self.DEBUG_PERF > 0 else "") )
 
 				# The piece scoring ensure pieces are sorted by conflict, then by pattern
 				# We only check heuristic patterns when the piece doesn't contribute
@@ -1736,7 +1705,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				heuristic_conflicts_already_checked_once = False
 				piece_index = 0
 				for rp in rpl:
-					output.append( (3, "# "+ str(rp) ) )
+					output.append( (2, "# "+ str(rp) ) )
 
 					if heuristic_patterns and not heuristic_patterns_already_checked_once:
 						if (rp.heuristic_patterns_count[0] == 0):
@@ -1744,7 +1713,7 @@ class LibBlackwood( external_libs.External_Libs ):
 							output.append( (2, "cmp cl, "+str(self.puzzle.scenario.heuristic_patterns_count[0][depth])+" #  Heuristic patterns count"))
 							output.append( (2, "jae "+funk_name+"__heuristic_patterns_ok"))
 							#output.append( (3, "cf->stats_heuristic_patterns_break_count[ "+sspace[""]+" ]++; " if self.DEBUG_STATS > 0 else "" ))
-							output.append( (3, "paddq xmm3, xmm0 # cf->stats_total_heuristic_patterns_break_count ++; " if self.DEBUG_PERF > 0 else "" ))
+							output.append( (3, "paddq mm4, mm1 # cf->stats_total_heuristic_patterns_break_count ++; " if self.DEBUG_PERF > 0 else "" ))
 							output.append( (3, "# cf->patterns_down[ "+x[""]+"] = "+str(ref_up)+";" ) )
 							output.append( (3, "ror "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
 							output.append( (3, "movb "+patterns_down_reg[""]+"b, "+str(ref_up) ) )
@@ -1752,13 +1721,6 @@ class LibBlackwood( external_libs.External_Libs ):
 							output.append( (3, "ret" ))
 							output.append( (2, funk_name+"__heuristic_patterns_ok:"))
 
-							#output.append( (2, "if (cf->cumulative_heuristic_patterns_count < "+str(self.puzzle.scenario.heuristic_patterns_count[0][depth]-rp.heuristic_patterns_count[0])+" ) { "))
-							#output.append( (2, "if (cf->cumulative_heuristic_patterns_count < "+str(self.puzzle.scenario.heuristic_patterns_count[0][depth])+" ) { "))
-							#output.append( (3, "cf->stats_heuristic_patterns_break_count[ "+sspace[""]+" ]++; " if self.DEBUG_STATS > 0 else "" ))
-							#output.append( (3, "cf->stats_total_heuristic_patterns_break_count ++; " if self.DEBUG_PERF > 0 else "" ))
-							#output.append( (3, "cf->patterns_down[ "+x[""]+"] = "+str(ref_up)+";" ) )
-							#output.append( (3, "return;" ))
-							#output.append( (2, "}"))
 							heuristic_patterns_already_checked_once = True
 
 					if heuristic_conflicts and not heuristic_conflicts_already_checked_once:
@@ -1771,7 +1733,7 @@ class LibBlackwood( external_libs.External_Libs ):
 							output.append( (2, "cmp ch, "+str(conflicts_allowed)+" #  Heuristic conflicts count"))
 							output.append( (2, "jae "+funk_name+"__heuristic_conflicts_ok"))
 							#output.append( (3, "cf->stats_heuristic_patterns_break_count[ "+sspace[""]+" ]++; " if self.DEBUG_STATS > 0 else "" ))
-							output.append( (3, "paddq xmm4, xmm0 # cf->stats_total_heuristic_conflicts_break_count ++; " if self.DEBUG_PERF > 0 else "" ))
+							output.append( (3, "paddq mm5, mm1 # cf->stats_total_heuristic_conflicts_break_count ++; " if self.DEBUG_PERF > 0 else "" ))
 							output.append( (3, "# cf->patterns_down[ "+x[""]+"] = "+str(ref_up)+";" ) )
 							output.append( (3, "ror "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
 							output.append( (3, "movb "+patterns_down_reg[""]+"b, "+str(ref_up) ) )
@@ -1779,74 +1741,58 @@ class LibBlackwood( external_libs.External_Libs ):
 							output.append( (3, "ret" ))
 							output.append( (2, funk_name+"__heuristic_conflicts_ok:"))
 
-							#output.append( (2, "if (cf->cumulative_heuristic_conflicts_count > "+str(conflicts_allowed)+ ") { "))
-							#output.append( (3, "cf->stats_heuristic_conflicts_break_count[ "+sspace[""]+" ]++; " if self.DEBUG_STATS > 0 else "" ))
-							#output.append( (3, "cf->stats_total_heuristic_conflicts_break_count ++; " if self.DEBUG_PERF > 0 else "" ))
-							#output.append( (3, "cf->patterns_down[ "+x[""]+"] = "+str(ref_up)+";" ))
-							#output.append( (3, "return;" ))
-							#output.append( (2, "}" ))
 							heuristic_conflicts_already_checked_once = True
-
 
 
 					mask_index = rp.p // 64
 					mask_reg = "r"+str(8+mask_index)
-					#output.append( (2, 'cf->stats_pieces_tried_count['+sspace[""]+'] ++;' if self.DEBUG_STATS > 0 else "") )
-					output.append( (2, 'paddq xmm2, xmm0 # cf->stats_total_pieces_tried_count ++;' if self.DEBUG_PERF > 0 else "") )
-					#output.append( (2, "# if ( ! (cf->pieces_used["+str(mask_index)+"] & "+'0b'+'{0:064b}'.format(rp.masks[mask_index]) +" ) ) {" ))
-
-					#output.append( (2, "movq rax, "+'0b'+('{0:064b}').format(rp.masks[mask_index]) ))
+					output.append( (2, 'paddq mm3, mm1 # cf->stats_total_pieces_tried_count ++;' if self.DEBUG_PERF > 0 else "") )
+					output.append( (2, "# Test if the piece is already in use" ))
 					output.append( (2, "bt "+mask_reg+", "+str(rp.masks_bit_index[mask_index]) ))
-					#output.append( (2, "xor rax, rax" ))
-					#output.append( (2, "bts rax, "+str(rp.masks_bit_index[mask_index]) ))
-					#output.append( (2, "andq rax, "+mask_reg ))
-					#for (bitshift, subop, subreg) in [ (8, "b", "b"), (16, "w", "w"), (32, "d", "d"), (64, "q", "") ]:
-					#	if (bitshift==64) or (rp.masks[mask_index] < (1<<bitshift)):
-					#		output.append( (2, "and"+subop+" "+mask_reg+subreg+", "+'0b'+('{0:0'+str(bitshift)+'b}').format(rp.masks[mask_index]) ))
-					#		break
-					
 					output.append( (2, "jc "+funk_name+"__skip_piece_"+str(piece_index) ))
-	
-					#output.append( (3, "# cf->pieces_used["+str(mask_index)+"] |= "+'0b'+'{0:064b}'.format(rp.masks[mask_index])+ ";" ))
 					output.append( (3, "bts "+mask_reg+", "+str(rp.masks_bit_index[mask_index]) ))
-					#output.append( (3, "movq rax, "+'0b'+('{0:064b}').format(rp.masks[mask_index]) ))
-					#output.append( (3, "orq "+mask_reg+", rax" ))
-
-					output.append( (3, "# cf->patterns_down[ "+x[""]+"] = "+str(rp.d)+";" ))
-					output.append( (3, "ror "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
-					output.append( (3, "movb "+patterns_down_reg[""]+"b, "+str(ref_up) ) )
-					output.append( (3, "rol "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
-
-					output.append( (3, "inc cl # cf->cumulative_heuristic_patterns_count ++;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 0 else "" ))
-					output.append( (3, "inc cl # cf->cumulative_heuristic_patterns_count ++;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 1 else "" ))
-					output.append( (3, "inc ch # cf->cumulative_heuristic_conflicts_count ++;" if rp.conflicts_count > 0 else "" ))
 					
-					output.append( (3, "# Call the next function by calculating its address" ))
-					output.append( (3, "movq rbx, "+patterns_down_reg["next"] ) )
-					output.append( (3, "ror rbx, "+patterns_down_rotate["next"] ) )
-					output.append( (3, "movzx rax, bl" ) )
-					output.append( (3, "shl  ax, 5" ))
-					output.append( (3, "add  ax, "+str(rp.l) ))
-					output.append( (3, "shl  eax, "+str(align_shift["next"]) ))
-					output.append( (3, "call [ rax + "+funk_name_next_0+"@PLT ]" ))
+					output.append( (3, "# Store the piece in the board[WH]" ))
+					output.append( (3, "mov dword ptr [rsi + "+sspace[""]+"*8 ], 0x"+"{:02X}".format(rp.u)+"{:02X}".format(rp.r)+"{:02X}".format(rp.d)+"{:02X}".format(rp.l) ))
+					
+					if depth != WH-1:
+						output.append( (3, "# cf->patterns_down[ "+x[""]+"] = "+str(rp.d)+";" ))
+						output.append( (3, "ror "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
+						output.append( (3, "movb "+patterns_down_reg[""]+"b, "+str(ref_up) ) )
+						output.append( (3, "rol "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
 
-					#	output solve_funky_space_+next_space+"_ref_up_"+pattern_down[next_x]++"_ref_right"+x.l,
-					#	(1, "cf," )
+						output.append( (3, "inc cl # cf->cumulative_heuristic_patterns_count ++;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 0 else "" ))
+						output.append( (3, "inc cl # cf->cumulative_heuristic_patterns_count ++;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 1 else "" ))
+						output.append( (3, "inc ch # cf->cumulative_heuristic_conflicts_count ++;" if rp.conflicts_count > 0 else "" ))
 
-					output.append( (3, "dec ch # cf->cumulative_heuristic_conflicts_count --;" if rp.conflicts_count > 0 else "" ))
-					output.append( (3, "dec cl # cf->cumulative_heuristic_patterns_count --;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 0 else "" ))
-					output.append( (3, "dec cl # cf->cumulative_heuristic_patterns_count --;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 1 else "" ))
+						output.append( (3, "# Call the next function by calculating its address" ))
+						output.append( (3, "movq rbx, "+patterns_down_reg["next"] ) )
+						output.append( (3, "ror rbx, "+patterns_down_rotate["next"] ) )
+						output.append( (3, "movzx rax, bl" ) )
+						output.append( (3, "shl  ax, 5" ))
+						output.append( (3, "add  ax, "+str(rp.l) ))
+						output.append( (3, "shl  eax, "+str(align_shift["next"]) ))
+						output.append( (3, "call [ rax + "+funk_name_next+"@PLT ]" ))
 
-					#output.append( (3, "# cf->pieces_used["+str(mask_index)+"] &= !"+'0b'+'{0:064b}'.format(rp.masks[mask_index])+ ";" ))
-					#output.append( (3, "movq rax, "+'~0b'+('{0:064b}').format(rp.masks[mask_index]) ))
-					#output.append( (3, "andq "+mask_reg+", rax" ))
+						output.append( (3, "dec ch # cf->cumulative_heuristic_conflicts_count --;" if rp.conflicts_count > 0 else "" ))
+						output.append( (3, "dec cl # cf->cumulative_heuristic_patterns_count --;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 0 else "" ))
+						output.append( (3, "dec cl # cf->cumulative_heuristic_patterns_count --;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 1 else "" ))
+					else:
+						for r in registers:
+							output.append( (3, "push "+r ))
+						output.append( (3, "# rdi is already pointing to cf->" ))
+						output.append( (3, "# rsi is already pointing to board[WH]" ))
+						output.append( (3, "call [ "+funk_name_next+"@PLT ]" ))
+						for r in reversed(registers):
+							output.append( (3, "pop "+r ))
+
 					output.append( (3, "btr "+mask_reg+", "+str(rp.masks_bit_index[mask_index]) ))
 
-					output.append( (2, "jmp "+funk_name+"__end_piece_"+str(piece_index) ))
-					#output.append( (2, "} else {" if self.DEBUG_STATS + self.DEBUG_PERF > 0 else "") )
+					output.append( (2, "jmp "+funk_name+"__end_piece_"+str(piece_index) if self.DEBUG_PERF > 0 else "" ))
+					#output.append( (2, "} else {" if self.DEBUG_STATS + self.DEBUG_PERF > 0 else ""))
 					output.append( (2, funk_name+"__skip_piece_"+str(piece_index)+":" ))
 					#output.append( (3, 'cf->stats_pieces_used_count['+sspace[""]+'] ++;' if self.DEBUG_STATS > 0 else "") )
-					output.append( (3, 'paddq xmm5, xmm0  # cf->stats_total_pieces_used_count ++;' if self.DEBUG_PERF > 0 else "") )
+					output.append( (3, 'paddq mm6, mm1  # cf->stats_total_pieces_used_count ++;' if self.DEBUG_PERF > 0 else "") )
 					output.append( (2, funk_name+"__end_piece_"+str(piece_index)+":" ))
 
 					piece_index += 1
@@ -1858,12 +1804,357 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (2, "movb "+patterns_down_reg[""]+"b, "+str(ref_up) ) )
 				output.append( (2, "rol "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
 
+				output.append( (2, funk_name+"__end:" ))
 				output.append( (2, "ret") )
-				output.append( (1, ".cfi_endproc") )
-				output.append( (1, ".size "+funk_name+", .-"+funk_name ))
-				output.append( (1, ".align "+str(1 << align_shift[""]) ))
+				output.append( (0, ".cfi_endproc") )
+				output.append( (0, ".size "+funk_name+", .-"+funk_name ))
+				output.append( (0, ".align "+str(1 << align_shift[""]) ))
 
 
+		# Solve_Funk_Check_Command
+		funk_name = "solve_funky_check_commands"
+		if only_signature:
+			# Signature for .h file
+			output.append( (0, "void "+funk_name+"();") )
+		else:
+
+			output.extend( [
+				(0, ".globl  "+funk_name ),
+				(0, ".type   "+funk_name+", @function"),
+				(0, funk_name+":"),
+				(0, ".cfi_startproc"),
+				] )
+			output.extend( [
+				(2, "btq [r15], 0"),
+				(2, "jnc "+funk_name+"_end"),
+				] )
+			for r in registers:
+				output.append( (3, "push "+r ))
+			output.append( (3, "# rdi is already pointing to cf->" ))
+			output.append( (3, "# rsi is already pointing to board[WH]" ))
+			output.append( (3, "call solve_funky_check_commands_c@PLT" ))
+			output.append( (3, "bt rax, 0  # We set the carry if TTF") )
+			for r in reversed(registers):
+				output.append( (3, "pop "+r ))
+
+			output.extend( [
+				(2, funk_name+"_end:"),
+				(2, "ret"),
+				(0, ".cfi_endproc"),
+				(0, ".size solve"+funk_name+", .-"+funk_name ),
+				] )
+
+		# Solve_Funk_Best_Depth_Seen
+		funk_name = "solve_funky_best_depth_seen"
+		if only_signature:
+			# Signature for .h file
+			output.append( (0, "void "+funk_name+"();") )
+		else:
+
+			output.extend( [
+				(0, ".globl  "+funk_name ),
+				(0, ".type   "+funk_name+", @function"),
+				(0, funk_name+":"),
+				(0, ".cfi_startproc"),
+				] )
+			for r in registers:
+				output.append( (3, "push "+r ))
+			output.append( (3, "# rdi is already pointing to cf->" ))
+			output.append( (3, "# rsi is already pointing to board[WH]" ))
+			output.append( (3, "# rdx is already best_depth_seen" ))
+			output.append( (3, "call solve_funky_best_depth_seen_c@PLT" ))
+			for r in reversed(registers):
+				output.append( (3, "pop "+r ))
+
+			output.extend( [
+				(2, funk_name+"_end:"),
+				(2, "ret"),
+				(0, ".cfi_endproc"),
+				(0, ".size solve"+funk_name+", .-"+funk_name ),
+				] )
+
+		# Solve_Funk_Best_Depth_Seen
+		funk_name = "solve_funky_bootstrap"
+		if only_signature:
+			# Signature for .h file
+			output.append( (0, "void "+funk_name+"(") )
+			output.append( (1, "p_blackwood cf,"), )
+			output.append( (1, "t_union_rotated_piece board[WH],"), )
+			output.append( (1, "uint64 * p_check_commands"), )
+			output.append( (1, ");"), )
+		else:
+
+			output.extend( [
+				(0, ".globl  "+funk_name ),
+				(0, ".type   "+funk_name+", @function"),
+				(0, funk_name+":"),
+				(0, ".cfi_startproc"),
+				] )
+
+			# Calling 
+			# First Argument  : RDI
+			# Second Argument : RSI
+			# Third Argument  : RDX
+			# Fourth Argument : RCX
+			# Fifth Argument  : R8
+			# Sixth Argument  : R9
+
+			output.append( (1, "mov rsi, rsi  # rsi board[WH]" ))
+			output.append( (1, "mov rdi, rdi  # rdi cf->" ))
+			output.append( (1, "mov r15, rdx  # &(cf->check_commands)" ))
+
+			output.append( (1, "xor rcx, rcx  #  cl heuristic patterns  count" ))
+			output.append( (1, "xor rdx, rdx  #  dl best_depth_seen" ))
+			output.append( (1, "xor r8, r8  # r8  pieces_used[0]" ))
+			output.append( (1, "xor r9, r9  # r9  pieces_used[1] " ))
+			output.append( (1, "xor r10, r10  # r10 pieces_used[2] " ))
+			output.append( (1, "xor r11, r11  # r11 pieces_used[3]" ))
+			output.append( (1, "xor r12, r12  # r12 patterns_down[0-7]" ))
+			output.append( (1, "xor r13, r13  # r13 patterns_down[8-15]" ))
+			output.append( (1, "xor r14, r14  # r14 " ))
+			output.append( (1, "xor rax, rax" ))
+			output.append( (1, "inc rax" ))
+			output.append( (1, "pxor mm0, mm0  # mm0 0" ))
+			output.append( (1, "pxor mm1, mm1  " ))
+			output.append( (1, "movd mm1, eax  # mm1 1" ))
+			output.append( (1, "pxor mm2, mm2  # mm2 stats_total_nodes_count" ))
+			output.append( (1, "pxor mm3, mm3  # mm3 stats_pieces_tried_count" ))
+			output.append( (1, "pxor mm4, mm4  # mm4 stats_total_heuristic_patterns_break_count " ))
+			output.append( (1, "pxor mm5, mm5  # mm5 stats_total_heuristic_conflicts_break_count" ))
+			output.append( (1, "pxor mm6, mm6  # mm6 stats_pieces_used_count " ))
+			output.append( (1, "pxor mm7, mm7  # mm7" ))
+			output.append( (1, "xor rax, rax  # rax tmp" ))
+			output.append( (1, "xor rbx, rbx  # rbx tmp" ))
+
+			output.append( (3, "# Call the Bouzin" ))
+			output.append( (3, "call solve_funky_space_007_ref_up_00_ref_right_00@PLT" ))
+			#output.append( (3, "call solve_funky_space_015_ref_up_00_ref_right_00@PLT" ))
+
+			output.extend( [
+				(2, funk_name+"_end:"),
+				(2, "ret"),
+				(0, ".cfi_endproc"),
+				(0, ".size solve"+funk_name+", .-"+funk_name ),
+				] )
+
+
+		return output
+
+	# ----- Generate Funky functions
+	def gen_solve_funky_bootstrap_c( self, only_signature=False):
+		output = []
+
+		output.extend( [ 
+			(0, "int solve_funky_bootstrap_c("),
+			(1, "p_blackwood cf"),
+			] )
+
+		if only_signature:
+			output.append( (1, ');') )
+			return output
+
+
+		output.append( (1, ") {") )
+		output.append( (1, "uint i;") )
+		output.append( (0, '' ), )
+		output.extend( [
+			#(1, 'was_allocated = 0;' ),
+			(1, 'if (cf == NULL) {' ),
+			#(2, 'DEBUG_PRINT(("Allocating Memory\\n"));'), 
+			(2, 'cf = (p_blackwood)allocate_blackwood();'), 
+			#(2, 'was_allocated = 1;' ),
+			(1, '}'), 
+			(1, 'global_blackwood = cf;'), 
+			(1, '' ),
+			] )
+
+		output.append( (1, "// Clear funky blackwood structure") )
+		for (c, n, s) in self.FLAGS:
+			if c == "Seed":
+				continue
+			output.append( (1, "cf->"+n+" = 0;") )
+
+		output.extend( [
+			(1, "cf->heartbeat = 1; // We start at 1 for the adaptative filter "),
+			(1, "cf->heartbeat_limit = heartbeat_time_bonus[ 0 ];"),
+			] )
+
+		if self.DEBUG > 0:
+ 			output.extend( [
+			(1, "cf->commands |= CLEAR_SCREEN;"),
+			(1, "cf->commands |= SHOW_TITLE;"),
+			(1, "cf->commands |= SHOW_SEED;"),
+			(1, "cf->commands |= SHOW_HEARTBEAT;"),
+			(1, "cf->commands |= SHOW_ADAPTATIVE_FILTER;"),
+			(1, "cf->commands |= SHOW_STATS_NODES_COUNT;"),
+			(1, "cf->commands |= ZERO_STATS_NODES_COUNT;"),
+			(1, "cf->commands |= SHOW_STATS_PIECES_TRIED_COUNT;"),
+			(1, "cf->commands |= ZERO_STATS_PIECES_TRIED_COUNT;"),
+			#(1, "cf->commands |= SHOW_STATS_PIECES_USED_COUNT;"),
+			#(1, "cf->commands |= ZERO_STATS_PIECES_USED_COUNT;"),
+			#(1, "cf->commands |= SHOW_STATS_HEURISTIC_PATTERNS_BREAK_COUNT;"),
+			#(1, "cf->commands |= ZERO_STATS_HEURISTIC_PATTERNS_BREAK_COUNT;"),
+			#(1, "cf->commands |= SHOW_STATS_HEURISTIC_CONFLICTS_BREAK_COUNT;"),
+			#(1, "cf->commands |= ZERO_STATS_HEURISTIC_CONFLICTS_BREAK_COUNT;"),
+			(1, "cf->commands |= SHOW_STATS_ADAPTATIVE_FILTER_COUNT;"),
+			(1, "cf->commands |= ZERO_STATS_ADAPTATIVE_FILTER_COUNT;"),
+			#(1, "cf->commands |= SHOW_NODES_HEARTBEAT;"),
+			#(1, "cf->commands |= ZERO_NODES_HEARTBEAT;"),
+			(1, "cf->commands |= SHOW_MAX_DEPTH_SEEN;"),
+			(1, "cf->commands |= SHOW_BEST_BOARD_URL;"),
+			] )
+
+		output.extend( [
+			(1, 'for(i=0;i<WH;i++) cf->board[i].value = 0;' ),
+			(1, 'for(i=0;i<WH;i++) cf->nodes_heartbeat[i] = 0;' ),
+			(1, 'for(i=0;i<WH;i++) cf->best_depth_seen_heartbeat[i] = 0;' ),
+			(2, ""),
+			] )
+
+		for (fname, vname, uname, flag)  in self.STATS:
+			vtname = vname.replace("stats_", "stats_total_")
+			output.extend( [
+				(1, 'cf->'+vtname+" = 0;"),
+				(1, 'for(i=0;i<WH;i++) cf->'+vname+'[i] = 0;' ),
+				(0, "" ),
+				] )
+
+
+		output.append( (1, 'solve_funky_bootstrap(' ), )
+		output.append( (2, 'cf,' ), )
+		output.append( (2, '&(cf->board[0]),' ), )
+		output.append( (2, '&(cf->check_commands)' ), )
+		output.append( (1, ');' ), )
+		output.append( (0, '' ), )
+		output.append( (1, 'return 0;' ), )
+		output.append( (0, '}' ), )
+		output.append( (0, '' ), )
+
+		return output
+
+
+	# ----- Generate Funky functions
+	def gen_solve_funky_check_command_c( self, only_signature=False):
+		output = []
+
+		output.extend( [ 
+			(0, "int solve_funky_check_commands_c("),
+			(1, "p_blackwood cf,"),
+			(1, "t_union_rotated_piece board[WH]"),
+			] )
+
+		if only_signature:
+			output.append( (1, ');') )
+			return output
+
+
+		output.append( (1, ") {") )
+		output.append( (1, "uint i;") )
+
+		output.append( (1, 'cf->check_commands = 0;' ), )
+		output.append( (0, '' ) )
+		output.append( (1, 'if (cf->time_to_finish) {' ) )
+		output.append( (2, 'cf->check_commands = 1;' ) )
+		output.append( (2, 'return 1;' ) )
+		output.append( (1, '};' ) )
+		output.append( (0, '' ) )
+		output.append( (1, 'if (cf->heartbeat > cf->heartbeat_limit) {' ) )
+		output.append( (2, 'cf->time_to_finish = 1;' ) )
+		output.append( (2, 'cf->check_commands = 1;' ) )
+		output.append( (2, 'return 1;' ) )
+		output.append( (1, '};' ) )
+		output.append( (0, '' ) )
+		output.append( (1, 'do_commands(cf);' ), )
+		output.append( (0, '' ) )
+		output.append( (1, 'while ((cf->leave_cpu_alone || cf->pause) && !cf->time_to_finish) {' ) )
+		output.append( (2, 'do_commands(cf);' ), )
+		output.append( (2, 'sleep(1);' ), )
+		output.append( (1, '}' ), )
+		output.append( (0, '' ), )
+		output.append( (1, 'if (cf->send_a_notification) {' ), )
+		output.append( (2, 'if (cf->best_depth_seen == 0) for(i=0;i<WH;i++) cf->board[i] = board[i];') )
+		output.append( (2, 'cf->wait_for_notification = 1;' ) )
+		output.append( (2, 'cf->send_a_notification = 0;' ), )
+		output.append( (1, '}' ), )
+		output.append( (0, '' ), )
+		output.append( (1, 'return 0;' ), )
+		output.append( (0, '' ), )
+		output.append( (0, '}' ), )
+		output.append( (0, '' ), )
+
+		return output
+
+	# ----- Generate Funky functions
+	def gen_solve_funky_we_have_a_solution_c( self, only_signature=False):
+		output = []
+
+		output.extend( [ 
+			(0, "int solve_funky_we_have_a_solution_c("),
+			(1, "p_blackwood cf,"),
+			(1, "t_union_rotated_piece board[WH]"),
+			] )
+
+		if only_signature:
+			output.append( (1, ');') )
+			return output
+
+
+		output.append( (1, ") {") )
+		output.append( (1, "uint i;") )
+
+		output.append( (1, '// We have a complete puzzle !!' ) )
+		output.append( (1, 'for(i=0;i<WH;i++) cf->board[i] = board[i];') )
+		output.append( (1, 'cf->wait_for_notification = 1;' ), )
+		output.append( (1, 'cf->check_commands = 1;' ), )
+		output.append( (1, 'for(i=0;(i<3000000) && (!cf->time_to_finish);i++) {') )
+		output.append( (2, 'do_commands(cf);' ) )
+		output.append( (2, 'sleep(1); // Wait for the WFN thread' ) )
+		output.append( (1, '}' ) )
+		output.append( (0, '' ), )
+		output.append( (1, 'return 0;' ), )
+		output.append( (0, '}' ), )
+		output.append( (0, '' ), )
+
+		return output
+
+
+	# ----- Generate Funky functions
+	def gen_solve_funky_best_depth_seen_c( self, only_signature=False):
+		output = []
+
+		output.extend( [ 
+			(0, "int solve_funky_best_depth_seen_c("),
+			(1, "p_blackwood cf,"),
+			(1, "t_union_rotated_piece board[WH],"),
+			(1, "uint64 best_depth_seen"),
+			] )
+
+		if only_signature:
+			output.append( (1, ');') )
+			return output
+
+
+		output.append( (1, ") {") )
+		output.append( (1, "uint i;") )
+
+
+		output.append( (1, 'cf->best_depth_seen = best_depth_seen;') )
+		output.append( (1, 'cf->best_depth_seen_heartbeat[ best_depth_seen ] = cf->heartbeat;') )
+		if self.DEBUG > 0:
+			output.append( (1, 'for(i=0;i<WH;i++) cf->board[i] = board[i];') )
+
+		output.append( (1, "if (best_depth_seen >= "+str(self.puzzle.scenario.depth_first_notification)+" ) {" ) )
+		output.append( (2, 'cf->wait_for_notification = 1;' ) )
+		output.append( (2, 'cf->commands |= SAVE_MAX_DEPTH_SEEN_ONCE;' ) )
+		output.append( (2, 'cf->commands |= SHOW_MAX_DEPTH_SEEN_ONCE;' ) )
+		output.append( (2, 'if (best_depth_seen > WH-2)' ) )
+		output.append( (3, 'cf->commands |= SHOW_BEST_BOARD_URL_ONCE;' ) )
+		output.append( (2, 'do_commands(cf);' ) )
+		output.append( (1, '}' ), )
+		output.append( (0, '' ), )
+		output.append( (1, 'return 0;' ), )
+		output.append( (0, '}' ), )
+		output.append( (0, '' ), )
 
 		return output
 
@@ -1923,9 +2214,9 @@ class LibBlackwood( external_libs.External_Libs ):
 		self.writeGen( gen, self.gen_allocate_blackwood_function( only_signature=True ) )
 		self.writeGen( gen, self.gen_free_blackwood_function( only_signature=True ) )
 		self.writeGen( gen, self.gen_set_blackwood_arrays_function( only_signature=True ) )
-		self.writeGen( gen, self.gen_save_max_depth_seen_function( only_signature=True ) )
+		self.writeGen( gen, self.gen_save_best_depth_seen_function( only_signature=True ) )
 		self.writeGen( gen, self.gen_getSolutionURL_function( only_signature=True ) )
-		self.writeGen( gen, self.gen_getMaxDepthSeenHeartbeat_function( only_signature=True ) )
+		self.writeGen( gen, self.gen_getBestDepthHeartbeat_function( only_signature=True ) )
 
 		self.writeGen( gen, self.gen_print_url_functions(only_signature=True) )
 
@@ -1935,6 +2226,10 @@ class LibBlackwood( external_libs.External_Libs ):
 		self.writeGen( gen, self.gen_filter_function( only_signature=True ) )
 		#self.writeGen( gen, self.gen_solve_function(only_signature=True) )
 		self.writeGen( gen, self.gen_solve_funky_functions(only_signature=True) )
+		self.writeGen( gen, self.gen_solve_funky_check_command_c(only_signature=True) )
+		self.writeGen( gen, self.gen_solve_funky_we_have_a_solution_c(only_signature=True) )
+		self.writeGen( gen, self.gen_solve_funky_best_depth_seen_c(only_signature=True) )
+		self.writeGen( gen, self.gen_solve_funky_bootstrap_c(only_signature=True) )
 
 		self.writeGen( gen, self.getFooterH() )
 
@@ -1965,13 +2260,17 @@ class LibBlackwood( external_libs.External_Libs ):
 			self.writeGen( gen, self.gen_allocate_blackwood_function( only_signature=False ) )
 			self.writeGen( gen, self.gen_free_blackwood_function( only_signature=False ) )
 			self.writeGen( gen, self.gen_set_blackwood_arrays_function( only_signature=False ) )
-			self.writeGen( gen, self.gen_save_max_depth_seen_function( only_signature=False) )
+			self.writeGen( gen, self.gen_save_best_depth_seen_function( only_signature=False) )
 			self.writeGen( gen, self.gen_getSolutionURL_function( only_signature=False ) )
-			self.writeGen( gen, self.gen_getMaxDepthSeenHeartbeat_function( only_signature=False ) )
+			self.writeGen( gen, self.gen_getBestDepthHeartbeat_function( only_signature=False ) )
 			self.writeGen( gen, self.gen_print_url_functions(only_signature=False) )
 			self.writeGen( gen, self.gen_print_functions(only_signature=False) )
 			self.writeGen( gen, self.gen_do_commands(only_signature=False ) )
 
+			self.writeGen( gen, self.gen_solve_funky_check_command_c(only_signature=False) )
+			self.writeGen( gen, self.gen_solve_funky_we_have_a_solution_c(only_signature=False) )
+			self.writeGen( gen, self.gen_solve_funky_best_depth_seen_c(only_signature=False) )
+			self.writeGen( gen, self.gen_solve_funky_bootstrap_c(only_signature=False) )
 
 
 		elif macro_name == "generate":

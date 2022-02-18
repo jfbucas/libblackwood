@@ -92,7 +92,7 @@ class Wait_For_Notification_Thread(threading.Thread):
 				# A complete solution
 				channel = str(self.puzzle.scenario.score_target)
 
-				if self.libblackwood.LibExt.getMaxDepthSeen(self.libblackwood.cb) < self.puzzle.board_wh:
+				if self.libblackwood.LibExt.getBestDepthSeen(self.libblackwood.cb) < self.puzzle.board_wh:
 					# Have we reached the time limit?
 					if self.libblackwood.LibExt.getHB(self.libblackwood.cb) > self.libblackwood.LibExt.getHBLimit(self.libblackwood.cb):
 						if os.environ.get('NOTIFY_END') == None:
@@ -102,12 +102,12 @@ class Wait_For_Notification_Thread(threading.Thread):
 					else:
 						# Only a partial solution
 						channel = "partial"
-						if self.libblackwood.LibExt.getMaxDepthSeen(self.libblackwood.cb) >= self.puzzle.scenario.depth_first_notification:
-							channel = str(self.libblackwood.LibExt.getMaxDepthSeen(self.libblackwood.cb))
+						if self.libblackwood.LibExt.getBestDepthSeen(self.libblackwood.cb) >= self.puzzle.scenario.depth_first_notification:
+							channel = str(self.libblackwood.LibExt.getBestDepthSeen(self.libblackwood.cb))
 
 				max_depth_seen_hb="["
 				for i in range(0, self.puzzle.board_wh):
-					t = self.libblackwood.LibExt.getMaxDepthSeenHeartbeat(self.libblackwood.cb, i)
+					t = self.libblackwood.LibExt.getBestDepthSeenHeartbeat(self.libblackwood.cb, i)
 					if t > 0:
 						max_depth_seen_hb+=str(i)+":"+str(t)+" | "
 				max_depth_seen_hb+="]"
@@ -116,7 +116,7 @@ class Wait_For_Notification_Thread(threading.Thread):
 				payload+="\"icon_emoji\":\":puzzle:\","
 				payload+="\"channel\":\""+channel+"\","
 				payload+="\"text\":\"@channel [View]("+self.notification_url.value.decode("utf-8")+") "+ "[Git]("+self.giturl+") "+str(self.puzzle.scenario)
-				payload+=" "+str(self.libblackwood.LibExt.getMaxDepthSeen(self.libblackwood.cb))
+				payload+=" "+str(self.libblackwood.LibExt.getBestDepthSeen(self.libblackwood.cb))
 				payload+=" "+max_depth_seen_hb
 				payload+="\"}"
 
