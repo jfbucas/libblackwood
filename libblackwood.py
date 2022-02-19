@@ -369,6 +369,9 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, "// The Board" ),
 				(1, "t_union_rotated_piece board[ WH ];"),
 				(0, "" ),
+				(1, "// The Board Pieces" ),
+				(1, "t_piece board_pieces[ WH ];"),
+				(0, "" ),
 				(1, "// Time keeping on nodes" ),
 				(1, "uint16 nodes_heartbeat[ WH ];"),
 				(0, "" ),
@@ -1690,8 +1693,9 @@ class LibBlackwood( external_libs.External_Libs ):
 					output.append( (0, ".align "+str(1 << align_shift[""]) ))
 					continue
 
-				output.append( (2, "mov rax, 0x"+"{:02X}".format(depth)+"{:02X}".format(space[""])+"{:02X}".format(ref_up)+"{:02X}".format(ref_right) if self.DEBUG > 0 else "" ))
-				output.append( (2, "call solve_funky_trace@PLT" if self.DEBUG > 0 else "" ))
+				if depth > 34:
+					output.append( (2, "mov rax, 0x"+"{:02X}".format(depth)+"{:02X}".format(space[""])+"{:02X}".format(ref_up)+"{:02X}".format(ref_right) if self.DEBUG > 0 else "" ))
+					output.append( (2, "call solve_funky_trace@PLT" if self.DEBUG > 0 else "" ))
 
 				if ((self.DEBUG > 0 and depth > WH//2) or (depth > self.puzzle.scenario.depth_first_notification-7)) and depth < self.puzzle.scenario.depth_first_notification:
 					output.append( (2, "cmp dl, "+str(depth) ) )
@@ -1702,6 +1706,7 @@ class LibBlackwood( external_libs.External_Libs ):
 
 				if depth in (range(0, WH, W*4) if self.DEBUG == 0 else range(0, WH, W*2)):
 					output.append( (2, "call solve_funky_check_commands@PLT") )
+					output.append( (2, "bt rax, 0  # We set the carry if TTF") )
 					output.append( (2, "jc "+funk_name+"__end # TTF") )
 
 				#output.append( (2, 'cf->stats_nodes_count['+sspace[""]+'] ++;' if self.DEBUG_STATS > 0 else "") )
@@ -1761,12 +1766,13 @@ class LibBlackwood( external_libs.External_Libs ):
 					output.append( (3, "bts "+mask_reg+", "+str(rp.masks_bit_index[mask_index]) ))
 					
 					output.append( (3, "# Store the piece in the board[WH]" ))
-					output.append( (3, "mov dword ptr [rsi + "+sspace[""]+"*8 ], 0x"+"{:02X}".format(rp.u)+"{:02X}".format(rp.r)+"{:02X}".format(rp.d)+"{:02X}".format(rp.l) ))
+					output.append( (3, "mov dword ptr [rsi + "+sspace[""]+"*4 ], 0x"+"{:02X}".format(rp.l)+"{:02X}".format(rp.d)+"{:02X}".format(rp.r)+"{:02X}".format(rp.u) ))
+					#output.append( (3, "mov dword ptr [rsi + "+sspace[""]+"*4 ], 0x01020304" ))
 					
 					if depth != WH-1:
 						output.append( (3, "# cf->patterns_down[ "+x[""]+"] = "+str(rp.d)+";" ))
 						output.append( (3, "ror "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
-						output.append( (3, "movb "+patterns_down_reg[""]+"b, "+str(ref_up) ) )
+						output.append( (3, "movb "+patterns_down_reg[""]+"b, "+str(rp.d) ) )
 						output.append( (3, "rol "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
 
 						output.append( (3, "inc cl # cf->cumulative_heuristic_patterns_count ++;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 0 else "" ))
@@ -1841,13 +1847,14 @@ class LibBlackwood( external_libs.External_Libs ):
 				(2, "btq [r15], 0"),
 				(2, "jnc "+funk_name+"_end"),
 				] )
-			for r in registers:
+			for r in registers[1:]: # not rax
 				output.append( (3, "push "+r ))
 			output.append( (3, "# rdi is already pointing to cf->" ))
 			output.append( (3, "# rsi is already pointing to board[WH]" ))
 			output.append( (3, "call solve_funky_check_commands_c@PLT" ))
-			output.append( (3, "bt rax, 0  # We set the carry if TTF") )
-			for r in reversed(registers):
+			output.append( (3, "# rax = Time To Finish" ))
+			#output.append( (3, "bt rax, 0  # We set the carry if TTF") )
+			for r in reversed(registers[1:]): # not rax
 				output.append( (3, "pop "+r ))
 
 			output.extend( [
@@ -1892,7 +1899,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			# Signature for .h file
 			output.append( (0, "void "+funk_name+"(") )
 			output.append( (1, "p_blackwood cf,"), )
-			output.append( (1, "t_union_rotated_piece board[WH],"), )
+			output.append( (1, "t_piece board[WH],"), )
 			output.append( (1, "uint64 * p_check_commands"), )
 			output.append( (1, ");"), )
 		else:
@@ -2049,6 +2056,7 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		output.extend( [
 			(1, 'for(i=0;i<WH;i++) cf->board[i].value = 0;' ),
+			(1, 'for(i=0;i<WH;i++) { cf->board_pieces[i].u = 0;cf->board_pieces[i].r = 0;cf->board_pieces[i].d = 0;cf->board_pieces[i].l = 0; }' ),
 			(1, 'for(i=0;i<WH;i++) cf->nodes_heartbeat[i] = 0;' ),
 			(1, 'for(i=0;i<WH;i++) cf->best_depth_seen_heartbeat[i] = 0;' ),
 			(2, ""),
@@ -2066,7 +2074,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		output.append( (1, 'printf("Starting\\n");' ), )
 		output.append( (1, 'solve_funky_bootstrap(' ), )
 		output.append( (2, 'cf,' ), )
-		output.append( (2, '&(cf->board[0]),' ), )
+		output.append( (2, '&(cf->board_pieces[0]),' ), )
 		output.append( (2, '&(cf->check_commands)' ), )
 		output.append( (1, ');' ), )
 		output.append( (0, '' ), )
@@ -2084,18 +2092,19 @@ class LibBlackwood( external_libs.External_Libs ):
 		output.extend( [ 
 			(0, "int solve_funky_check_commands_c("),
 			(1, "p_blackwood cf,"),
-			(1, "t_union_rotated_piece board[WH]"),
+			(1, "t_piece board[WH]"),
 			] )
 
 		if only_signature:
 			output.append( (1, ');') )
 			return output
 
+		(u_shift, r_shift, d_shift, l_shift) = self.puzzle.scenario.edges_shift_from_references()
 
 		output.append( (1, ") {") )
 		output.append( (1, "uint i;") )
 
-		output.append( (1, 'printf("Checking Commands\\n");' ), )
+		#output.append( (1, 'printf("Checking Commands\\n");' if self.DEBUG > 0 else "" ), )
 		output.append( (1, 'cf->check_commands = 0;' ), )
 		output.append( (0, '' ) )
 		output.append( (1, 'if (cf->time_to_finish) {' ) )
@@ -2117,7 +2126,9 @@ class LibBlackwood( external_libs.External_Libs ):
 		output.append( (1, '}' ), )
 		output.append( (0, '' ), )
 		output.append( (1, 'if (cf->send_a_notification) {' ), )
-		output.append( (2, 'if (cf->best_depth_seen == 0) for(i=0;i<WH;i++) cf->board[i] = board[i];') )
+		output.append( (2, 'if (cf->best_depth_seen == 0) {') )
+		output.append( (3, 'for(i=0;i<WH;i++) { cf->board[i].info.u = board[i].u'+u_shift+'; cf->board[i].info.r = board[i].r'+r_shift+'; cf->board[i].info.d = board[i].d'+d_shift+'; cf->board[i].info.l = board[i].l'+l_shift+'; }') )
+		output.append( (2, '}' ), )
 		output.append( (2, 'cf->wait_for_notification = 1;' ) )
 		output.append( (2, 'cf->send_a_notification = 0;' ), )
 		output.append( (1, '}' ), )
@@ -2136,19 +2147,20 @@ class LibBlackwood( external_libs.External_Libs ):
 		output.extend( [ 
 			(0, "int solve_funky_we_have_a_solution_c("),
 			(1, "p_blackwood cf,"),
-			(1, "t_union_rotated_piece board[WH]"),
+			(1, "t_piece board[WH]"),
 			] )
 
 		if only_signature:
 			output.append( (1, ');') )
 			return output
 
+		(u_shift, r_shift, d_shift, l_shift) = self.puzzle.scenario.edges_shift_from_references()
 
 		output.append( (1, ") {") )
 		output.append( (1, "uint i;") )
 
 		output.append( (1, '// We have a complete puzzle !!' ) )
-		output.append( (1, 'for(i=0;i<WH;i++) cf->board[i] = board[i];') )
+		output.append( (1, 'for(i=0;i<WH;i++) { cf->board[i].info.u = board[i].u'+u_shift+'; cf->board[i].info.r = board[i].r'+r_shift+'; cf->board[i].info.d = board[i].d'+d_shift+'; cf->board[i].info.l = board[i].l'+l_shift+'; }') )
 		output.append( (1, 'cf->wait_for_notification = 1;' ), )
 		output.append( (1, 'cf->check_commands = 1;' ), )
 		output.append( (1, 'for(i=0;(i<3000000) && (!cf->time_to_finish);i++) {') )
@@ -2170,7 +2182,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		output.extend( [ 
 			(0, "int solve_funky_best_depth_seen_c("),
 			(1, "p_blackwood cf,"),
-			(1, "t_union_rotated_piece board[WH],"),
+			(1, "t_piece board[WH],"),
 			(1, "uint64 best_depth_seen"),
 			] )
 
@@ -2178,6 +2190,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (1, ');') )
 			return output
 
+		(u_shift, r_shift, d_shift, l_shift) = self.puzzle.scenario.edges_shift_from_references()
 
 		output.append( (1, ") {") )
 		output.append( (1, "uint i;") )
@@ -2186,7 +2199,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		output.append( (1, 'cf->best_depth_seen = best_depth_seen;') )
 		output.append( (1, 'cf->best_depth_seen_heartbeat[ best_depth_seen ] = cf->heartbeat;') )
 		if self.DEBUG > 0:
-			output.append( (1, 'for(i=0;i<WH;i++) cf->board[i] = board[i];') )
+			output.append( (1, 'for(i=0;i<WH;i++) { cf->board[i].info.u = board[i].u'+u_shift+'; cf->board[i].info.r = board[i].r'+r_shift+'; cf->board[i].info.d = board[i].d'+d_shift+'; cf->board[i].info.l = board[i].l'+l_shift+'; }') )
 
 		output.append( (1, "if (best_depth_seen >= "+str(self.puzzle.scenario.depth_first_notification)+" ) {" ) )
 		output.append( (2, 'cf->wait_for_notification = 1;' ) )
