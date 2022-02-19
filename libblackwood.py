@@ -1690,6 +1690,9 @@ class LibBlackwood( external_libs.External_Libs ):
 					output.append( (0, ".align "+str(1 << align_shift[""]) ))
 					continue
 
+				output.append( (2, "mov rax, 0x"+"{:02X}".format(depth)+"{:02X}".format(space[""])+"{:02X}".format(ref_up)+"{:02X}".format(ref_right) if self.DEBUG > 0 else "" ))
+				output.append( (2, "call solve_funky_trace@PLT" if self.DEBUG > 0 else "" ))
+
 				if ((self.DEBUG > 0 and depth > WH//2) or (depth > self.puzzle.scenario.depth_first_notification-7)) and depth < self.puzzle.scenario.depth_first_notification:
 					output.append( (2, "cmp dl, "+str(depth) ) )
 					output.append( (2, "jae "+funk_name+"__end") )
@@ -1949,6 +1952,34 @@ class LibBlackwood( external_libs.External_Libs ):
 				(0, ".size solve"+funk_name+", .-"+funk_name ),
 				] )
 
+		# Solve_Funk_trace
+		funk_name = "solve_funky_trace"
+		if only_signature:
+			# Signature for .h file
+			output.append( (0, "void "+funk_name+"();") )
+		else:
+
+			output.extend( [
+				(0, ".globl  "+funk_name ),
+				(0, ".type   "+funk_name+", @function"),
+				(0, funk_name+":"),
+				(0, ".cfi_startproc"),
+				] )
+			for r in registers:
+				output.append( (3, "push "+r ))
+			output.append( (3, "# rdi is already pointing to cf->" ))
+			output.append( (3, "mov rsi, rax # The context" ))
+			output.append( (3, "call solve_funky_trace_c@PLT" ))
+			for r in reversed(registers):
+				output.append( (3, "pop "+r ))
+
+			output.extend( [
+				(2, funk_name+"_end:"),
+				(2, "ret"),
+				(0, ".cfi_endproc"),
+				(0, ".size solve"+funk_name+", .-"+funk_name ),
+				] )
+
 
 		return output
 
@@ -2172,6 +2203,37 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		return output
 
+	# ----- Generate Funky functions
+	def gen_solve_funky_trace_c( self, only_signature=False):
+		output = []
+
+		output.extend( [ 
+			(0, "int solve_funky_trace_c("),
+			(1, "p_blackwood cf,"),
+			(1, "uint64 position"),
+			] )
+
+		if only_signature:
+			output.append( (1, ');') )
+			return output
+
+
+		output.append( (1, ") {") )
+		output.append( (1, "uint64 i, depth, space, up, right;") )
+
+		output.append( (0, 'depth  = (position >> 24) & 0xff;' ), )
+		output.append( (0, 'space  = (position >> 16) & 0xff;' ), )
+		output.append( (0, 'up     = (position >>  8) & 0xff;' ), )
+		output.append( (0, 'right  = (position >>  0) & 0xff;' ), )
+		output.append( (0, '' ), )
+		output.append( (0, 'printf("Trace: %3llu solve_funky_space_%03llu_ref_up_%02llu_ref_right_%02llu\\n", depth, space, up, right); ' ), )
+		output.append( (0, '' ), )
+		output.append( (1, 'return 0;' ), )
+		output.append( (0, '}' ), )
+		output.append( (0, '' ), )
+
+		return output
+
 
 	# ----- Generate Scoriste function
 	def gen_main_function( self, only_signature=False):
@@ -2244,6 +2306,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		self.writeGen( gen, self.gen_solve_funky_we_have_a_solution_c(only_signature=True) )
 		self.writeGen( gen, self.gen_solve_funky_best_depth_seen_c(only_signature=True) )
 		self.writeGen( gen, self.gen_solve_funky_bootstrap_c(only_signature=True) )
+		self.writeGen( gen, self.gen_solve_funky_trace_c(only_signature=True) )
 
 		self.writeGen( gen, self.getFooterH() )
 
@@ -2285,6 +2348,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			self.writeGen( gen, self.gen_solve_funky_we_have_a_solution_c(only_signature=False) )
 			self.writeGen( gen, self.gen_solve_funky_best_depth_seen_c(only_signature=False) )
 			self.writeGen( gen, self.gen_solve_funky_bootstrap_c(only_signature=False) )
+			self.writeGen( gen, self.gen_solve_funky_trace_c(only_signature=False) )
 
 
 		elif macro_name == "generate":
