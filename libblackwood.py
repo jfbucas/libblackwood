@@ -1481,16 +1481,16 @@ class LibBlackwood( external_libs.External_Libs ):
 		# r11 pieces_used[3]
 		# r12 patterns_down[0-7]
 		# r13 patterns_down[8-15]
-		# r14 
+		# r14 first_function address 
 		# r15 &(cf->check_commands)
-		# mm0 0
-		# mm1 1
-		# mm2 stats_total_nodes_count
-		# mm3 stats_pieces_tried_count
-		# mm4 stats_total_heuristic_patterns_break_count 
-		# mm5 stats_total_heuristic_conflicts_break_count
-		# mm6 stats_pieces_used_count 
-		# mm7
+		# xmm0 0
+		# xmm1 1
+		# xmm2 stats_total_nodes_count
+		# xmm3 stats_pieces_tried_count
+		# xmm4 stats_total_heuristic_patterns_break_count 
+		# xmm5 stats_total_heuristic_conflicts_break_count
+		# xmm6 stats_pieces_used_count 
+		# xmm7
 
 		# Calling 
 		# First Argument  : RDI
@@ -1542,6 +1542,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		print()
 		
 
+		first_funk_name = None
 
 		for depth in range(WH):
 		#for depth in range(WH-W*2,WH-W):
@@ -1580,9 +1581,11 @@ class LibBlackwood( external_libs.External_Libs ):
 					(rpl_lists[k], longest[k]) = rpl_lists_space[ space[k] ]
 
 					if longest[k] in [ 1, 2 ]:
-						align_shift[k] = 6
-					elif longest[k] in [ 4, 6, 7 ]:
-						align_shift[k] = 7
+						align_shift[k] = 8
+					elif longest[k] in [ 3, 4, 6, 7 ]:
+						align_shift[k] = 9
+					elif longest[k] in [ 8, 9, 10, 11 ]:
+						align_shift[k] = 10
 					elif longest[k] in [ 12 ]:
 						align_shift[k] = 9
 					elif longest[k] in [ 96 ]:
@@ -1660,6 +1663,8 @@ class LibBlackwood( external_libs.External_Libs ):
 				else:
 					funk_name_next = "solve_funky_we_have_a_solution_c"
 				funk_name = "solve_funky_space_"+format(space[""], "03")+"_ref_up_"+format(ref_up,"02")+"_ref_right_"+format(ref_right,"02")
+				if first_funk_name == None:
+					first_funk_name = funk_name
 
 				if only_signature:
 					# Signature for .h file
@@ -1697,7 +1702,7 @@ class LibBlackwood( external_libs.External_Libs ):
 					output.append( (2, "jc "+funk_name+"__end # TTF") )
 
 				#output.append( (2, 'cf->stats_nodes_count['+sspace[""]+'] ++;' if self.DEBUG_STATS > 0 else "") )
-				output.append( (2, 'paddq mm2, mm1 # cf->stats_total_nodes_count ++;' if self.DEBUG_PERF > 0 else "") )
+				output.append( (2, 'paddq xmm2, xmm1 # cf->stats_total_nodes_count ++;' if self.DEBUG_PERF > 0 else "") )
 
 				# The piece scoring ensure pieces are sorted by conflict, then by pattern
 				# We only check heuristic patterns when the piece doesn't contribute
@@ -1713,7 +1718,7 @@ class LibBlackwood( external_libs.External_Libs ):
 							output.append( (2, "cmp cl, "+str(self.puzzle.scenario.heuristic_patterns_count[0][depth])+" #  Heuristic patterns count"))
 							output.append( (2, "jae "+funk_name+"__heuristic_patterns_ok"))
 							#output.append( (3, "cf->stats_heuristic_patterns_break_count[ "+sspace[""]+" ]++; " if self.DEBUG_STATS > 0 else "" ))
-							output.append( (3, "paddq mm4, mm1 # cf->stats_total_heuristic_patterns_break_count ++; " if self.DEBUG_PERF > 0 else "" ))
+							output.append( (3, "paddq xmm4, xmm1 # cf->stats_total_heuristic_patterns_break_count ++; " if self.DEBUG_PERF > 0 else "" ))
 							output.append( (3, "# cf->patterns_down[ "+x[""]+"] = "+str(ref_up)+";" ) )
 							output.append( (3, "ror "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
 							output.append( (3, "movb "+patterns_down_reg[""]+"b, "+str(ref_up) ) )
@@ -1733,7 +1738,7 @@ class LibBlackwood( external_libs.External_Libs ):
 							output.append( (2, "cmp ch, "+str(conflicts_allowed)+" #  Heuristic conflicts count"))
 							output.append( (2, "jae "+funk_name+"__heuristic_conflicts_ok"))
 							#output.append( (3, "cf->stats_heuristic_patterns_break_count[ "+sspace[""]+" ]++; " if self.DEBUG_STATS > 0 else "" ))
-							output.append( (3, "paddq mm5, mm1 # cf->stats_total_heuristic_conflicts_break_count ++; " if self.DEBUG_PERF > 0 else "" ))
+							output.append( (3, "paddq xmm5, xmm1 # cf->stats_total_heuristic_conflicts_break_count ++; " if self.DEBUG_PERF > 0 else "" ))
 							output.append( (3, "# cf->patterns_down[ "+x[""]+"] = "+str(ref_up)+";" ) )
 							output.append( (3, "ror "+patterns_down_reg[""]+", "+patterns_down_rotate[""] ) )
 							output.append( (3, "movb "+patterns_down_reg[""]+"b, "+str(ref_up) ) )
@@ -1746,7 +1751,7 @@ class LibBlackwood( external_libs.External_Libs ):
 
 					mask_index = rp.p // 64
 					mask_reg = "r"+str(8+mask_index)
-					output.append( (2, 'paddq mm3, mm1 # cf->stats_total_pieces_tried_count ++;' if self.DEBUG_PERF > 0 else "") )
+					output.append( (2, 'paddq xmm3, xmm1 # cf->stats_total_pieces_tried_count ++;' if self.DEBUG_PERF > 0 else "") )
 					output.append( (2, "# Test if the piece is already in use" ))
 					output.append( (2, "bt "+mask_reg+", "+str(rp.masks_bit_index[mask_index]) ))
 					output.append( (2, "jc "+funk_name+"__skip_piece_"+str(piece_index) ))
@@ -1769,10 +1774,15 @@ class LibBlackwood( external_libs.External_Libs ):
 						output.append( (3, "movq rbx, "+patterns_down_reg["next"] ) )
 						output.append( (3, "ror rbx, "+patterns_down_rotate["next"] ) )
 						output.append( (3, "movzx rax, bl" ) )
-						output.append( (3, "shl  ax, 5" ))
+						output.append( (3, "shl  ax, "+str(self.EDGE_SHIFT_LEFT) ))
 						output.append( (3, "add  ax, "+str(rp.l) ))
 						output.append( (3, "shl  eax, "+str(align_shift["next"]) ))
-						output.append( (3, "call [ rax + "+funk_name_next+"@PLT ]" ))
+						# We should be doing the following call, but the linker doesn't get the right value for the function address
+						#output.append( (3, "call [ "+funk_name_next+"@PLT + rax ]" if depth < 1 else "")) 
+						# So we have to calculate it ourselves
+						output.append( (3, "add rax, "+funk_name_next+"-"+first_funk_name))
+						output.append( (3, "add rax, r14"))
+						output.append( (3, "call rax" ))
 
 						output.append( (3, "dec ch # cf->cumulative_heuristic_conflicts_count --;" if rp.conflicts_count > 0 else "" ))
 						output.append( (3, "dec cl # cf->cumulative_heuristic_patterns_count --;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 0 else "" ))
@@ -1792,7 +1802,7 @@ class LibBlackwood( external_libs.External_Libs ):
 					#output.append( (2, "} else {" if self.DEBUG_STATS + self.DEBUG_PERF > 0 else ""))
 					output.append( (2, funk_name+"__skip_piece_"+str(piece_index)+":" ))
 					#output.append( (3, 'cf->stats_pieces_used_count['+sspace[""]+'] ++;' if self.DEBUG_STATS > 0 else "") )
-					output.append( (3, 'paddq mm6, mm1  # cf->stats_total_pieces_used_count ++;' if self.DEBUG_PERF > 0 else "") )
+					output.append( (3, 'paddq xmm6, xmm1  # cf->stats_total_pieces_used_count ++;' if self.DEBUG_PERF > 0 else "") )
 					output.append( (2, funk_name+"__end_piece_"+str(piece_index)+":" ))
 
 					piece_index += 1
@@ -1902,6 +1912,9 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (1, "mov rsi, rsi  # rsi board[WH]" ))
 			output.append( (1, "mov rdi, rdi  # rdi cf->" ))
 			output.append( (1, "mov r15, rdx  # &(cf->check_commands)" ))
+			output.append( (1, "lea rax, [rip]  # First Function address because Linker is too stup^W weak" ))
+			output.append( (1, "sub rax, .-"+first_funk_name+"" ))
+			output.append( (1, "mov r14, rax" ))
 
 			output.append( (1, "xor rcx, rcx  #  cl heuristic patterns  count" ))
 			output.append( (1, "xor rdx, rdx  #  dl best_depth_seen" ))
@@ -1911,23 +1924,22 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (1, "xor r11, r11  # r11 pieces_used[3]" ))
 			output.append( (1, "xor r12, r12  # r12 patterns_down[0-7]" ))
 			output.append( (1, "xor r13, r13  # r13 patterns_down[8-15]" ))
-			output.append( (1, "xor r14, r14  # r14 " ))
+			output.append( (1, "pxor xmm0, xmm0  # xmm0 0" ))
 			output.append( (1, "xor rax, rax" ))
 			output.append( (1, "inc rax" ))
-			output.append( (1, "pxor mm0, mm0  # mm0 0" ))
-			output.append( (1, "pxor mm1, mm1  " ))
-			output.append( (1, "movd mm1, eax  # mm1 1" ))
-			output.append( (1, "pxor mm2, mm2  # mm2 stats_total_nodes_count" ))
-			output.append( (1, "pxor mm3, mm3  # mm3 stats_pieces_tried_count" ))
-			output.append( (1, "pxor mm4, mm4  # mm4 stats_total_heuristic_patterns_break_count " ))
-			output.append( (1, "pxor mm5, mm5  # mm5 stats_total_heuristic_conflicts_break_count" ))
-			output.append( (1, "pxor mm6, mm6  # mm6 stats_pieces_used_count " ))
-			output.append( (1, "pxor mm7, mm7  # mm7" ))
+			output.append( (1, "pxor xmm1, xmm1  " ))
+			output.append( (1, "movd xmm1, eax  # xmm1 1" ))
+			output.append( (1, "pxor xmm2, xmm2  # xmm2 stats_total_nodes_count" ))
+			output.append( (1, "pxor xmm3, xmm3  # xmm3 stats_pieces_tried_count" ))
+			output.append( (1, "pxor xmm4, xmm4  # xmm4 stats_total_heuristic_patterns_break_count " ))
+			output.append( (1, "pxor xmm5, xmm5  # xmm5 stats_total_heuristic_conflicts_break_count" ))
+			output.append( (1, "pxor xmm6, xmm6  # xmm6 stats_pieces_used_count " ))
+			output.append( (1, "pxor xmm7, xmm7  # xmm7" ))
 			output.append( (1, "xor rax, rax  # rax tmp" ))
 			output.append( (1, "xor rbx, rbx  # rbx tmp" ))
 
 			output.append( (3, "# Call the Bouzin" ))
-			output.append( (3, "call solve_funky_space_007_ref_up_00_ref_right_00@PLT" ))
+			output.append( (3, "call "+first_funk_name+"@PLT" ))
 			#output.append( (3, "call solve_funky_space_015_ref_up_00_ref_right_00@PLT" ))
 
 			output.extend( [
@@ -2020,6 +2032,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				] )
 
 
+		output.append( (1, 'printf("Starting\\n");' ), )
 		output.append( (1, 'solve_funky_bootstrap(' ), )
 		output.append( (2, 'cf,' ), )
 		output.append( (2, '&(cf->board[0]),' ), )
@@ -2051,6 +2064,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		output.append( (1, ") {") )
 		output.append( (1, "uint i;") )
 
+		output.append( (1, 'printf("Checking Commands\\n");' ), )
 		output.append( (1, 'cf->check_commands = 0;' ), )
 		output.append( (0, '' ) )
 		output.append( (1, 'if (cf->time_to_finish) {' ) )
@@ -2323,6 +2337,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		thread_output_filename = None
 
 		cb = self.cb
+		cf = self.cb
 		self.copy_new_arrays_to_cb()
 
 		#l = self.gen_solve_function( only_signature=True )
@@ -2331,6 +2346,13 @@ class LibBlackwood( external_libs.External_Libs ):
 		#for pname in self.getParametersNamesFromSignature(l):
 		#	args.append( loc[ pname ] )
 		#self.LibExtWrapper( self.getFunctionNameFromSignature(l), args, timeit=True )
+
+		l = self.gen_solve_funky_bootstrap_c( only_signature=True )
+		args = []
+		loc = locals()
+		for pname in self.getParametersNamesFromSignature(l):
+			args.append( loc[ pname ] )
+		self.LibExtWrapper( self.getFunctionNameFromSignature(l), args, timeit=True )
 
 		myLCA.stop_lca_thread = True	
 		myWFN.stop_wfn_thread = True	
