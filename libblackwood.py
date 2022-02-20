@@ -197,6 +197,8 @@ class LibBlackwood( external_libs.External_Libs ):
 				self.LibExt.setSFN( self.cb, 1 )
 				command_found = True
 			elif command in [ "q", "quit", "exit" ]:
+				if self.DEBUG > 0:
+					print("=[ TTF ]=")
 				self.LibExt.setTTF( self.cb, 1 )
 				command_found = True
 
@@ -386,6 +388,12 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.extend( [
 				(1, "// Statistics "+uname ),
 				(1, "uint64 "+vtname+";"),
+				(0, "" ),
+				] )
+
+			for (fname, vname, uname, flag)  in self.STATS:
+				output.extend( [
+				(1, "// Statistics "+uname ),
 				(1, "uint64 "+vname+"[ WH ];"),
 				(0, "" ),
 				] )
@@ -1459,6 +1467,35 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		return output
 
+
+
+	# ----- Generate Funky functions
+	def gen_registers( self, pushpop, with_rax=True, indent=3):
+
+		output = []
+		registers = [ "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15" ]
+		xmmregisters = [ "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" ]
+
+		start = 0
+		if not with_rax:
+			start = 1
+
+		if pushpop == "push":
+			for r in registers[start:]:
+				output.append( (indent, pushpop+" "+r ))
+			for r in xmmregisters:
+				output.append( (indent, "movq rax, "+r ))
+				output.append( (indent, pushpop+" rax" ))
+		elif pushpop == "pop":
+			for r in reversed(xmmregisters):
+				output.append( (indent, pushpop+" rax" ))
+				output.append( (indent, "movq "+r+", rax" ))
+			for r in reversed(registers[start:]):
+				output.append( (indent, pushpop+" "+r ))
+
+		return output
+
+
 	# ----- Generate Funky functions
 	def gen_solve_funky_functions( self, only_signature=False):
 
@@ -1466,7 +1503,6 @@ class LibBlackwood( external_libs.External_Libs ):
 		H=self.puzzle.board_h
 		WH=self.puzzle.board_wh
 
-		registers = [ "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15" ]
 		output = []
 
 		# https://renenyffenegger.ch/notes/development/languages/assembler/x86/registers/index
@@ -1493,7 +1529,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		# xmm4 stats_total_heuristic_patterns_break_count 
 		# xmm5 stats_total_heuristic_conflicts_break_count
 		# xmm6 stats_pieces_used_count 
-		# xmm7
+		# xmm7 &(cf->stats_total_nodes_count)
 
 		# Calling 
 		# First Argument  : RDI
@@ -1585,12 +1621,12 @@ class LibBlackwood( external_libs.External_Libs ):
 
 					if longest[k] in [ 1, 2 ]:
 						align_shift[k] = 8
-					elif longest[k] in [ 3, 4, 6, 7 ]:
+					elif longest[k] in [ 3, 4, 5 ]:
 						align_shift[k] = 9
-					elif longest[k] in [ 8, 9, 10, 11 ]:
+					elif longest[k] in [ 6, 7, 8, 9, 10, 11 ]:
 						align_shift[k] = 10
 					elif longest[k] in [ 12 ]:
-						align_shift[k] = 9
+						align_shift[k] = 11
 					elif longest[k] in [ 96 ]:
 						align_shift[k] = 13
 					else:
@@ -1797,13 +1833,11 @@ class LibBlackwood( external_libs.External_Libs ):
 						output.append( (3, "dec cl # cf->cumulative_heuristic_patterns_count --;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 0 else "" ))
 						output.append( (3, "dec cl # cf->cumulative_heuristic_patterns_count --;" if heuristic_patterns and rp.heuristic_patterns_count[0] > 1 else "" ))
 					else:
-						for r in registers:
-							output.append( (3, "push "+r ))
+						output.extend( self.gen_registers("push") )
 						output.append( (3, "# rdi is already pointing to cf->" ))
 						output.append( (3, "# rsi is already pointing to board[WH]" ))
 						output.append( (3, "call [ "+funk_name_next+"@PLT ]" ))
-						for r in reversed(registers):
-							output.append( (3, "pop "+r ))
+						output.extend( self.gen_registers("pop") )
 
 					output.append( (3, "btr "+mask_reg+", "+str(rp.masks_bit_index[mask_index]) ))
 
@@ -1847,15 +1881,25 @@ class LibBlackwood( external_libs.External_Libs ):
 				(2, "btq [r15], 0"),
 				(2, "jnc "+funk_name+"_end"),
 				] )
-			for r in registers[1:]: # not rax
-				output.append( (3, "push "+r ))
+			output.extend( self.gen_registers("push", with_rax=False) )
 			output.append( (3, "# rdi is already pointing to cf->" ))
 			output.append( (3, "# rsi is already pointing to board[WH]" ))
+			output.append( (3, "# Save statistics" ))
+			output.append( (3, "movq rax, xmm7" ))
+			output.append( (3, "movq rbx, xmm2" ))
+			output.append( (3, "mov [rax +  0], rbx" ))
+			output.append( (3, "movq rbx, xmm3" ))
+			output.append( (3, "mov [rax +  8], rbx" ))
+			output.append( (3, "movq rbx, xmm4" ))
+			output.append( (3, "mov [rax + 16], rbx" ))
+			output.append( (3, "movq rbx, xmm5" ))
+			output.append( (3, "mov [rax + 24], rbx" ))
+			output.append( (3, "movq rbx, xmm6" ))
+			output.append( (3, "mov [rax + 32], rbx" ))
 			output.append( (3, "call solve_funky_check_commands_c@PLT" ))
 			output.append( (3, "# rax = Time To Finish" ))
 			#output.append( (3, "bt rax, 0  # We set the carry if TTF") )
-			for r in reversed(registers[1:]): # not rax
-				output.append( (3, "pop "+r ))
+			output.extend( self.gen_registers("pop", with_rax=False) )
 
 			output.extend( [
 				(2, funk_name+"_end:"),
@@ -1877,14 +1921,12 @@ class LibBlackwood( external_libs.External_Libs ):
 				(0, funk_name+":"),
 				(0, ".cfi_startproc"),
 				] )
-			for r in registers:
-				output.append( (3, "push "+r ))
+			output.extend( self.gen_registers("push") )
 			output.append( (3, "# rdi is already pointing to cf->" ))
 			output.append( (3, "# rsi is already pointing to board[WH]" ))
 			output.append( (3, "# rdx is already best_depth_seen" ))
 			output.append( (3, "call solve_funky_best_depth_seen_c@PLT" ))
-			for r in reversed(registers):
-				output.append( (3, "pop "+r ))
+			output.extend( self.gen_registers("pop") )
 
 			output.extend( [
 				(2, funk_name+"_end:"),
@@ -1900,7 +1942,8 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (0, "void "+funk_name+"(") )
 			output.append( (1, "p_blackwood cf,"), )
 			output.append( (1, "t_piece board[WH],"), )
-			output.append( (1, "uint64 * p_check_commands"), )
+			output.append( (1, "uint64 * p_check_commands,"), )
+			output.append( (1, "uint64 * p_stats"), )
 			output.append( (1, ");"), )
 		else:
 
@@ -1925,6 +1968,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (1, "lea rax, [rip]  # First Function address because Linker is too stup^W weak" ))
 			output.append( (1, "sub rax, .-"+first_funk_name+"" ))
 			output.append( (1, "mov r14, rax" ))
+			output.append( (1, "movq xmm7, rcx  # xmm7 &(cf->stats)" ))
 
 			output.append( (1, "xor rcx, rcx  #  cl heuristic patterns  count" ))
 			output.append( (1, "xor rdx, rdx  #  dl best_depth_seen" ))
@@ -1938,23 +1982,22 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (1, "xor rax, rax" ))
 			output.append( (1, "inc rax" ))
 			output.append( (1, "pxor xmm1, xmm1  " ))
-			output.append( (1, "movd xmm1, eax  # xmm1 1" ))
+			output.append( (1, "movq xmm1, rax  # xmm1 1" ))
 			output.append( (1, "pxor xmm2, xmm2  # xmm2 stats_total_nodes_count" ))
 			output.append( (1, "pxor xmm3, xmm3  # xmm3 stats_pieces_tried_count" ))
 			output.append( (1, "pxor xmm4, xmm4  # xmm4 stats_total_heuristic_patterns_break_count " ))
 			output.append( (1, "pxor xmm5, xmm5  # xmm5 stats_total_heuristic_conflicts_break_count" ))
 			output.append( (1, "pxor xmm6, xmm6  # xmm6 stats_pieces_used_count " ))
-			output.append( (1, "pxor xmm7, xmm7  # xmm7" ))
 			output.append( (1, "xor rax, rax  # rax tmp" ))
 			output.append( (1, "xor rbx, rbx  # rbx tmp" ))
 
-			output.append( (3, "# Call the Bouzin" ))
-			output.append( (3, "call "+first_funk_name+"@PLT" ))
+			output.append( (1, "# Call the Bouzin" ))
+			output.append( (1, "call "+first_funk_name+"@PLT" ))
 			#output.append( (3, "call solve_funky_space_015_ref_up_00_ref_right_00@PLT" ))
 
 			output.extend( [
-				(2, funk_name+"_end:"),
-				(2, "ret"),
+				(1, funk_name+"_end:"),
+				(1, "ret"),
 				(0, ".cfi_endproc"),
 				(0, ".size solve"+funk_name+", .-"+funk_name ),
 				] )
@@ -1972,13 +2015,11 @@ class LibBlackwood( external_libs.External_Libs ):
 				(0, funk_name+":"),
 				(0, ".cfi_startproc"),
 				] )
-			for r in registers:
-				output.append( (3, "push "+r ))
+			output.extend( self.gen_registers("push") )
 			output.append( (3, "# rdi is already pointing to cf->" ))
 			output.append( (3, "mov rsi, rax # The context" ))
 			output.append( (3, "call solve_funky_trace_c@PLT" ))
-			for r in reversed(registers):
-				output.append( (3, "pop "+r ))
+			output.extend( self.gen_registers("pop") )
 
 			output.extend( [
 				(2, funk_name+"_end:"),
@@ -2075,7 +2116,8 @@ class LibBlackwood( external_libs.External_Libs ):
 		output.append( (1, 'solve_funky_bootstrap(' ), )
 		output.append( (2, 'cf,' ), )
 		output.append( (2, '&(cf->board_pieces[0]),' ), )
-		output.append( (2, '&(cf->check_commands)' ), )
+		output.append( (2, '&(cf->check_commands),' ), )
+		output.append( (2, '&(cf->stats_total_pieces_tried_count)' ), )
 		output.append( (1, ');' ), )
 		output.append( (0, '' ), )
 		output.append( (1, 'return 0;' ), )
@@ -2109,13 +2151,13 @@ class LibBlackwood( external_libs.External_Libs ):
 		output.append( (0, '' ) )
 		output.append( (1, 'if (cf->time_to_finish) {' ) )
 		output.append( (2, 'cf->check_commands = 1;' ) )
-		output.append( (2, 'return 1;' ) )
+		output.append( (1, 'return cf->time_to_finish;' ), )
 		output.append( (1, '};' ) )
 		output.append( (0, '' ) )
 		output.append( (1, 'if (cf->heartbeat > cf->heartbeat_limit) {' ) )
 		output.append( (2, 'cf->time_to_finish = 1;' ) )
 		output.append( (2, 'cf->check_commands = 1;' ) )
-		output.append( (2, 'return 1;' ) )
+		output.append( (1, 'return cf->time_to_finish;' ), )
 		output.append( (1, '};' ) )
 		output.append( (0, '' ) )
 		output.append( (1, 'do_commands(cf);' ), )
@@ -2133,7 +2175,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		output.append( (2, 'cf->send_a_notification = 0;' ), )
 		output.append( (1, '}' ), )
 		output.append( (0, '' ), )
-		output.append( (1, 'return 0;' ), )
+		output.append( (1, 'return cf->time_to_finish;' ), )
 		output.append( (0, '' ), )
 		output.append( (0, '}' ), )
 		output.append( (0, '' ), )
