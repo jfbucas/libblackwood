@@ -270,12 +270,15 @@ class LibBlackwood( external_libs.External_Libs ):
 				vtname = vname.replace("stats_", "stats_total_")
 
 				output.extend( [
-				(1, 'if (b->commands & SHOW_'+flag+')' ),
+				(1, 'if (b->commands & SHOW_'+flag+') {' ),
 				(2, prefix+'print'+fname+'( '+out+' b );' ),
+				(2, 'printf( "Total '+vname+' = %llu\\n", b->'+vtname+' );' ),
+				(1, '}' ),
 				(0, '' ),
 
 				(1, 'if (b->commands & ZERO_'+flag+')' ),
-				(2, 'for(i=0;i<WH;i++) { b->'+vtname+' += b->'+vname+'[i]; b->'+vname+'[i] = 0; }' ),
+				#(2, 'for(i=0;i<WH;i++) { b->'+vtname+' += b->'+vname+'[i]; b->'+vname+'[i] = 0; }' ),
+				(2, 'for(i=0;i<WH;i++) { b->'+vname+'[i] = 0; }' ),
 				(0, '' ),
 				] )
 
@@ -1470,7 +1473,7 @@ class LibBlackwood( external_libs.External_Libs ):
 
 
 	# ----- Generate Funky functions
-	def gen_registers( self, pushpop, with_rax=True, indent=3):
+	def gen_registers( self, pushpop, with_rax=True, xmm_reg="rax", indent=3):
 
 		output = []
 		registers = [ "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15" ]
@@ -1484,12 +1487,12 @@ class LibBlackwood( external_libs.External_Libs ):
 			for r in registers[start:]:
 				output.append( (indent, pushpop+" "+r ))
 			for r in xmmregisters:
-				output.append( (indent, "movq rax, "+r ))
-				output.append( (indent, pushpop+" rax" ))
+				output.append( (indent, "movq "+xmm_reg+", "+r ))
+				output.append( (indent, pushpop+" "+xmm_reg ))
 		elif pushpop == "pop":
 			for r in reversed(xmmregisters):
-				output.append( (indent, pushpop+" rax" ))
-				output.append( (indent, "movq "+r+", rax" ))
+				output.append( (indent, pushpop+" "+xmm_reg ))
+				output.append( (indent, "movq "+r+", "+xmm_reg ))
 			for r in reversed(registers[start:]):
 				output.append( (indent, pushpop+" "+r ))
 
@@ -1729,8 +1732,8 @@ class LibBlackwood( external_libs.External_Libs ):
 					output.append( (0, ".align "+str(1 << align_shift[""]) ))
 					continue
 
-				if depth > 34:
-					output.append( (2, "mov rax, 0x"+"{:02X}".format(depth)+"{:02X}".format(space[""])+"{:02X}".format(ref_up)+"{:02X}".format(ref_right) if self.DEBUG > 0 else "" ))
+				if depth > 35:
+					output.append( (2, "mov rbx, 0x"+"{:02X}".format(depth)+"{:02X}".format(space[""])+"{:02X}".format(ref_up)+"{:02X}".format(ref_right) if self.DEBUG > 0 else "" ))
 					output.append( (2, "call solve_funky_trace@PLT" if self.DEBUG > 0 else "" ))
 
 				if ((self.DEBUG > 0 and depth > WH//2) or (depth > self.puzzle.scenario.depth_first_notification-7)) and depth < self.puzzle.scenario.depth_first_notification:
@@ -1738,9 +1741,12 @@ class LibBlackwood( external_libs.External_Libs ):
 					output.append( (2, "jae "+funk_name+"__end") )
 					output.append( (2, "mov dl, "+str(depth)) )
 					output.append( (2, "call solve_funky_best_depth_seen@PLT") )
+					output.append( (2, "mov rbx, 0x"+"{:02X}".format(depth)+"{:02X}".format(space[""])+"{:02X}".format(ref_up)+"{:02X}".format(ref_right) if self.DEBUG > 0 else "" ))
+					output.append( (2, "call solve_funky_trace@PLT" if self.DEBUG > 0 else "" ))
 					output.append( (2, funk_name+"__not_best_depth_seen:"))
 
 				if depth in (range(0, WH, W*4) if self.DEBUG == 0 else range(0, WH, W*2)):
+				#if depth in (range(0, WH, W*4) if self.DEBUG == 0 else range(0, WH)):
 					output.append( (2, "call solve_funky_check_commands@PLT") )
 					output.append( (2, "bt rax, 0  # We set the carry if TTF") )
 					output.append( (2, "jc "+funk_name+"__end # TTF") )
@@ -1881,7 +1887,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(2, "btq [r15], 0"),
 				(2, "jnc "+funk_name+"_end"),
 				] )
-			output.extend( self.gen_registers("push", with_rax=False) )
+			output.extend( self.gen_registers("push", with_rax=False, xmm_reg="rbx") )
 			output.append( (3, "# rdi is already pointing to cf->" ))
 			output.append( (3, "# rsi is already pointing to board[WH]" ))
 			output.append( (3, "# Save statistics" ))
@@ -1899,7 +1905,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			output.append( (3, "call solve_funky_check_commands_c@PLT" ))
 			output.append( (3, "# rax = Time To Finish" ))
 			#output.append( (3, "bt rax, 0  # We set the carry if TTF") )
-			output.extend( self.gen_registers("pop", with_rax=False) )
+			output.extend( self.gen_registers("pop", with_rax=False, xmm_reg="rbx") )
 
 			output.extend( [
 				(2, funk_name+"_end:"),
@@ -2017,7 +2023,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				] )
 			output.extend( self.gen_registers("push") )
 			output.append( (3, "# rdi is already pointing to cf->" ))
-			output.append( (3, "mov rsi, rax # The context" ))
+			output.append( (3, "mov rsi, rbx # The context" ))
 			output.append( (3, "call solve_funky_trace_c@PLT" ))
 			output.extend( self.gen_registers("pop") )
 
@@ -2070,7 +2076,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			(1, "cf->heartbeat_limit = heartbeat_time_bonus[ 0 ];"),
 			] )
 
-		if self.DEBUG > 0:
+		if self.DEBUG > 3:
  			output.extend( [
 			(1, "cf->commands |= CLEAR_SCREEN;"),
 			(1, "cf->commands |= SHOW_TITLE;"),
@@ -2117,7 +2123,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		output.append( (2, 'cf,' ), )
 		output.append( (2, '&(cf->board_pieces[0]),' ), )
 		output.append( (2, '&(cf->check_commands),' ), )
-		output.append( (2, '&(cf->stats_total_pieces_tried_count)' ), )
+		output.append( (2, '&(cf->stats_total_nodes_count)' ), )
 		output.append( (1, ');' ), )
 		output.append( (0, '' ), )
 		output.append( (1, 'return 0;' ), )
@@ -2313,6 +2319,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			(1, 'if (signal(SIGUSR2, sig_handler) == SIG_ERR) printf("\\nUnable to catch SIGUSR2\\n");' ),
 			(1, '' ),
 			#(1, 'return solve(NULL, NULL);'), 
+			(1, 'return solve_funky_bootstrap_c(NULL);'), 
 			(1, '' ),
 			(0, '}' ),
 			] )
