@@ -12,6 +12,7 @@ class RowScanRL( scenario.Scenario ):
 		self.conflicts_indexes_allowed = []
 		self.heuristic_stats16 = False
 		self.depth_first_notification = 225
+		#self.use_adaptative_filter_depth = False
 
 		self.timelimit = 1 # Minutes
 
