@@ -14,6 +14,9 @@ global_list = []
 class Scenario( defs.Defs ):
 	"""Definitions for Scenarios"""
 
+	STATS = False
+	PERF = False
+
 	use_adaptative_filter_depth = True
 
 	def __init__( self ):
@@ -22,6 +25,9 @@ class Scenario( defs.Defs ):
 
 		if self.DEBUG > 0:
 			self.info(" * Using scenario : "+self.name )
+		
+		if self.DEBUG > 0:
+			self.STATS = True
 
 		self.seed = 0
 		self.heuristic_patterns_count = []
@@ -34,6 +40,7 @@ class Scenario( defs.Defs ):
 		self.spaces_references = [None] * self.puzzle.board_wh
 		self.reverse_spaces_order = False
 		self.flip_spaces_order = False
+		self.default_commands = []
 
 		self.score_target = self.puzzle.board_wh*2 - self.puzzle.board_w - self.puzzle.board_h
 		self.score_target -= len(self.conflicts_indexes_allowed)
@@ -98,6 +105,38 @@ class Scenario( defs.Defs ):
 			if sum(self.heuristic_conflicts_count) > 0:
 				self.printArray(self.heuristic_conflicts_count, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
 				#exit()
+
+		# Commands to apply during runtime
+		self.prepare_default_commands()
+
+	# ----- Prepare spaces sequence
+	def prepare_default_commands( self ):
+		if self.puzzle.DEBUG > 0:
+			self.default_commands.extend( [	
+				"CLEAR_SCREEN",
+				"SHOW_TITLE",
+				"SHOW_SEED",
+				"SHOW_HEARTBEAT",
+				"SHOW_ADAPTATIVE_FILTER" if self.use_adaptative_filter_depth else "",
+				"SHOW_STATS_NODES_COUNT",
+				"ZERO_STATS_NODES_COUNT",
+				"SHOW_STATS_PIECES_TRIED_COUNT",
+				"ZERO_STATS_PIECES_TRIED_COUNT",
+				#"SHOW_STATS_PIECES_USED_COUNT",
+				#"ZERO_STATS_PIECES_USED_COUNT",
+				#"SHOW_STATS_HEURISTIC_PATTERNS_BREAK_COUNT",
+				#"ZERO_STATS_HEURISTIC_PATTERNS_BREAK_COUNT",
+				#"SHOW_STATS_HEURISTIC_CONFLICTS_BREAK_COUNT",
+				#"ZERO_STATS_HEURISTIC_CONFLICTS_BREAK_COUNT",
+				"SHOW_STATS_ADAPTATIVE_FILTER_COUNT" if self.use_adaptative_filter_depth else "",
+				"ZERO_STATS_ADAPTATIVE_FILTER_COUNT" if self.use_adaptative_filter_depth else "",
+				"SHOW_NODES_HEARTBEAT",
+				"ZERO_NODES_HEARTBEAT",
+				"SHOW_MAX_DEPTH_SEEN",
+				"SHOW_BEST_BOARD_URL",
+				] )
+			
+
 
 	# ----- Prepare spaces sequence
 	def prepare_spaces_sequence( self ):
