@@ -173,7 +173,7 @@ class Puzzle( defs.Defs ):
 	stats = None
 
 	# ----- Init the puzzle
-	def __init__( self ):
+	def __init__( self, scenario_name="", extra_fixed=[] ):
 		"""
 		Initialize
 		"""
@@ -193,7 +193,10 @@ class Puzzle( defs.Defs ):
 
 		# Because Fixed pieces can be defined in the scenario
 		# it has to be placed before SpacesType
-		self.scenario = scenarios.loadScenario(self)
+		self.scenario = scenarios.loadScenario(self, scenario_name)
+
+		# Add extra fixed pieces
+		self.puzzle.fixed.extend( extra_fixed )
 
 		self.initStaticSpacesType()
 

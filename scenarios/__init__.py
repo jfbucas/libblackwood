@@ -21,6 +21,6 @@ def loadScenario( puzzle, name = "JB470" ):
 		if name.lower() == x.__name__.lower():
 			return x(puzzle)
 
-	puzzle.error( "ERROR: Unknown scenario: "+ name)
+	puzzle.error( "ERROR: Unknown scenario: '"+ name +"'")
 	exit()
 

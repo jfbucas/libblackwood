@@ -27,6 +27,8 @@ def loadPuzzle( puzzlename = "E2ncud" ):
 		p = tomy_4x4.Tomy_4x4()
 	elif puzzlename in [ "Brendan_12x12", "B12x12", "12x12" ]:
 		p = brendan_12x12.Brendan_12x12()
+	elif puzzlename in [ "Brendan_10x10", "B10x10", "10x10", "axa", "AxA" ]:
+		p = brendan_10x10.Brendan_10x10()
 	elif puzzlename in [ "Brendan_08x08f", "B8x8f", "8x8f" ]:
 		p = brendan_08x08.Brendan_08x08(with_fixed=True)
 	elif puzzlename in [ "Brendan_08x08", "B8x8", "8x8" ]:

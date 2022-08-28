@@ -68,7 +68,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			[ "Check for Commands",		"check_commands",		"CheckCommands" ],
 			[ "Commands for Interactivity",	"commands",			"Commands" ],
 			[ "Show help",			"help",				"Help" ],
-			[ "Max Depth Seen",		"best_depth_seen",		"BestDepth" ],
+			[ "Max Depth Seen",		"best_depth_seen",		"BestDepthSeen" ],
 			[ "Seed",			"seed",				"Seed" ],
 		]
 
@@ -99,6 +99,8 @@ class LibBlackwood( external_libs.External_Libs ):
 		for (fname, vname, uname, flag)  in self.ARRAYS:
 			self.COMMANDS_LIST.append( "SHOW_"+flag )
 			self.COMMANDS_LIST.append( "ZERO_"+flag )
+			self.COMMANDS_LIST.append( "ZERO_TOTAL_"+flag )
+			self.COMMANDS_LIST.append( "SHOW_RESULT_"+flag )
 
 
 		self.COMMANDS[ "NONE" ] = 0
@@ -139,7 +141,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		signatures.extend( self.gen_getter_setter_function( only_signature=True ) )
 		signatures.extend( self.gen_allocate_blackwood_function( only_signature=True ) )
 		signatures.extend( self.gen_getSolutionURL_function( only_signature=True ) )
-		signatures.extend( self.gen_getBestDepthHeartbeat_function( only_signature=True ) )
+		signatures.extend( self.gen_getBestDepthSeenHeartbeat_function( only_signature=True ) )
 		signatures.extend( self.gen_solve_function(only_signature=True) )
 		signatures.extend( self.gen_do_commands(only_signature=True ) )
 		signatures.extend( self.gen_set_blackwood_arrays_function(only_signature=True ) )
@@ -207,7 +209,7 @@ class LibBlackwood( external_libs.External_Libs ):
 
 			if not command_found:
 				for (fname, vname, uname, flag)  in self.ARRAYS:
-					if command in  [ "SHOW_"+flag, "ZERO_"+flag ]:
+					if command in  [ "SHOW_"+flag, "ZERO_"+flag, "ZERO_TOTAL_"+flag, "ZERO_END_"+flag ]:
 						self.LibExt.xorCommands( self.cb, self.COMMANDS[ command ] )
 						command_found = True
 
@@ -261,7 +263,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(2, prefix+'printf( '+out+' "Heartbeats: %llu/%llu\\n", b->heartbeat, b->heartbeat_limit);' ),
 				(0, '' ),
 				(1, 'if (b->commands & SHOW_ADAPTATIVE_FILTER)' ),
-				(2, prefix+'printf( '+out+' "Adaptative Filter Depth: %llu '+ ("(filtered=%llu)" if self.DEBUG>0 else "")+ '\\n", b->adaptative_filter_depth'+ (', b->stats_last_adaptative_filter_rejected' if self.DEBUG>0 else "") + ');' ),
+				(2, prefix+'printf( '+out+' "Adaptative Filter Depth: %llu '+ ("(filtered=%llu)" if self.DEBUG > 0 else "")+ '\\n", b->adaptative_filter_depth'+ (', b->stats_last_adaptative_filter_rejected' if self.DEBUG > 0 else "") + ');' ),
 				(0, '' ),
 				] )
 
@@ -270,15 +272,24 @@ class LibBlackwood( external_libs.External_Libs ):
 
 				output.extend( [
 				(1, 'if (b->commands & SHOW_'+flag+') {' ),
-				(2, prefix+'print'+fname+'( '+out+' b );' ),
-				(2, 'printf( "Total '+vname+' = %llu\\n", b->'+vtname+' );' if self.puzzle.scenario.PERF > 0 else ""),
+				(2, prefix+'print'+fname+'( '+out+' b );'  if self.puzzle.scenario.STATS else ""),
+				(2, 'printf( "Total '+vname+' = %llu\\n", b->'+vtname+' );' if self.puzzle.scenario.PERF else ""),
+				(1, '}' ),
+				(0, '' ),
+
+				(1, 'if ((b->commands & SHOW_RESULT_'+flag+')&&(b->time_to_finish)) {' ),
+				(2, prefix+'print'+fname+'_for_stats_by_depth( '+out+' b );'  if self.puzzle.scenario.STATS else ""),
+				(2, 'printf( "'+vname+' = %llu  (avg = %llu)\\n", b->'+vtname+', b->'+vtname+' / b->heartbeat );' if self.puzzle.scenario.PERF else ""),
 				(1, '}' ),
 				(0, '' ),
 
 				(1, 'if (b->commands & ZERO_'+flag+')' ),
-				(2, 'b->'+vtname+' = 0;' ),
 				#(2, 'for(i=0;i<WH;i++) { b->'+vtname+' += b->'+vname+'[i]; b->'+vname+'[i] = 0; }' ),
-				(2, 'for(i=0;i<WH;i++) { b->'+vname+'[i] = 0; }' ),
+				(2, 'for(i=0;i<WH;i++) { b->'+vname+'[i] = 0; }' if self.puzzle.scenario.STATS else ""),
+				(0, '' ),
+
+				(1, 'if (b->commands & ZERO_TOTAL_'+flag+')' ),
+				(2, 'b->'+vtname+' = 0;' if self.puzzle.scenario.PERF else ""),
 				(0, '' ),
 				] )
 
@@ -324,7 +335,11 @@ class LibBlackwood( external_libs.External_Libs ):
 				(2, prefix+'printf( '+out+' " > s  | save\\n");'),
 				(2, prefix+'printf( '+out+' " > q  | quit\\n");'),
 
-				(2, (prefix+'printf( '+out+' "\\n Stats:\\n'+ "".join([ "  > "+format("SHOW_"+flag, "45")+"  > "+format("ZERO_"+flag, "45")+"\\n" for (fname, vname, uname, flag) in self.ARRAYS])+'\\n");') if self.puzzle.scenario.STATS or self.puzzle.scenario.PERF else ""),
+				(2, (prefix+'printf( '+out+' "\\n Stats:\\n'+ "".join([
+					"  > "+format("SHOW_"+flag, "45")+
+					"  > "+format("ZERO_"+flag, "45")+
+					"  > "+format("ZERO_TOTAL_"+flag, "45")+"\\n" 
+					for (fname, vname, uname, flag) in self.ARRAYS])+'\\n");') if self.puzzle.scenario.STATS or self.puzzle.scenario.PERF else ""),
 				#(2, 'b->commands &= ~SHOW_HELP;' ),
 				(1, '}' ),
 				(0, '' ),
@@ -584,10 +599,10 @@ class LibBlackwood( external_libs.External_Libs ):
 		return output
 
 	# ----- Generate the solution into a string for WFN
-	def gen_getBestDepthHeartbeat_function( self, only_signature=False ):
+	def gen_getBestDepthSeenHeartbeat_function( self, only_signature=False ):
 
 		output = [ 
-			(0, "uint64 getBestDepthHeartbeat("),
+			(0, "uint64 getBestDepthSeenHeartbeat("),
 			(1, "voidp b,"),
 			(1, "uint64 index"),
 			]
@@ -891,7 +906,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				out = "f_out,"
 
 			# ----------------------------------
-			for dest in [ "", "_for_stats" ]:
+			for dest in [ "", "_for_stats", "_for_stats_by_depth" ]:
 
 				output.extend( [ 
 					(0, "void "+prefix+"print"+fname+dest+"("),
@@ -972,7 +987,8 @@ class LibBlackwood( external_libs.External_Libs ):
 						(2, prefix+'printf( '+out+'"Total: %3llu '+uname+'/s\\n\\n", total);' ),
 						(1, '}' ),
 						])
-				else:
+
+				elif dest == "_for_stats":
 					output.extend( [
 						(1, 'for (y = 0; y < '+str(self.puzzle.board_h)+'; y++) {' ),
 						(2, 'for (x = 0; x < '+str(self.puzzle.board_w)+'; x++) {' ),
@@ -983,6 +999,19 @@ class LibBlackwood( external_libs.External_Libs ):
 						(1, '} // y' ),
 						(1, prefix+'printf( '+out+'"\\n" );' ),
 						(1, prefix+'printf( '+out+'"Total: %llu '+uname+'/s\\n", total );' ),
+						])
+
+				else:
+					output.extend( [
+						(1, 'for (y = 0; y < '+str(self.puzzle.board_h)+'; y++) {' ),
+						(2, 'for (x = 0; x < '+str(self.puzzle.board_w)+'; x++) {' ),
+						(3, 'count = b->'+vname+'[ spaces_sequence[x+(y*'+str(self.puzzle.board_w)+')] ];' ),
+						(3, 'total += count;' ),
+						(3, prefix+'printf( '+out+'"%llu ", count);' ),
+						(2, '} // x' ),
+						(1, '} // y' ),
+						(1, prefix+'printf( '+out+'"\\n" );' ),
+						#(1, prefix+'printf( '+out+'"Total: %llu '+uname+'/s\\n", total );' ),
 						])
 
 
@@ -1139,8 +1168,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			] )
 
 		for c in self.puzzle.scenario.default_commands:
-			if c != "":
-	 			output.append( (1, "cb->commands |= "+c+";"), )
+ 			output.append( (1, "cb->commands |= "+c+";"), )
 
 
 		output.extend( [
@@ -1508,7 +1536,7 @@ class LibBlackwood( external_libs.External_Libs ):
 		self.writeGen( gen, self.gen_set_blackwood_arrays_function( only_signature=True ) )
 		self.writeGen( gen, self.gen_save_best_depth_seen_function( only_signature=True ) )
 		self.writeGen( gen, self.gen_getSolutionURL_function( only_signature=True ) )
-		self.writeGen( gen, self.gen_getBestDepthHeartbeat_function( only_signature=True ) )
+		self.writeGen( gen, self.gen_getBestDepthSeenHeartbeat_function( only_signature=True ) )
 
 		self.writeGen( gen, self.gen_print_url_functions(only_signature=True) )
 
@@ -1549,7 +1577,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			self.writeGen( gen, self.gen_set_blackwood_arrays_function( only_signature=False ) )
 			self.writeGen( gen, self.gen_save_best_depth_seen_function( only_signature=False) )
 			self.writeGen( gen, self.gen_getSolutionURL_function( only_signature=False ) )
-			self.writeGen( gen, self.gen_getBestDepthHeartbeat_function( only_signature=False ) )
+			self.writeGen( gen, self.gen_getBestDepthSeenHeartbeat_function( only_signature=False ) )
 			self.writeGen( gen, self.gen_print_url_functions(only_signature=False) )
 			self.writeGen( gen, self.gen_print_functions(only_signature=False) )
 			self.writeGen( gen, self.gen_do_commands(only_signature=False ) )

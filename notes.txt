@@ -1,0 +1,22 @@
+View:
+ - average depth
+ - best depth seen
+
+Job:
+ - puzzle name
+ - scenario
+ - extra fixed
+ - time limit
+
+Result:
+ - time
+ - nodes count array
+ - solution (if found)
+
+
+TODO:
+ - JSON result
+ - API
+ - job list
+ - scenario.prefered_ref
+ - extra fixed

@@ -18,6 +18,7 @@ class Scenario( defs.Defs ):
 	PERF = False
 
 	use_adaptative_filter_depth = True
+	default_commands = []
 
 	def __init__( self ):
 
@@ -40,7 +41,6 @@ class Scenario( defs.Defs ):
 		self.spaces_references = [None] * self.puzzle.board_wh
 		self.reverse_spaces_order = False
 		self.flip_spaces_order = False
-		self.default_commands = []
 
 		self.score_target = self.puzzle.board_wh*2 - self.puzzle.board_w - self.puzzle.board_h
 		self.score_target -= len(self.conflicts_indexes_allowed)
@@ -107,10 +107,6 @@ class Scenario( defs.Defs ):
 				#exit()
 
 		# Commands to apply during runtime
-		self.prepare_default_commands()
-
-	# ----- Prepare spaces sequence
-	def prepare_default_commands( self ):
 		if self.puzzle.DEBUG > 0:
 			self.default_commands.extend( [	
 				"CLEAR_SCREEN",
@@ -136,6 +132,8 @@ class Scenario( defs.Defs ):
 				"SHOW_BEST_BOARD_URL",
 				] )
 			
+		self.default_commands = list(dict.fromkeys(self.default_commands))
+		if "" in self.default_commands: self.default_commands.remove("")
 
 
 	# ----- Prepare spaces sequence
