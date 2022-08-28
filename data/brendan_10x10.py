@@ -3,9 +3,11 @@ import puzzle
 class Brendan_10x10( puzzle.Puzzle ):
 	"""The Brendan 10x10 puzzle"""
 
-	def __init__( self ):
+	name = "brendan/pieces_10x10.txt.js"
+	aliases = [ "Brendan_10x10", "B10x10", "10x10", "axa", "AxA" ]
 
-		self.name = "brendan/pieces_10x10.txt.js"
+	def __init__( self, extra_fixed=[] ):
+
 		self.motifs_order = "jef"
 		self.upside_down = False
 
@@ -122,5 +124,9 @@ class Brendan_10x10( puzzle.Puzzle ):
 			[ 0,0,1 ], # we fix a corner
 		]
 
+		# Add extra fixed
+		self.fixed.extend(extra_fixed)
+
 		puzzle.Puzzle.__init__( self )
 
+puzzle.global_list.append(Brendan_10x10)

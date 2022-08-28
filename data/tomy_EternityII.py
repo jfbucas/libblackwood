@@ -4,9 +4,11 @@ import puzzle
 class Tomy_EternityII( puzzle.Puzzle ):
 	"""The full Eternity II puzzle"""
 
-	def __init__( self, with_clues=True, upside_down=False  ):
+	name = "EternityII"
+	aliases = [ "Tomy_EternityII", "EternityII", "E2" ]
 
-		self.name = "EternityII"
+	def __init__( self, extra_fixed=[], with_clues=True, upside_down=False  ):
+
 		self.motifs_order = "jef"
 		self.upside_down = upside_down
 
@@ -304,5 +306,9 @@ class Tomy_EternityII( puzzle.Puzzle ):
 				[ 138,120,0 ],
 				] )
 
+		# Add extra fixed
+		self.fixed.extend(extra_fixed)
+
 		puzzle.Puzzle.__init__( self )
 
+puzzle.global_list.append(Tomy_EternityII)

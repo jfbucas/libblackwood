@@ -1667,7 +1667,8 @@ class LibBlackwood( external_libs.External_Libs ):
 if __name__ == "__main__":
 	import data
 
-	p = data.loadPuzzle()
+	#p = data.loadPuzzle()
+	p = data.loadPuzzle(extra_fixed=[[0,0,3],[2,9,0]])
 	if p != None:
 
 		lib = LibBlackwood( p )

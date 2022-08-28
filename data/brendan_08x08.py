@@ -3,9 +3,11 @@ import puzzle
 class Brendan_08x08( puzzle.Puzzle ):
 	"""The Brendan 08x08 puzzle"""
 
-	def __init__( self, with_fixed=False ):
+	name = "brendan/pieces_08x08.txt.js"
+	aliases = [ "Brendan_08x08", "B8x8", "8x8" ]
 
-		self.name = "brendan/pieces_08x08.txt.js"
+	def __init__( self, extra_fixed=[] ):
+
 		self.motifs_order = "jef"
 		self.upside_down = False
 
@@ -80,10 +82,17 @@ class Brendan_08x08( puzzle.Puzzle ):
 			[8,8,9,11]
 		]
 
+		"""
 		if with_fixed:
 			# Fixed piece,space,rotation
 			self.fixed = [
 				[ 0,0,3 ], # we fix a corner
 			]
+		"""
 	
+		# Add extra fixed
+		self.fixed.extend(extra_fixed)
+
 		puzzle.Puzzle.__init__( self )
+
+puzzle.global_list.append(Brendan_08x08)

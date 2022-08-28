@@ -14,6 +14,9 @@ import defs
 import scenarios
 
 
+# Contains the classes of all the known puzzles
+global_list = []
+
 #
 # Pieces, Rotations, Lists, Puzzle 
 #
@@ -194,9 +197,6 @@ class Puzzle( defs.Defs ):
 		# Because Fixed pieces can be defined in the scenario
 		# it has to be placed before SpacesType
 		self.scenario = scenarios.loadScenario(self, scenario_name)
-
-		# Add extra fixed pieces
-		self.puzzle.fixed.extend( extra_fixed )
 
 		self.initStaticSpacesType()
 

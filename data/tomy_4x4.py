@@ -4,9 +4,11 @@ import puzzle
 class Tomy_4x4( puzzle.Puzzle ):
 	"""The demo puzzle provided on Tomy's website"""
 
-	def __init__( self ):
+	name = "tomy/pieces.txt.4x4.js"
+	aliases = [ "Tomy_4x4", "T4x4", "4x4" ]
 
-		self.name = "tomy/pieces.txt.4x4.js"
+	def __init__( self, extra_fixed=[] ):
+
 		self.motifs_order = "jef"
 		self.upside_down = False
 
@@ -32,6 +34,10 @@ class Tomy_4x4( puzzle.Puzzle ):
 			[4,2,3,0]
 		]
 	
+		# Add extra fixed
+		self.fixed.extend(extra_fixed)
+
 		puzzle.Puzzle.__init__( self )
 
 
+puzzle.global_list.append(Tomy_4x4)
