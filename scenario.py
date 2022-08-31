@@ -19,6 +19,7 @@ class Scenario( defs.Defs ):
 
 	use_adaptative_filter_depth = True
 	default_commands = []
+	prefered_reference = None
 
 	def __init__( self ):
 
@@ -194,17 +195,24 @@ class Scenario( defs.Defs ):
 			ref += "D" if space >= WH-W      else ( "d" if self.spaces_order[ space + W ] < depth else "" );
 			ref += "L" if space % W == 0     else ( "l" if self.spaces_order[ space - 1 ] < depth else "" );
 
-			# Removes the out reference if not needed (2 ref is enough)
-			for x in [0, 1]:
+			if self.prefered_reference != None:
 				if len(ref) > 2:
-					one_found=False
-					new_ref = ""
-					for s in reversed(ref):
-						if s.upper() == s and not one_found:
-							one_found = True
-						else:
-							new_ref += s
-					ref = new_ref
+					if self.prefered_reference[0:1] in list(ref.lower()) and \
+					   self.prefered_reference[1:2] in list(ref.lower()):
+					   	ref = self.prefered_reference
+
+			else:
+				# Removes the out reference if not needed (2 ref is enough)
+				for x in [0, 1]:
+					if len(ref) > 2:
+						one_found=False
+						new_ref = ""
+						for s in reversed(ref):
+							if s.upper() == s and not one_found:
+								one_found = True
+							else:
+								new_ref += s
+						ref = new_ref
 
 			ref = ref.lower()
 

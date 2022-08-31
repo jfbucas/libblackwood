@@ -38,6 +38,17 @@ class Piece():
 		self.l = l
 		self.fixed = fixed
 
+	def copy(self):
+		return Piece(
+			self.p, 
+			self.u,
+			self.r,
+			self.d,
+			self.l,
+			self.fixed
+			)
+		
+
 	def __str__(self):
 		return str(self.p)+"["+str(self.u)+","+str(self.r)+","+str(self.d)+","+str(self.l)+"]"
 	def __repr__(self):
@@ -169,6 +180,7 @@ class Puzzle( defs.Defs ):
 	static_space_left_up	= []
 
 	static_spaces_type = []		# the type for each space
+	static_valid_pieces = []	# A list of pieces for each space of the board
 
 	pieces_stats16_weight = []
 
@@ -199,6 +211,7 @@ class Puzzle( defs.Defs ):
 		self.scenario = scenarios.loadScenario(self, scenario_name)
 
 		self.initStaticSpacesType()
+		self.initStaticValidPieces()
 
 		self.TITLE_STR += self.name+"("+ self.scenario.name +")"
 
@@ -1020,6 +1033,86 @@ class Puzzle( defs.Defs ):
 			self.info( " * Preparing pieces took "+ self.top("prepare pieces"))
 
 		return ( master_index, master_lists_of_rotated_pieces, master_all_rotated_pieces )
+
+	# ----- Init the list of valid pieces for each space of the board
+	def initStaticValidPieces( self ):
+		"""Init the list of valid pieces for each space of the board"""
+
+		pieces = {}
+		pieces["corner"] = self.getPieces(only_corner=True) 
+		pieces["border"] = self.getPieces(only_border=True) 
+		pieces["center"] = self.getPieces(only_center=True) 
+		pieces["fixed" ] = self.getPieces(only_fixed=True) 
+
+		self.static_valid_pieces = [None] * self.board_wh
+
+		# Default pieces
+		for space in range(self.board_wh):
+
+			# What pieces are allowed on that space
+			valid_list = []
+
+			if self.static_spaces_type[ space ] == "fixed":
+				# Fixed
+				for [ fp, fs, fr ] in self.fixed:
+					if fs == space:
+						for p in pieces[self.static_spaces_type[ space ]]:
+							if p.p == fp:
+								new_p = p.copy()
+								valid_list.append(new_p)
+
+			elif self.static_spaces_type[ space ] == "corner":
+				# Corners
+				r = 0
+				if space == 0					: r=3
+				if space == self.board_w-1			: r=0
+				if space == self.board_wh - self.board_w	: r=2
+				if space == self.board_wh-1			: r=1
+
+				for p in pieces[self.static_spaces_type[ space ]]:
+					new_p = p.copy()
+					for i in range(r):
+						new_p.turnCW()
+					valid_list.append(new_p)
+
+			elif self.static_spaces_type[ space ] == "border":
+				# Borders
+				r = 0
+				if ((space % self.board_w) == 0          )	:	r=3
+				if ((space % self.board_w) == (self.board_w-1))	:	r=1
+				if (space < self.board_w)			:	r=0
+				if (space > (self.board_wh - self.board_w))	:	r=2
+
+				for p in pieces[self.static_spaces_type[ space ]]:
+					new_p = p.copy()
+					for i in range(r):
+						new_p.turnCW()
+					valid_list.append(new_p)
+			else:
+				for p in pieces[self.static_spaces_type[ space ]]:
+					for r in range(4):
+						new_p = p.copy()
+						for i in range(r):
+							new_p.turnCW()
+						valid_list.append(new_p)
+
+			self.static_valid_pieces[ space ] = valid_list
+
+		if self.DEBUG_STATIC > 0:
+			self.info( " * Valid pieces" )
+			a = []
+			for space in range(self.board_wh):
+				a.append(len(self.static_valid_pieces[ space ]))
+
+			self.printArray( a, array_w=self.board_w, array_h=self.board_h)
+			
+
+			if self.DEBUG_STATIC > 4:
+				for space in range(self.board_wh):
+					if self.static_spaces_type[ space ] == "border":
+						print(self.static_valid_pieces[ space ])
+
+		
 
 
 
