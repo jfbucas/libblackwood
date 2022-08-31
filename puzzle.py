@@ -1059,6 +1059,8 @@ class Puzzle( defs.Defs ):
 						for p in pieces[self.static_spaces_type[ space ]]:
 							if p.p == fp:
 								new_p = p.copy()
+								for i in range(fr):
+									new_p.turnCW()
 								valid_list.append(new_p)
 
 			elif self.static_spaces_type[ space ] == "corner":
@@ -1185,7 +1187,7 @@ if __name__ == "__main__":
 
 	p = data.loadPuzzle()
 
-	p.initPatternsRelations()
+	#p.initPatternsRelations()
 
 
 
