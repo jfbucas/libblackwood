@@ -30,13 +30,14 @@ class Piece():
 	fixed = False
 	weight = 0
 
-	def __init__(self, p, u,r,d,l, fixed=False):
+	def __init__(self, p, u,r,d,l, fixed=False, rotation=0):
 		self.p = p
 		self.u = u
 		self.r = r
 		self.d = d
 		self.l = l
 		self.fixed = fixed
+		self.rotation = rotation
 
 	def copy(self):
 		return Piece(
@@ -45,7 +46,8 @@ class Piece():
 			self.r,
 			self.d,
 			self.l,
-			self.fixed
+			self.fixed,
+			self.rotation
 			)
 		
 
@@ -84,9 +86,11 @@ class Piece():
 		return self.fixed
 
 	def turnCW(self):
+		self.rotation = (self.rotation+1)%4
 		(self.u, self.r, self.d, self.l) = (self.l, self.u, self.r, self.d)
 
 	def turnCCW(self):
+		self.rotation = (self.rotation-1)%4
 		(self.u, self.r, self.d, self.l) = (self.r, self.d, self.l, self.u)
 
 class RotatedPiece():
@@ -159,6 +163,7 @@ class Puzzle( defs.Defs ):
 
 	pieces = []
 	fixed = []
+	extra_fixed = []
 
 	nb_colors_border = 0
 	nb_colors_center = 0
@@ -429,7 +434,7 @@ class Puzzle( defs.Defs ):
 		self.static_spaces_type[ self.board_wh - 1 ] = "corner"
 
 		# Fixed
-		for [ fp, fs, fr ] in self.fixed:
+		for [ fp, fs, fr ] in self.fixed+self.extra_fixed:
 			self.static_spaces_type[ fs ] = "fixed"
 
 		if self.DEBUG_STATIC > 2:
@@ -549,7 +554,7 @@ class Puzzle( defs.Defs ):
 		n = 0
 		for p in self.pieces:
 			q = Piece( n, p[0], p[1], p[2], p[3] )
-			for [ fp, fs, fr ] in self.fixed:
+			for [ fp, fs, fr ] in self.fixed+self.extra_fixed:
 				if n == fp:
 					q.fixed = True
 
@@ -908,7 +913,7 @@ class Puzzle( defs.Defs ):
 			master_index[ "center"+("_conflicts" if conflicts else "")+"_"+reference ] = self.list_rotated_pieces_to_array(tmp, reference)
 
 		# Fixed
-		for [ fp, fs, fr ] in self.fixed:
+		for [ fp, fs, fr ] in self.fixed+self.extra_fixed:
 			p = Piece( fp, self.pieces[fp][0], self.pieces[fp][1], self.pieces[fp][2], self.pieces[fp][3] )
 			for i in range(fr):
 				p.turnCW()
@@ -1054,7 +1059,7 @@ class Puzzle( defs.Defs ):
 
 			if self.static_spaces_type[ space ] == "fixed":
 				# Fixed
-				for [ fp, fs, fr ] in self.fixed:
+				for [ fp, fs, fr ] in self.fixed+self.extra_fixed:
 					if fs == space:
 						for p in pieces[self.static_spaces_type[ space ]]:
 							if p.p == fp:

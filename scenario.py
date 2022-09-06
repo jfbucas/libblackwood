@@ -258,7 +258,7 @@ class Scenario( defs.Defs ):
 		master_piece_name = ""
 		# Is it a fixed or next to a fixed?
 		if master_piece_name == "":
-			for ( fpiece, fspace, frotation ) in self.puzzle.fixed:
+			for ( fpiece, fspace, frotation ) in self.puzzle.fixed+self.puzzle.extra_fixed:
 				if space == fspace:
 					master_piece_name = "fixed"+str(fpiece)
 				elif space == self.puzzle.static_space_up[fspace]:

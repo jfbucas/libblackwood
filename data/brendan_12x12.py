@@ -168,7 +168,7 @@ class Brendan_12x12( puzzle.Puzzle ):
 		]
 
 		# Add extra fixed
-		self.fixed.extend(extra_fixed)
+		self.extra_fixed = extra_fixed
 
 		puzzle.Puzzle.__init__( self )
 
