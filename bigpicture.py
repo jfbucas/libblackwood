@@ -9,6 +9,9 @@ import multiprocessing
 import itertools
 import ctypes
 
+import png
+import math
+
 # Local Libs
 import defs
 import puzzle
@@ -34,7 +37,9 @@ class BigPicture( defs.Defs ):
 		self.valid_pieces = self.filterValidPieces( self.puzzle.static_valid_pieces )
 		
 		#self.fixPiece(self.puzzle, self.valid_pieces)
-		self.getJobs(self.valid_pieces, max_width=128, max_height=128)
+		#self.getJobs(self.valid_pieces, max_width=128, max_height=128)
+		self.getJobs(self.valid_pieces)
+		self.getImages()
 
 
 	# ----- Filter based on edges/patterns the valid_pieces list
@@ -179,43 +184,25 @@ class BigPicture( defs.Defs ):
 		depth = len(self.puzzle.extra_fixed+self.puzzle.fixed)
 
 		all_valid_pieces[ depth-1 ] = [ (0, 0,  current_valid_pieces) ]
+		width[ depth-1 ] = 1
+		height[ depth-1 ] = 1
 
 		while depth < self.puzzle.board_wh:
 
-			orientation = 1-(depth % 2)
+			orientation = depth % 2
 			width[ depth ] = 0
 			height[ depth ] = 0
 			all_valid_pieces[ depth ] = []
 
-			actual_x = 0
-			actual_y = 0
 
-			largest_x = 1
-			largest_y = 1
+			new_column_width = [1] * (width[depth-1])
+			new_line_height  = [1] * (height[depth-1])
 
-			previous_old_x = 0
-			previous_old_y = 0
+			tmp_valid_pieces = []
 
 			for old_x, old_y, current_valid_pieces in all_valid_pieces[ depth-1 ]:
 				
-
-				# if we change column/line
-				if orientation == 0:
-					actual_y = old_y
-					if previous_old_x < old_x:
-						actual_x += largest_x
-						largest_x = 0
-				else:
-					actual_x = old_x
-					if previous_old_y < old_y:
-						actual_y += largest_y
-						largest_y = 0
-
-				print("Depth", depth, "Old", old_x,",",old_y, "::", "Actual", actual_x,",",actual_y)
-
-				# Keep old position to detect change in column/line
-				previous_old_x = old_x
-				previous_old_y = old_y
+				#print("Depth", depth, "Old coordonates", old_x,",",old_y)
 
 
 				lowest_valid_pieces = self.puzzle.board_wh*4
@@ -228,33 +215,49 @@ class BigPicture( defs.Defs ):
 							lowest_valid_pieces = len(current_valid_pieces[ space ])
 							best_space = space
 
-				print("Depth", depth, "Best space is", best_space, "with", lowest_valid_pieces, "pieces")
+				if best_space == None:
+					print("No best_space found, continuing")
+					continue
 
 
 				# Add the new jobs
 				new_x = 0
 				new_y = 0
-				for p in current_valid_pieces[ best_space ]:
-					new_valid_pieces = self.filterValidPieces(self.fixPiece( current_valid_pieces, p.p, best_space, p.rotation) )
+				for  p in current_valid_pieces[ best_space ]:
+					new_valid_pieces = self.filterValidPieces( self.fixPiece( current_valid_pieces, p.p, best_space, p.rotation) )
 					if new_valid_pieces != None:
-						all_valid_pieces[ depth ].append( (actual_x+new_x, actual_y+new_y, new_valid_pieces ) )
+						tmp_valid_pieces.append( (old_x, new_x, old_y, new_y, new_valid_pieces ) )
 
 						if orientation == 0:
 							new_x += 1
+							if new_x > new_column_width[old_x]:
+								new_column_width[old_x] = new_x
 						else:
 							new_y += 1
+							if new_y > new_line_height[old_y]:
+								new_line_height[old_y] = new_y
 
-				if orientation == 0:
-					if new_x > largest_x:
-						largest_x = new_x
-				else:
-					if new_y > largest_y:
-						largest_y = new_y
 				
+			# Adjust the coordinates of the jobs
+			new_column_position = [0]
+			for n in new_column_width:
+				new_column_position.append( new_column_position[-1] + n )
+
+			new_line_position = [0]
+			for n in new_line_height:
+				new_line_position.append( new_line_position[-1] + n )
+
+			for old_x, new_x, old_y, new_y, valid_pieces in tmp_valid_pieces:
+				actual_x = new_x+new_column_position[old_x]
+				actual_y = new_y+new_line_position[old_y]
+
+				#print("Depth", depth, "Coordonates", old_x,old_y, " -> ", actual_x, actual_y)
+
+				all_valid_pieces[ depth ].append( (actual_x, actual_y, new_valid_pieces ) )
 
 
-			width[ depth ]  = actual_x + largest_x
-			height[ depth ] = actual_y + largest_y
+			width[ depth ]  = new_column_position[-1]
+			height[ depth ] = new_line_position[-1]
 
 			print("Depth", depth, "Size of the jobs:", width[depth], "x", height[depth])
 			print()
@@ -265,35 +268,69 @@ class BigPicture( defs.Defs ):
 			depth += 1
 
 
-		print("Len of valid_pieces:", len(all_valid_pieces[depth]))
+		print("Len of valid_pieces:", len(all_valid_pieces[-1]))
 
-		return all_valid_pieces[depth]
+		for d in all_valid_pieces:
+			output = ""
+			for x, y, current_valid_pieces in all_valid_pieces[d]:
+				jobid = str(d)+"_"+str(x)+"_"+str(y)
+				extra_fixed=[]
+				for space in range(self.puzzle.board_wh):
+					if  (len(current_valid_pieces[ space ]) == 1) and (self.puzzle.static_spaces_type[space] != "fixed"): 
+						piece = current_valid_pieces[ space ][0]
+						extra_fixed.append( (piece.p, space, piece.rotation) )
+				output += jobid+"|"+str(extra_fixed)+"\n"
+			
+			jobsfile = open( "jobs/"+self.getFileFriendlyName( self.puzzle.name )+"_"+str(d)+"_"+str(pre_fixed)+".jobs.txt", "w" )
+			jobsfile.write(output)
+			jobsfile.close()
 
-		"""
-
-		lowest_valid_pieces = self.puzzle.board_wh*4
-		best_space = -1
-
-		for space in range(puzzle.board_wh):
-			if  puzzle.static_spaces_type[ space ] != "fixed":
-				if  len(valid_pieces[ space ]) > 0:
-					if  len(valid_pieces[ space ]) < lowest_valid_pieces:
-						lowest_valid_pieces = len(valid_pieces[ space ])
-						best_space = space
-
-		print("Best space is", best_space, "with", lowest_valid_pieces, "pieces")
-
-		for p in valid_pieces[best_space]:
-			new_extra_fixed = puzzle.extra_fixed + [ [p.p, best_space, p.rotation] ]
-			new_puzzle = data.loadPuzzle(extra_fixed=new_extra_fixed)
-			new_valid_pieces = self.filterValidPieces( new_puzzle.static_valid_pieces )
-
-			if new_valid_pieces != None:
-				self.fixPiece(new_puzzle, new_valid_pieces, depth+1)
-		"""
+		return all_valid_pieces[-1]
 
 
+	def getImages( self, pre_fixed=[] ):
 
+		# Read the data
+		for depth in range(-1, self.puzzle.board_wh):
+			filename = "jobs/"+self.getFileFriendlyName( self.puzzle.name )+"_"+str(depth)+"_"+str(pre_fixed)+".jobs.txt"
+
+			if os.path.exists(filename):
+				coordinates=[]
+
+				jobsfile = open( "jobs/"+self.getFileFriendlyName( self.puzzle.name )+"_"+str(depth)+"_"+str(pre_fixed)+".jobs.txt", "r" )
+				max_x = 0
+				max_y = 0
+				for line in jobsfile:
+					if line.startswith('#'):
+						continue
+					line = line.strip('\n').strip(' ')
+					line = line.split("|")
+					line = line[0].split("_")
+					x=int(line[1])
+					y=int(line[2])
+					if x > max_x:
+						max_x = x
+					if y > max_y:
+						max_y = y
+					coordinates.append( (x, y) )
+				jobsfile.close()
+
+
+				# Create the blank image
+				w = png.Writer(max_x+1, max_y+1, greyscale=True)
+				img = []
+				for h in range(max_y+1):
+					l = [ 0 ] * (max_x+1)
+					img.append(l)
+
+				# Insert the jobs
+				for x,y in coordinates:
+					img[y][x] = 255
+
+				# Write the image
+				f = open("jobs/"+self.getFileFriendlyName( self.puzzle.name )+"_"+str(depth)+"_"+str(pre_fixed)+".png", 'wb')      # binary mode is important
+				w.write(f, img)
+				f.close()
 
 
 if __name__ == "__main__":
