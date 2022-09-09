@@ -204,7 +204,6 @@ class BigPicture( defs.Defs ):
 				
 				#print("Depth", depth, "Old coordonates", old_x,",",old_y)
 
-
 				lowest_valid_pieces = self.puzzle.board_wh*4
 				best_space = None
 
@@ -226,7 +225,7 @@ class BigPicture( defs.Defs ):
 				for  p in current_valid_pieces[ best_space ]:
 					new_valid_pieces = self.filterValidPieces( self.fixPiece( current_valid_pieces, p.p, best_space, p.rotation) )
 					if new_valid_pieces != None:
-						tmp_valid_pieces.append( (old_x, new_x, old_y, new_y, new_valid_pieces ) )
+						tmp_valid_pieces.append( (old_x, new_x, old_y, new_y, new_valid_pieces) )
 
 						if orientation == 0:
 							new_x += 1
@@ -253,7 +252,7 @@ class BigPicture( defs.Defs ):
 
 				#print("Depth", depth, "Coordonates", old_x,old_y, " -> ", actual_x, actual_y)
 
-				all_valid_pieces[ depth ].append( (actual_x, actual_y, new_valid_pieces ) )
+				all_valid_pieces[ depth ].append( (actual_x, actual_y, valid_pieces) )
 
 
 			width[ depth ]  = new_column_position[-1]
@@ -262,28 +261,28 @@ class BigPicture( defs.Defs ):
 			print("Depth", depth, "Size of the jobs:", width[depth], "x", height[depth])
 			print()
 
+			# Write the output
+			output = ""
+			for x, y, current_valid_pieces in all_valid_pieces[ depth ]:
+				jobid = str(depth)+"_"+str(x)+"_"+str(y)
+				extra_fixed=[]
+				for space in range(self.puzzle.board_wh):
+					if  (len(current_valid_pieces[ space ]) == 1) and (self.puzzle.static_spaces_type[ space ] != "fixed"): 
+						piece = current_valid_pieces[ space ][0]
+						extra_fixed.append( (piece.p, space, piece.rotation) )
+				output += jobid+"|"+str(extra_fixed)+"\n"
+			
+			jobsfile = open( "jobs/"+self.getFileFriendlyName( self.puzzle.name )+"_"+str(depth)+"_"+str(pre_fixed)+".jobs.txt", "w" )
+			jobsfile.write(output)
+			jobsfile.close()
+
 			if width[ depth ] > max_width and height[ depth ] > max_height:
 					break
 				
 			depth += 1
 
 
-		print("Len of valid_pieces:", len(all_valid_pieces[-1]))
-
-		for d in all_valid_pieces:
-			output = ""
-			for x, y, current_valid_pieces in all_valid_pieces[d]:
-				jobid = str(d)+"_"+str(x)+"_"+str(y)
-				extra_fixed=[]
-				for space in range(self.puzzle.board_wh):
-					if  (len(current_valid_pieces[ space ]) == 1) and (self.puzzle.static_spaces_type[space] != "fixed"): 
-						piece = current_valid_pieces[ space ][0]
-						extra_fixed.append( (piece.p, space, piece.rotation) )
-				output += jobid+"|"+str(extra_fixed)+"\n"
-			
-			jobsfile = open( "jobs/"+self.getFileFriendlyName( self.puzzle.name )+"_"+str(d)+"_"+str(pre_fixed)+".jobs.txt", "w" )
-			jobsfile.write(output)
-			jobsfile.close()
+		#print("Len of valid_pieces:", len(all_valid_pieces[-1]))
 
 		return all_valid_pieces[-1]
 
