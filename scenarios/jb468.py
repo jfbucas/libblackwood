@@ -3,10 +3,10 @@ import scenario
 class JB468( scenario.Scenario ):
 	"""The Joshua Blackwood 468 Scenario"""
 
-	def __init__( self, puzzle ):
+	def __init__( self, puzzle, discriminant="" ):
 
 		self.puzzle = puzzle
-		self.name = __name__.split(".")[1]
+		self.name = __name__.split(".")[1] + str(discriminant)
 
 		self.heuristic_patterns = [ [ 9, 12, 15 ] ]
 		self.conflicts_indexes_allowed = [ 201, 206, 211, 216, 221, 225, 229, 233, 237, 239, 241, 243 ]

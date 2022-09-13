@@ -3,10 +3,10 @@ import scenario
 class JB470Circle( scenario.Scenario ):
 	"""The Joshua Blackwood 470 with a growing circle from the top-left corner Scenario"""
 
-	def __init__( self, puzzle ):
+	def __init__( self, puzzle, discriminant="" ):
 
 		self.puzzle = puzzle
-		self.name = __name__.split(".")[1]
+		self.name = __name__.split(".")[1] + str(discriminant)
 
 		self.heuristic_patterns = [ [ 9, 12, 15 ] ]
 		self.conflicts_indexes_allowed = [ 197, 203, 210, 216, 221, 225, 229, 233, 236, 238 ]

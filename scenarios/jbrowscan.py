@@ -3,10 +3,10 @@ import scenario
 class JBRowScan( scenario.Scenario ):
 	"""Joshua Blackwood Heuristics with a simple rowscan Scenario"""
 
-	def __init__( self, puzzle ):
+	def __init__( self, puzzle, discriminant="" ):
 
 		self.puzzle = puzzle
-		self.name = __name__.split(".")[1]
+		self.name = __name__.split(".")[1] + str(discriminant)
 
 		self.heuristic_patterns = [ [ 9, 12, 15 ] ]
 		self.conflicts_indexes_allowed = []

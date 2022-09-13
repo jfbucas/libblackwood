@@ -6,10 +6,10 @@ import os
 class JB470Spiral( scenario.Scenario ):
 	"""The Joshua Blackwood 470 Scenario with a spiral"""
 
-	def __init__( self, puzzle ):
+	def __init__( self, puzzle, discriminant="" ):
 
 		self.puzzle = puzzle
-		self.name = __name__.split(".")[1]
+		self.name = __name__.split(".")[1] + str(discriminant)
 
 		self.heuristic_patterns = []
 		self.conflicts_indexes_allowed = [ 220, 223, 227, 232, 237, 243, 246, 250, 252, 254 ]

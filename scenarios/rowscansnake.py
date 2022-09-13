@@ -3,10 +3,10 @@ import scenario
 class RowScanSnake( scenario.Scenario ):
 	"""The Heuristics with a simple rowscan snake Scenario"""
 
-	def __init__( self, puzzle ):
+	def __init__( self, puzzle, discriminant="" ):
 
 		self.puzzle = puzzle
-		self.name = __name__.split(".")[1]
+		self.name = __name__.split(".")[1] + str(discriminant)
 
 		self.heuristic_patterns = [ ]
 		self.conflicts_indexes_allowed = []
