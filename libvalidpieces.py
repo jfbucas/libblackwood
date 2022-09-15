@@ -107,6 +107,7 @@ class LibValidpieces( external_libs.External_Libs ):
 			( 2, 	"uint8 l; // left" ),
 			( 0, "};" ),
 			( 0, "typedef struct st_piece_full t_piece_full;" ),
+			( 0, "typedef t_piece_full * p_piece_full;" ),
 			] )
 
 		output.extend( [
