@@ -91,6 +91,7 @@ class LibBigPicture( external_libs.External_Libs ):
 		#signatures.extend( self.gen_solve_function(only_signature=True) )
 		#signatures.extend( self.gen_do_commands(only_signature=True ) )
 		#signatures.extend( self.gen_set_blackwood_arrays_function(only_signature=True ) )
+		signatures.extend( self.gen_print_valid_pieces_functions(only_signature=True) )
 		
 		self.defineFunctionsArgtypesRestype( signatures )
 
@@ -289,13 +290,142 @@ class LibBigPicture( external_libs.External_Libs ):
 			
 		return output
 
+	# ----- Generate print functions
+	def gen_print_valid_pieces_functions( self, only_signature=False ):
+
+		output = []
+
+		uname = "pieces"
+
+		W=self.puzzle.board_w
+		H=self.puzzle.board_h
+		WH=self.puzzle.board_wh
+
+		for prefix in [ "", "s", "f" ]:
+
+			if prefix == "":
+				out = ""
+			elif prefix == "s":
+				out = "s_out,"
+			elif prefix == "f":
+				out = "f_out,"
+
+			# ----------------------------------
+			for dest in [ "", "_for_stats" ]:
+
+				output.extend( [ 
+					(0, "void "+prefix+"print_valid_pieces"+dest+"("),
+					(1, "charp s_out,"  if (prefix == "s") else "" ),
+					(1, "FILE   * f_out," if (prefix == "f") else "" ),
+					(1, "t_piece_full * valid_pieces"),
+					] )
+
+				if only_signature:
+					output.extend( [ (1, ');'), ])
+					continue
+					
+				output.extend( [
+					(1, ") {"),
+					(1, "uint64 space, x, y, piece_index;"),
+					(1, "int64 count, total;"),
+					(1, "uint64 space_count[WH];"),
+					(0, ''), 
+					(1, 'total = 0;' ),
+					(0, ''), 
+					(1, 'for (space = 0; space < WH; space++) {' ),
+					(2, 'space_count[space] = 0;' ),
+					(2, 'while (valid_pieces[space*WH*4+space_count[space]].u != 0xff) { space_count[space]++; }' ),
+					(2, 'total += space_count[space];' ),
+					(1, '}' ),
+					] )
+
+				if dest == "":
+					output.extend( [
+						(1, 'for (y = 0; y < H; y++) {' ),
+						(2, 'for (x = 0; x < W; x++) {' ),
+						(3, 'count = space_count[ x+(y*W) ];' ),
+						(3, 'if (count <= 0) {' ),
+						(4, prefix+'printf( '+out+'"  . " );' ),
+						] )
+
+					output.extend( [
+						(1, '} else if (count < 1000) {' ),
+						(2, prefix+'printf( '+out+'"'+self.verdoie +"%3llu"+self.XTermNormal+' ", count/1);' ),
+						(3, '} else if (count < 1000000) {' ),
+						(4, prefix+'printf( '+out+'"'+self.jaunoie +"%3llu"+self.XTermNormal+' ", count/1000);' ),
+						(3, '} else if (count < 1000000000) {' ),
+						(4, prefix+'printf( '+out+'"'+self.rougeoie+"%3llu"+self.XTermNormal+' ", count/1000000);' ),
+						(3, '} else if (count < 1000000000000) {' ),
+						(4, prefix+'printf( '+out+'"'+self.violoie +"%3llu"+self.XTermNormal+' ", count/1000000000);' ),
+						(3, '} else if (count < 1000000000000000) {' ),
+						(4, prefix+'printf( '+out+'"'+self.bleuoie +"%3llu"+self.XTermNormal+' ", count/1000000000000);' ),
+						] )
+
+					output.extend( [
+						(3, '} else {' ),
+						(4, prefix+'printf( '+out+'"%3llu ", count);' ),
+						(3, '}' ),
+						(2, '} // x' ),
+						(2, prefix+'printf( '+out+'"\\n" );' ),
+						(1, '} // y' ),
+						(1, prefix+'printf( '+out+'"\\n" );' ),
+						(1, 'if (total == 0) {' ),
+						(2, prefix+'printf( '+out+'"Total:  . '+uname+'\\n\\n" );' ),
+						(1, '} else if (total < 1000) {' ),
+						(2, prefix+'printf( '+out+'"Total: '+self.verdoie +"%3llu"+self.XTermNormal+' '+uname+'\\n\\n", total/1);' ),
+						(1, '} else if (total < 1000000) {' ),
+						(2, prefix+'printf( '+out+'"Total: '+self.jaunoie +"%3lluK"+self.XTermNormal+' '+uname+'\\n\\n", total/1000);' ),
+						(1, '} else if (total < 1000000000) {' ),
+						(2, prefix+'printf( '+out+'"Total: '+self.rougeoie+"%3lluM"+self.XTermNormal+' '+uname+'\\n\\n", total/1000000);' ),
+						(1, '} else if (total < 1000000000000) {' ),
+						(2, prefix+'printf( '+out+'"Total: '+self.violoie +"%3lluG"+self.XTermNormal+' '+uname+'\\n\\n", total/1000000000);' ),
+						(1, '} else if (total < 1000000000000000) {' ),
+						(2, prefix+'printf( '+out+'"Total: '+self.bleuoie +"%3lluT"+self.XTermNormal+' '+uname+'\\n\\n", total/1000000000000);' ),
+						(1, '} else {' ),
+						(2, prefix+'printf( '+out+'"Total: %3llu '+uname+'/s\\n\\n", total);' ),
+						(1, '}' ),
+						])
+
+				elif dest == "_for_stats":
+					output.extend( [
+						(1, 'for (y = 0; y < H; y++) {' ),
+						(2, 'for (x = 0; x < W; x++) {' ),
+						(3, 'count = space_count[ x+(y*W) ];' ),
+						(3, prefix+'printf( '+out+'"%llu ", count);' ),
+						(2, '} // x' ),
+						(1, '} // y' ),
+						(1, prefix+'printf( '+out+'"\\n" );' ),
+						(1, prefix+'printf( '+out+'"Total: %llu '+uname+'/s\\n", total );' ),
+						])
+
+				else:
+					output.extend( [
+						(1, 'for (y = 0; y < H; y++) {' ),
+						(2, 'for (x = 0; x < W; x++) {' ),
+						(3, 'count = space_count[ x+(y*W) ];' ),
+						(3, prefix+'printf( '+out+'"%llu ", count);' ),
+						(2, '} // x' ),
+						(1, '} // y' ),
+						(1, prefix+'printf( '+out+'"\\n" );' ),
+						#(1, prefix+'printf( '+out+'"Total: %llu '+uname+'/s\\n", total );' ),
+						])
+
+
+				output.extend( [
+					(1, 'fflush(stdout);' if prefix == "" else ""), 
+					(0, '}' ),
+					(0, ''), 
+					] )
+
+
+		return output
 
 	# ----- Filter based on edges/patterns the valid_pieces list
 	def gen_FilterValidPieces_function( self, only_signature=False ):
 		
 		output = [ 
-			(0, "p_valid_pieces filterValidPieces("),
-			(1, "p_valid_pieces valid_pieces"),
+			(0, "t_piece_full * filterValidPieces("),
+			(1, "t_piece_full * valid_pieces"),
 			]
 
 		if only_signature:
@@ -307,15 +437,14 @@ class LibBigPicture( external_libs.External_Libs ):
 			(1, ""),
 			(2, "uint64 removed;"),
 			(2, "uint64 space;"),
-			(2, "uint64 piece_index;"),
+			(2, "uint64 piece_index, dst_piece_index;"),
 			(2, "t_piece_full piece;"),
 			(2, "t_patterns_seen patterns_seen[WH];"),
 			(2, "t_patterns_seen local_patterns;"),
-			(2, "p_valid_pieces current_valid_pieces;" ),
+			(2, "t_piece_full * current_valid_pieces;" ),
 			(2, "" ),
-			(2, "t_valid_pieces tmp_valid_pieces;" ),
-			(2, "p_valid_pieces result_valid_pieces;" ),
-			(2, "t_piece_full * dst_piece;" ),
+			(2, "t_piece_full tmp_valid_pieces[WH*WH*4];" ),
+			(2, "t_piece_full * result_valid_pieces;" ),
 			])
 
 		output.extend( [
@@ -324,7 +453,7 @@ class LibBigPicture( external_libs.External_Libs ):
 
 		output.extend( [
 			(2, 'current_valid_pieces = valid_pieces;' ),
-			(2, 'result_valid_pieces = (p_valid_pieces)(malloc(sizeof(t_valid_pieces)));;' ),
+			(2, 'result_valid_pieces = (t_piece_full *)(malloc(sizeof(t_valid_pieces)));;' ),
 			(2, 'removed = 0xff;' ),
 			(2, 'while (removed != 0) {' ),
 			(3, '' ),
@@ -335,17 +464,18 @@ class LibBigPicture( external_libs.External_Libs ):
 			(4, 'patterns_seen[space].r=0;' ),
 			(4, 'patterns_seen[space].d=0;' ),
 			(4, 'patterns_seen[space].l=0;' ),
-			(4, 'for (piece_index = space*WH*4; piece_index++; current_valid_pieces[piece_index]->u != 0xff) {' ),
-			(5, 'patterns_seen[space].u |= 1 << current_valid_pieces[piece_index]->u;' ),
-			(5, 'patterns_seen[space].r |= 1 << current_valid_pieces[piece_index]->r;' ),
-			(5, 'patterns_seen[space].d |= 1 << current_valid_pieces[piece_index]->d;' ),
-			(5, 'patterns_seen[space].l |= 1 << current_valid_pieces[piece_index]->l;' ),
+			(4, 'piece_index = space*WH*4;' ),
+			(4, 'while (current_valid_pieces[piece_index].u != 0xff) {' ),
+			(5, 'patterns_seen[space].u |= 1 << current_valid_pieces[piece_index].u;' ),
+			(5, 'patterns_seen[space].r |= 1 << current_valid_pieces[piece_index].r;' ),
+			(5, 'patterns_seen[space].d |= 1 << current_valid_pieces[piece_index].d;' ),
+			(5, 'patterns_seen[space].l |= 1 << current_valid_pieces[piece_index].l;' ),
+			(5, 'piece_index++;' ),
 			(4, '}' ),
 			(3, '}' ),
 			(3, '' ),
 			(3, 'for (space=0; space<WH; space++) {' ),
 			(3, '' ),
-			(4, 'dst_piece = result_valid_pieces[space*WH*4];' ),
 			(4, '' ),
 			(4, 'local_patterns.u = 1<<0;' ),
 			(4, 'local_patterns.r = 1<<0;' ),
@@ -357,42 +487,45 @@ class LibBigPicture( external_libs.External_Libs ):
 			(4, 'if (space < (WH-W))       { local_patterns.d = patterns_seen[space+W].u; }'), 
 			(4, 'if ((space % W) != 0    ) { local_patterns.l = patterns_seen[space-1].r; }'), 
 			(4, '' ),
-			(4, 'for (piece_index = space*WH*4; piece_index++; current_valid_pieces[piece_index]->u != 0xff) {' ),
+			(4, 'piece_index = space*WH*4;' ),
+			(4, 'dst_piece_index = space*WH*4;' ),
+			(4, 'while (current_valid_pieces[piece_index].u != 0xff) {' ),
 			(5, '' ),
-			(5, 'if ( (local_patterns.u & (1 << current_valid_pieces[piece_index]->u)) &&' ),
-			(5, '     (local_patterns.r & (1 << current_valid_pieces[piece_index]->r)) &&' ),
-			(5, '     (local_patterns.d & (1 << current_valid_pieces[piece_index]->d)) &&' ),
-			(5, '     (local_patterns.l & (1 << current_valid_pieces[piece_index]->l)) ) {' ),
-			(6, '*(dst_piece) = *(current_valid_pieces[piece_index]);' ), 
-			(6, 'dst_piece++;' ),
+			(5, 'if ( (local_patterns.u & (1 << current_valid_pieces[piece_index].u)) &&' ),
+			(5, '     (local_patterns.r & (1 << current_valid_pieces[piece_index].r)) &&' ),
+			(5, '     (local_patterns.d & (1 << current_valid_pieces[piece_index].d)) &&' ),
+			(5, '     (local_patterns.l & (1 << current_valid_pieces[piece_index].l)) ) {' ),
+			(6, 'result_valid_pieces[dst_piece_index] = current_valid_pieces[piece_index];' ), 
+			(6, 'dst_piece_index++;' ),
 			(5, '} else {' ),
 			(6, 'removed++;' ),
 			(5, '}' ),
 			(5, '' ),
-			(4, '}' ),
+			(5, 'piece_index++;' ),
+			(4, '} // while' ),
 			(4, '' ),
 			(4, '// If nothing is copied, it is a deadend' ),
-			(4, 'if (piece_index == space*WH*4) {' ),
+			(4, 'if (dst_piece_index == space*WH*4) {' ),
 			(5, 'free(result_valid_pieces);' ),
 			(5, 'return NULL;' ),
 			(4, '}' ),
 			(4, '' ),
 			(4, '// Copy 0xff marker at the end of the list' ),
-			(4, '*(dst_piece) = *(current_valid_pieces[piece_index]);' ), 
+			(4, 'result_valid_pieces[dst_piece_index] = current_valid_pieces[piece_index];' ), 
 			(4, '' ),
 			(3, '} // For space' ),
 			(3, '' ),
-			(3, '// If we need to go again, we use tmp_valid_pieces as source' ),
+			(3, '// If we need to go again, we copy into tmp_valid_pieces to use it as the new source' ),
 			(3, 'if (removed > 0) {' ),
-			(4, 'current_valid_pieces = &(tmp_valid_pieces);' ),
-			(4, 'for (space=0; space<WH*WH*4; space++) {' ),
-			(4, 'dst_piece = current_valid_pieces[space*WH*4];' ),
-			(5, 'for (piece_index = space*WH*4; piece_index++; result_valid_pieces[piece_index]->u != 0xff) {' ),
-			(6, '*(dst_piece) = *(result_valid_pieces[piece_index]);' ), 
-			(6, 'dst_piece++;' ),
+			(4, 'current_valid_pieces = tmp_valid_pieces;' ),
+			(4, 'for (space=0; space<WH; space++) {' ),
+			(5, 'piece_index = space*WH*4;' ),
+			(5, 'while (result_valid_pieces[piece_index].u != 0xff) {' ),
+			(6, 'current_valid_pieces[piece_index] = result_valid_pieces[piece_index];' ), 
+			(6, 'piece_index++;' ),
 			(5, '}' ),
 			(4, '// Copy 0xff marker at the end of the list' ),
-			(4, '*(dst_piece) = *(result_valid_pieces[piece_index]);' ), 
+			(4, 'current_valid_pieces[piece_index] = result_valid_pieces[piece_index];' ), 
 			(4, '}' ),
 			(3, '} // Copy' ),
 			(3, '' ),
@@ -407,91 +540,6 @@ class LibBigPicture( external_libs.External_Libs ):
 			])
 
 		return output
-		"""
-		current_valid_pieces = valid_pieces
-
-		removed = -1
-		while removed != 0:
-			removed = 0
-			new_valid_pieces = [None] * self.puzzle.board_wh
-
-			patterns_border = {"u":{0:True}, "r":{0:True}, "d":{0:True}, "l":{0:True}}
-			patterns_seen = [ ]
-			for space in range(self.puzzle.board_wh):
-				patterns_seen.append( {"u":{}, "r":{}, "d":{}, "l":{}} )
-
-			for space in range(self.puzzle.board_wh):
-				for i in range(0, self.MAX_NB_COLORS):
-					patterns_seen[ space ]["u"][i] = False
-					patterns_seen[ space ]["r"][i] = False
-					patterns_seen[ space ]["d"][i] = False
-					patterns_seen[ space ]["l"][i] = False
-
-			for space in range(self.puzzle.board_wh):
-				for p in current_valid_pieces[ space ]:
-					patterns_seen[ space ]["u"][p.u] = True
-					patterns_seen[ space ]["r"][p.r] = True
-					patterns_seen[ space ]["d"][p.d] = True
-					patterns_seen[ space ]["l"][p.l] = True
-
-				#print(space)
-				#print(patterns_seen[space]["u"])
-				#print(patterns_seen[space]["r"])
-				#print(patterns_seen[space]["d"])
-				#print(patterns_seen[space]["l"])
-
-			for space in range(self.puzzle.board_wh):
-				new_valid_list = []
-
-				space_u_patterns = patterns_border["d"]
-				space_r_patterns = patterns_border["l"]
-				space_d_patterns = patterns_border["u"]
-				space_l_patterns = patterns_border["r"]
-					
-				
-				if ((space % self.puzzle.board_w) != 0          )		: space_l_patterns = patterns_seen[space-1]["r"]
-				if ((space % self.puzzle.board_w) != (self.puzzle.board_w-1))	: space_r_patterns = patterns_seen[space+1]["l"]
-				if (space >= self.puzzle.board_w)				: space_u_patterns = patterns_seen[space-self.puzzle.board_w]["d"]
-				if (space < (self.puzzle.board_wh - self.puzzle.board_w))	: space_d_patterns = patterns_seen[space+self.puzzle.board_w]["u"]
-
-
-
-				for p in current_valid_pieces[ space ]:
-					if not space_u_patterns[ p.u ] or \
-					   not space_r_patterns[ p.r ] or \
-					   not space_d_patterns[ p.d ] or \
-					   not space_l_patterns[ p.l ]:
-						removed += 1
-					else:
-						new_valid_list.append(p)
-
-				if len(new_valid_list) == 0:
-					print("Filter Valid Piece has reached a deadend")
-					return None
-
-				new_valid_pieces[space] = new_valid_list
-
-			current_valid_pieces = new_valid_pieces
-
-
-			
-			if self.DEBUG_STATIC > 0:
-			#if True:
-				self.info( " * New Valid pieces" )
-				a = []
-				for space in range(self.puzzle.board_wh):
-					a.append(len(new_valid_pieces[ space ]))
-
-				self.printArray( a, array_w=self.puzzle.board_w, array_h=self.puzzle.board_h)
-				
-
-				#if self.DEBUG_STATIC > 4:
-				#	for space in range(self.puzzle.board_wh):
-				#		if self.static_spaces_type[ space ] == "border":
-				#			print(self.static_valid_pieces[ space ])
-		
-		return current_valid_pieces
-		"""
 
 	
 	# ----- Fix an piece in the valid_pieces
@@ -710,11 +758,14 @@ class LibBigPicture( external_libs.External_Libs ):
 		output.extend( [
 
 			(1, '' ),
-			(1, 'if (signal(SIGINT,  sig_handler) == SIG_ERR) printf("\\nUnable to catch SIGINT\\n");' ),
-			(1, 'if (signal(SIGUSR1, sig_handler) == SIG_ERR) printf("\\nUnable to catch SIGUSR1\\n");' ),
-			(1, 'if (signal(SIGUSR2, sig_handler) == SIG_ERR) printf("\\nUnable to catch SIGUSR2\\n");' ),
+			#(1, 'if (signal(SIGINT,  sig_handler) == SIG_ERR) printf("\\nUnable to catch SIGINT\\n");' ),
+			#(1, 'if (signal(SIGUSR1, sig_handler) == SIG_ERR) printf("\\nUnable to catch SIGUSR1\\n");' ),
+			#(1, 'if (signal(SIGUSR2, sig_handler) == SIG_ERR) printf("\\nUnable to catch SIGUSR2\\n");' ),
 			(1, '' ),
 			#(1, 'return solve(NULL, NULL);'), 
+			(1, 'printf("Starting\\n");'), 
+			(1, 'print_valid_pieces( static_valid_pieces );'), 
+			(1, 'print_valid_pieces( filterValidPieces( static_valid_pieces ) );'), 
 			(1, 'return 0;'), 
 			(1, '' ),
 			(0, '}' ),
@@ -747,6 +798,7 @@ class LibBigPicture( external_libs.External_Libs ):
 		self.writeGen( gen, self.gen_getter_setter_function( only_signature=True ) )
 		self.writeGen( gen, self.gen_sig_handler_function(only_signature=True) )
 		self.writeGen( gen, self.gen_FilterValidPieces_function(only_signature=True) )
+		self.writeGen( gen, self.gen_print_valid_pieces_functions(only_signature=True) )
 		"""
 		self.writeGen( gen, self.gen_allocate_blackwood_function( only_signature=True ) )
 		self.writeGen( gen, self.gen_free_blackwood_function( only_signature=True ) )
@@ -791,6 +843,7 @@ class LibBigPicture( external_libs.External_Libs ):
 			self.writeGen( gen, self.gen_getter_setter_function( only_signature=False ) )
 			self.writeGen( gen, self.gen_sig_handler_function(only_signature=False) )
 			self.writeGen( gen, self.gen_FilterValidPieces_function(only_signature=False) )
+			self.writeGen( gen, self.gen_print_valid_pieces_functions(only_signature=False) )
 			"""
 			self.writeGen( gen, self.gen_allocate_blackwood_function( only_signature=False ) )
 			self.writeGen( gen, self.gen_free_blackwood_function( only_signature=False ) )
@@ -864,6 +917,14 @@ class LibBigPicture( external_libs.External_Libs ):
 			args.append( loc[ pname ] )
 		self.LibExtWrapper( self.getFunctionNameFromSignature(l), args, timeit=True )
 		"""
+		
+		l = self.gen_main_function( only_signature=True )
+		args = []
+		loc = locals()
+		for pname in self.getParametersNamesFromSignature(l):
+			args.append( loc[ pname ] )
+		self.LibExtWrapper( self.getFunctionNameFromSignature(l), args, timeit=True )
+		
 
 		"""
 

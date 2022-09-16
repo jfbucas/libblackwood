@@ -61,9 +61,9 @@ class LibValidpieces( external_libs.External_Libs ):
 
 		# ---------------------------------
 		if only_signature:
-			output.append( (0 , "extern t_piece_full valid_pieces[ "+str(WH)+"*"+str(WH*4)+" ];") )
+			output.append( (0 , "extern t_piece_full static_valid_pieces[];") )
 		else:
-			output.append( (0 , "t_piece_full valid_pieces[] = {") )
+			output.append( (0 , "t_piece_full static_valid_pieces[WH*WH*4] = {") )
 
 			for space in range(WH):
 				x = 0
@@ -112,7 +112,7 @@ class LibValidpieces( external_libs.External_Libs ):
 
 		output.extend( [
 			( 0, "// Valid Pieces" ),
-			( 0, "typedef t_piece_full t_valid_pieces[ "+str(WH)+"*"+str(WH*4)+" ];" ),
+			( 0, "typedef t_piece_full t_valid_pieces[ WH*WH*4 ];" ),
 			( 0, "typedef t_valid_pieces * p_valid_pieces;" ),
 			] )
 
