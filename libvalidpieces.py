@@ -69,12 +69,12 @@ class LibValidpieces( external_libs.External_Libs ):
 				x = 0
 				s = ""
 				for p in self.puzzle.static_valid_pieces[space]:
-					s += "{ .u = "+format(p.u, "2")+ ", .r = "+format(p.r, "2")+ ", .d = "+format(p.d, "2") +", .l = "+format(p.l, "2") + " },"
+					s += "{ .number = "+format(p.p, "3")+ ", .rotation = "+format(p.rotation, "1")+ ", .u = "+format(p.u, "2")+ ", .r = "+format(p.r, "2")+ ", .d = "+format(p.d, "2") +", .l = "+format(p.l, "2") + " },"
 					x += 1
 
 				# Padding with empty
 				for n in range(x, WH*4):
-					s += "{ .u = "+format(0xff, "2")+ ", .r = "+format(0xff, "2")+ ", .d = "+format(0xff, "2") +", .l = "+format(0xff, "2") + " }" + (", " if x < WH*4-1 else "")
+					s += "{ .number = 0xffff, .rotation = 0xffff, .u = "+format(0xff, "2")+ ", .r = "+format(0xff, "2")+ ", .d = "+format(0xff, "2") +", .l = "+format(0xff, "2") + " }" + (", " if x < WH*4-1 else "")
 
 				output.append( (2, s) )
 
@@ -101,20 +101,22 @@ class LibValidpieces( external_libs.External_Libs ):
 		output.extend( [
 			( 0, "// Piece Full" ),
 			( 0, "struct st_piece_full {" ),
-			( 2, 	"uint8 u; // up" ),
-			( 2, 	"uint8 r; // right" ),
-			( 2, 	"uint8 d; // down" ),
-			( 2, 	"uint8 l; // left" ),
+			( 2, 	"uint16 number; // " ),
+			( 2, 	"uint16 rotation; // " ),
+			( 2, 	"uint8  u; // up" ),
+			( 2, 	"uint8  r; // right" ),
+			( 2, 	"uint8  d; // down" ),
+			( 2, 	"uint8  l; // left" ),
 			( 0, "};" ),
 			( 0, "typedef struct st_piece_full t_piece_full;" ),
 			( 0, "typedef t_piece_full * p_piece_full;" ),
 			] )
 
-		output.extend( [
-			( 0, "// Valid Pieces" ),
-			( 0, "typedef t_piece_full t_valid_pieces[ WH*WH*4 ];" ),
-			( 0, "typedef t_valid_pieces * p_valid_pieces;" ),
-			] )
+		#output.extend( [
+		#	( 0, "// Valid Pieces" ),
+		#	( 0, "typedef t_piece_full t_valid_pieces[ WH*WH*4 ];" ),
+		#	( 0, "typedef t_valid_pieces * p_valid_pieces;" ),
+		#	] )
 
 
 		self.writeGen( gen, output )

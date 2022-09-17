@@ -108,7 +108,7 @@ class LibBigPicture( external_libs.External_Libs ):
 				( 0, "struct st_job {" ),
 				( 2, 	"uint64 x;" ),
 				( 2, 	"uint64 y;" ),
-				( 2, 	"t_valid_pieces valid_pieces;" ),
+				( 2, 	"p_piece_full valid_pieces;" ),
 				( 0, "};" ),
 				( 0, "typedef struct st_job t_job;" ),
 			] )
@@ -330,6 +330,10 @@ class LibBigPicture( external_libs.External_Libs ):
 					(1, "int64 count, total;"),
 					(1, "uint64 space_count[WH];"),
 					(0, ''), 
+					(1, 'if (valid_pieces == NULL) {' ),
+					(2, 'printf("NULL: Nothing to print\\n");' ),
+					(1, 'return;' ),
+					(1, '}' ),
 					(1, 'total = 0;' ),
 					(0, ''), 
 					(1, 'for (space = 0; space < WH; space++) {' ),
@@ -434,7 +438,7 @@ class LibBigPicture( external_libs.External_Libs ):
 		output.extend( [
 			(1, ") {"),
 			(1, ""),
-			(2, 'return (t_piece_full *)(malloc(sizeof(t_valid_pieces)));' ),
+			(2, 'return (t_piece_full *)(malloc(sizeof(t_piece_full)*WH*WH*4));' ),
 			(1, ""),
 			(0, "}"),
 			])
@@ -459,6 +463,11 @@ class LibBigPicture( external_libs.External_Libs ):
 			(1, ""),
 			(2, "uint64 space;"),
 			(2, "uint64 piece_index;"),
+			(1, ""),
+			(2, 'if (src_valid_pieces == NULL) ' ),
+			(3, 'return NULL;' ),
+			(2, 'if (dst_valid_pieces == NULL) ' ),
+			(3, 'return NULL;' ),
 			(1, ""),
 			(4, 'for (space=0; space<WH; space++) {' ),
 			(5, 'piece_index = space*WH*4;' ),
@@ -534,7 +543,6 @@ class LibBigPicture( external_libs.External_Libs ):
 			(3, '}' ),
 			(3, '' ),
 			(3, 'for (space=0; space<WH; space++) {' ),
-			(3, '' ),
 			(4, '' ),
 			(4, 'local_patterns.u = 1<<0;' ),
 			(4, 'local_patterns.r = 1<<0;' ),
@@ -578,20 +586,83 @@ class LibBigPicture( external_libs.External_Libs ):
 			(3, 'if (removed > 0) {' ),
 			(4, 'current_valid_pieces = tmp_valid_pieces;' ),
 			(4, 'CopyValidPieces(result_valid_pieces, tmp_valid_pieces);' ),
-			(3, '} // Copy' ),
+			(3, '}' ),
 			(3, '' ),
-			(2, '} // While' ),
+			(2, '} // While removed' ),
 			(2, '' ),
 			])
 
 		output.extend( [
 			(1, ""),
-			(2, 'return result_valid_pieces;' ),
+			(1, 'return result_valid_pieces;' ),
 			(0, "}"),
 			])
 
 		return output
 
+	# ----- Fix one Piece
+	def gen_FixPieces_function( self, only_signature=False ):
+		
+		output = [ 
+			(0, "t_piece_full * FixPieces("),
+			(1, "t_piece_full * valid_pieces,"),
+			(1, "uint64 piece_number,"),
+			(1, "uint64 piece_space,"),
+			(1, "uint64 piece_rotation"),
+			#(1, "uint64 allocate"),
+			]
+
+		if only_signature:
+			output.extend( [ (1, ');'), ])
+			return output
+
+		output.extend( [
+			(1, ") {"),
+			(2, "uint64 space;"),
+			(2, "uint64 piece_index, dst_piece_index;"),
+			(2, "" ),
+			(2, "t_piece_full tmp_valid_pieces[WH*WH*4];" ),
+			(2, "t_piece_full * result_valid_pieces;" ),
+			(1, ""),
+			(2, 'if (valid_pieces == NULL) ' ),
+			(3, 'return NULL;' ),
+			(2, '' ),
+			(2, "result_valid_pieces = AllocateValidPieces();" ),
+			(2, 'for (space=0; space<WH; space++) {' ),
+			(2, '' ),
+			(3, 'piece_index = space*WH*4;' ),
+			(3, 'dst_piece_index = space*WH*4;' ),
+			(3, 'while (valid_pieces[piece_index].u != 0xff) {' ),
+			(4, 'if (space == piece_space) {' ),
+			(5, 'if ((valid_pieces[piece_index].number == piece_number)&&(valid_pieces[piece_index].rotation == piece_rotation)) {' ),
+			(6, 'result_valid_pieces[dst_piece_index] = valid_pieces[piece_index];' ), 
+			(6, 'dst_piece_index++;' ), 
+			(5, '}' ),
+			(4, '} else {' ),
+			(5, 'if (valid_pieces[piece_index].number != piece_number) {' ),
+			(6, 'result_valid_pieces[dst_piece_index] = valid_pieces[piece_index];' ), 
+			(6, 'dst_piece_index++;' ), 
+			(5, '}' ),
+			(4, '}' ),
+			(4, 'piece_index++;' ),
+			(3, '}' ),
+			(3, 'if (dst_piece_index == space*WH*4) {' ),
+			(4, 'printf("Fix Piece has reached a deadend on space %lld\\n", space);' ),
+			(4, 'free(result_valid_pieces);' ),
+			(4, 'return NULL;' ),
+			(3, '}' ),
+			(4, '// Copy 0xff marker at the end of the list' ),
+			(4, 'result_valid_pieces[dst_piece_index] = valid_pieces[piece_index];' ), 
+			(2, '} // For space' ),
+			(1, '' ),
+			])
+		output.extend( [
+			(1, ""),
+			(1, 'return result_valid_pieces;' ),
+			(0, "}"),
+			])
+
+		return output
 	
 	# ----- Fix an piece in the valid_pieces
 	def fixPiece( self, valid_pieces, piece_number, piece_space, piece_rotation):
@@ -817,6 +888,10 @@ class LibBigPicture( external_libs.External_Libs ):
 			(1, 'printf("Starting\\n");'), 
 			(1, 'PrintValidPieces( static_valid_pieces );'), 
 			(1, 'PrintValidPieces( FilterValidPieces( static_valid_pieces ) );'), 
+			#(1, 'PrintValidPieces( FixPieces(static_valid_pieces,0,0,3) );'), 
+			(1, 'PrintValidPieces( FilterValidPieces( FixPieces(static_valid_pieces,0,0,3) ) );'), 
+			(1, 'PrintValidPieces( FilterValidPieces( FixPieces(static_valid_pieces,2,15,0) ) );'), 
+			(1, 'PrintValidPieces( FilterValidPieces( FixPieces(FilterValidPieces( FixPieces(static_valid_pieces,0,0,3) ),2,15,0) ) );'), 
 			(1, 'return 0;'), 
 			(1, '' ),
 			(0, '}' ),
@@ -851,6 +926,7 @@ class LibBigPicture( external_libs.External_Libs ):
 		self.writeGen( gen, self.gen_AllocateValidPieces_function(only_signature=True) )
 		self.writeGen( gen, self.gen_CopyValidPieces_function(only_signature=True) )
 		self.writeGen( gen, self.gen_FilterValidPieces_function(only_signature=True) )
+		self.writeGen( gen, self.gen_FixPieces_function(only_signature=True) )
 		self.writeGen( gen, self.gen_PrintValidPieces_functions(only_signature=True) )
 		"""
 		self.writeGen( gen, self.gen_allocate_blackwood_function( only_signature=True ) )
@@ -898,6 +974,7 @@ class LibBigPicture( external_libs.External_Libs ):
 			self.writeGen( gen, self.gen_AllocateValidPieces_function(only_signature=False) )
 			self.writeGen( gen, self.gen_CopyValidPieces_function(only_signature=False) )
 			self.writeGen( gen, self.gen_FilterValidPieces_function(only_signature=False) )
+			self.writeGen( gen, self.gen_FixPieces_function(only_signature=False) )
 			self.writeGen( gen, self.gen_PrintValidPieces_functions(only_signature=False) )
 			"""
 			self.writeGen( gen, self.gen_allocate_blackwood_function( only_signature=False ) )
