@@ -91,7 +91,7 @@ class LibBigPicture( external_libs.External_Libs ):
 		#signatures.extend( self.gen_solve_function(only_signature=True) )
 		#signatures.extend( self.gen_do_commands(only_signature=True ) )
 		#signatures.extend( self.gen_set_blackwood_arrays_function(only_signature=True ) )
-		signatures.extend( self.gen_print_valid_pieces_functions(only_signature=True) )
+		#signatures.extend( self.gen_print_valid_pieces_functions(only_signature=True) )
 		
 		self.defineFunctionsArgtypesRestype( signatures )
 
@@ -291,7 +291,7 @@ class LibBigPicture( external_libs.External_Libs ):
 		return output
 
 	# ----- Generate print functions
-	def gen_print_valid_pieces_functions( self, only_signature=False ):
+	def gen_PrintValidPieces_functions( self, only_signature=False ):
 
 		output = []
 
@@ -314,7 +314,7 @@ class LibBigPicture( external_libs.External_Libs ):
 			for dest in [ "", "_for_stats" ]:
 
 				output.extend( [ 
-					(0, "void "+prefix+"print_valid_pieces"+dest+"("),
+					(0, "void "+prefix+"PrintValidPieces"+dest+"("),
 					(1, "charp s_out,"  if (prefix == "s") else "" ),
 					(1, "FILE   * f_out," if (prefix == "f") else "" ),
 					(1, "t_piece_full * valid_pieces"),
@@ -420,12 +420,71 @@ class LibBigPicture( external_libs.External_Libs ):
 
 		return output
 
+	# ----- Allocate
+	def gen_AllocateValidPieces_function( self, only_signature=False ):
+		
+		output = [ 
+			(0, "t_piece_full * AllocateValidPieces("),
+			]
+
+		if only_signature:
+			output.extend( [ (1, ');'), ])
+			return output
+
+		output.extend( [
+			(1, ") {"),
+			(1, ""),
+			(2, 'return (t_piece_full *)(malloc(sizeof(t_valid_pieces)));' ),
+			(1, ""),
+			(0, "}"),
+			])
+
+		return output
+
+	# ----- Copy
+	def gen_CopyValidPieces_function( self, only_signature=False ):
+		
+		output = [ 
+			(0, "t_piece_full * CopyValidPieces("),
+			(1, "t_piece_full * src_valid_pieces,"),
+			(1, "t_piece_full * dst_valid_pieces"),
+			]
+
+		if only_signature:
+			output.extend( [ (1, ');'), ])
+			return output
+
+		output.extend( [
+			(1, ") {"),
+			(1, ""),
+			(2, "uint64 space;"),
+			(2, "uint64 piece_index;"),
+			(1, ""),
+			(4, 'for (space=0; space<WH; space++) {' ),
+			(5, 'piece_index = space*WH*4;' ),
+			(5, 'while (src_valid_pieces[piece_index].u != 0xff) {' ),
+			(6, 'dst_valid_pieces[piece_index] = src_valid_pieces[piece_index];' ), 
+			(6, 'piece_index++;' ),
+			(5, '}' ),
+			(1, ""),
+			(4, '// Copy 0xff marker at the end of the list' ),
+			(4, 'dst_valid_pieces[piece_index] = src_valid_pieces[piece_index];' ), 
+			(4, '}' ),
+			(2, 'return dst_valid_pieces;' ),
+			(1, ""),
+			(0, "}"),
+			])
+
+		return output
+
+
 	# ----- Filter based on edges/patterns the valid_pieces list
 	def gen_FilterValidPieces_function( self, only_signature=False ):
 		
 		output = [ 
-			(0, "t_piece_full * filterValidPieces("),
+			(0, "t_piece_full * FilterValidPieces("),
 			(1, "t_piece_full * valid_pieces"),
+			#(1, "uint64 allocate"),
 			]
 
 		if only_signature:
@@ -453,7 +512,7 @@ class LibBigPicture( external_libs.External_Libs ):
 
 		output.extend( [
 			(2, 'current_valid_pieces = valid_pieces;' ),
-			(2, 'result_valid_pieces = (t_piece_full *)(malloc(sizeof(t_valid_pieces)));;' ),
+			(2, 'result_valid_pieces = AllocateValidPieces();' ),
 			(2, 'removed = 0xff;' ),
 			(2, 'while (removed != 0) {' ),
 			(3, '' ),
@@ -518,15 +577,7 @@ class LibBigPicture( external_libs.External_Libs ):
 			(3, '// If we need to go again, we copy into tmp_valid_pieces to use it as the new source' ),
 			(3, 'if (removed > 0) {' ),
 			(4, 'current_valid_pieces = tmp_valid_pieces;' ),
-			(4, 'for (space=0; space<WH; space++) {' ),
-			(5, 'piece_index = space*WH*4;' ),
-			(5, 'while (result_valid_pieces[piece_index].u != 0xff) {' ),
-			(6, 'current_valid_pieces[piece_index] = result_valid_pieces[piece_index];' ), 
-			(6, 'piece_index++;' ),
-			(5, '}' ),
-			(4, '// Copy 0xff marker at the end of the list' ),
-			(4, 'current_valid_pieces[piece_index] = result_valid_pieces[piece_index];' ), 
-			(4, '}' ),
+			(4, 'CopyValidPieces(result_valid_pieces, tmp_valid_pieces);' ),
 			(3, '} // Copy' ),
 			(3, '' ),
 			(2, '} // While' ),
@@ -764,8 +815,8 @@ class LibBigPicture( external_libs.External_Libs ):
 			(1, '' ),
 			#(1, 'return solve(NULL, NULL);'), 
 			(1, 'printf("Starting\\n");'), 
-			(1, 'print_valid_pieces( static_valid_pieces );'), 
-			(1, 'print_valid_pieces( filterValidPieces( static_valid_pieces ) );'), 
+			(1, 'PrintValidPieces( static_valid_pieces );'), 
+			(1, 'PrintValidPieces( FilterValidPieces( static_valid_pieces ) );'), 
 			(1, 'return 0;'), 
 			(1, '' ),
 			(0, '}' ),
@@ -797,8 +848,10 @@ class LibBigPicture( external_libs.External_Libs ):
 
 		self.writeGen( gen, self.gen_getter_setter_function( only_signature=True ) )
 		self.writeGen( gen, self.gen_sig_handler_function(only_signature=True) )
+		self.writeGen( gen, self.gen_AllocateValidPieces_function(only_signature=True) )
+		self.writeGen( gen, self.gen_CopyValidPieces_function(only_signature=True) )
 		self.writeGen( gen, self.gen_FilterValidPieces_function(only_signature=True) )
-		self.writeGen( gen, self.gen_print_valid_pieces_functions(only_signature=True) )
+		self.writeGen( gen, self.gen_PrintValidPieces_functions(only_signature=True) )
 		"""
 		self.writeGen( gen, self.gen_allocate_blackwood_function( only_signature=True ) )
 		self.writeGen( gen, self.gen_free_blackwood_function( only_signature=True ) )
@@ -812,7 +865,7 @@ class LibBigPicture( external_libs.External_Libs ):
 		
 		self.writeGen( gen, self.gen_do_commands(only_signature=True) )
 		self.writeGen( gen, self.gen_print_functions(only_signature=True) )
-		self.writeGen( gen, self.gen_filter_function( only_signature=True ) )
+		self.writeGen( gen, self.gen_Filter_function( only_signature=True ) )
 		self.writeGen( gen, self.gen_solve_function(only_signature=True) )
 		"""
 
@@ -842,8 +895,10 @@ class LibBigPicture( external_libs.External_Libs ):
 
 			self.writeGen( gen, self.gen_getter_setter_function( only_signature=False ) )
 			self.writeGen( gen, self.gen_sig_handler_function(only_signature=False) )
+			self.writeGen( gen, self.gen_AllocateValidPieces_function(only_signature=False) )
+			self.writeGen( gen, self.gen_CopyValidPieces_function(only_signature=False) )
 			self.writeGen( gen, self.gen_FilterValidPieces_function(only_signature=False) )
-			self.writeGen( gen, self.gen_print_valid_pieces_functions(only_signature=False) )
+			self.writeGen( gen, self.gen_PrintValidPieces_functions(only_signature=False) )
 			"""
 			self.writeGen( gen, self.gen_allocate_blackwood_function( only_signature=False ) )
 			self.writeGen( gen, self.gen_free_blackwood_function( only_signature=False ) )
