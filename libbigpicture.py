@@ -108,9 +108,21 @@ class LibBigPicture( external_libs.External_Libs ):
 				( 0, "struct st_job {" ),
 				( 2, 	"uint64 x;" ),
 				( 2, 	"uint64 y;" ),
-				( 2, 	"p_piece_full valid_pieces;" ),
+				( 2, 	"uint64 shift_x;" ),
+				( 2, 	"uint64 shift_y;" ),
+				( 2, 	"t_piece_full * valid_pieces;" ),
 				( 0, "};" ),
 				( 0, "typedef struct st_job t_job;" ),
+			] )
+
+			output.extend( [
+				( 0, "// Piece fixed" ),
+				( 0, "struct st_piece_fixed {" ),
+				( 2, 	"uint64 number;" ),
+				( 2, 	"uint64 space;" ),
+				( 2, 	"uint64 rotation;" ),
+				( 0, "};" ),
+				( 0, "typedef struct st_piece_fixed t_piece_fixed;" ),
 			] )
 
 			output.extend( [
@@ -656,6 +668,7 @@ class LibBigPicture( external_libs.External_Libs ):
 			(2, '} // For space' ),
 			(1, '' ),
 			])
+
 		output.extend( [
 			(1, ""),
 			(1, 'return result_valid_pieces;' ),
@@ -664,35 +677,167 @@ class LibBigPicture( external_libs.External_Libs ):
 
 		return output
 	
-	# ----- Fix an piece in the valid_pieces
-	def fixPiece( self, valid_pieces, piece_number, piece_space, piece_rotation):
+	# ----- get the jobs
+	def gen_getJobs_function( self, only_signature=False ):
+		
+		output = [ 
+			(0, "t_job * getJobs("),
+			(1, "t_piece_full * valid_pieces,"),
+			(1, "t_piece_fixed * pre_fixed,"),
+			(1, "uint64 max_width,"),
+			(1, "uint64 max_height"),
+			]
 
-		if valid_pieces == None:
-			return None
+		if only_signature:
+			output.extend( [ (1, ');'), ])
+			return output
 
-		new_valid_pieces = [None] * self.puzzle.board_wh
-		for space in range(self.puzzle.board_wh):
-			new_valid_list = []
+		output.extend( [
+			(1, ") {"),
+			(1, ""),
+			(2, "t_piece_full * current_valid_pieces;" ),
+			(2, "t_piece_full * new_valid_pieces;" ),
+			(2, "uint64 i;"),
+			(2, "uint64 depth;"),
+			(2, "uint64 orientation;"),
+			(2, "uint64 space;"),
+			(2, "uint64 piece_index;"),
+			(2, "uint64 new_column_width[16384];"),
+			(2, "uint64 new_line_height[16384];"),
+			(2, "uint64 new_column_position[16384];"),
+			(2, "uint64 new_line_position[16384];"),
+			(2, "uint64 width[WH+1];"),
+			(2, "uint64 height[WH+1];"),
+			(2, "t_job * all_jobs[WH+1];"),
+			(2, "t_job first_job[2];"),
+			(2, "uint64 jobs_index;"),
+			(2, "uint64 previous_jobs_index;"),
+			(2, "uint64 lowest_valid_pieces;"),
+			(2, "uint64 best_space;"),
+			(2, "uint64 len_valid_pieces;"),
+			(2, "uint64 shift_x;"),
+			(2, "uint64 shift_y;"),
+			(1, ""),
+			(1, ""),
+			(1, ""),
+			(1, ""),
+			(1, ""),
+			(2, 'if (valid_pieces == NULL) ' ),
+			(3, 'return NULL;' ),
+			(1, ""),
+			(2, "// Depth goes from -1 to WH, so we adjust with +1"),
+			(2, "depth = "+str(len(self.puzzle.extra_fixed+self.puzzle.fixed))+";"), #TODO
+			(2, "depth += 1;"),
+			(2, '' ),
+			(2, '// Starting point' ),
+			(2, "first_job[0].x = 0;"),
+			(2, "first_job[0].y = 0;"),
+			(2, "first_job[0].valid_pieces = valid_pieces;"),
+			(2, "first_job[1].x = 0xffffffff; // Marks the end of the list"),
+			(2, "all_jobs[depth-1] = first_job;"),
+			(2, "width[depth-1] = 1;"),
+			(2, "height[depth-1] = 1;"),
+			(2, ""),
+			(2, ""),
+			(2, "while (depth < WH+1) {"),
+			(2, ""),
+			(3, "orientation = depth % 2;"),
+			(3, "width[depth] = 0;"),
+			(3, "height[depth] = 0;"),
+			(3, "all_jobs[depth] = (t_job *)(malloc(sizeof(t_job)*16384*16384));"),
+			(3, "jobs_index = 0;"),
+			(3, "for(i=0; i<16384; i++){"),
+			(4, "new_column_width[i] = 1;"),
+			(4, "new_line_height[i] = 1;"),
+			(3, "}"),
+			(3, ""),
+			(3, "previous_jobs_index = 0;"),
+			(3, "while (all_jobs[depth-1][previous_jobs_index].x != 0xffffffff) {"),
+			(4, "current_valid_pieces = all_jobs[depth-1][previous_jobs_index].valid_pieces;"),
+			(4, "lowest_valid_pieces = WH*4;"),
+			(4, "best_space = WH*4;"),
+			(4, ""),
+			(4, 'for (space=0; space<WH; space++) {' ),
+			(5, 'piece_index = space*WH*4;' ),
+			(5, 'while (all_jobs[depth-1][previous_jobs_index].valid_pieces[piece_index].u != 0xff) {' ),
+			(6, "piece_index ++;"),
+			(5, "}"),
+			(5, 'len_valid_pieces = piece_index - space*WH*4;' ),
+			(5, "if (len_valid_pieces > 1) {"),
+			(6, "if (len_valid_pieces < lowest_valid_pieces) {"),
+			(7, "lowest_valid_pieces = len_valid_pieces;"),
+			(7, "best_space = space;"),
+			(6, "}"),
+			(5, "}"),
+			(4, "}"),
+			(4, "if (best_space == WH*4) {"),
+			(5, 'printf("No best_space found, continuing\\n");'),
+			(5, "continue; // While all_jobs"),
+			(4, "}"),
+			(4, ""),
+			(4, "shift_x = 0;"),
+			(4, "shift_y = 0;"),
+			(4, 'piece_index = best_space*WH*4;' ),
+			(4, 'while (current_valid_pieces[piece_index].u != 0xff) {' ),
+			(5, "new_valid_pieces = FilterValidPieces( FixPieces( current_valid_pieces, current_valid_pieces[piece_index].number, best_space, current_valid_pieces[piece_index].rotation));"),
+			(5, "if (new_valid_pieces != NULL) {"),
+			(6, "all_jobs[depth][jobs_index].x = all_jobs[depth-1][previous_jobs_index].x;"),
+			(6, "all_jobs[depth][jobs_index].y = all_jobs[depth-1][previous_jobs_index].y;"),
+			(6, "all_jobs[depth][jobs_index].shift_x = shift_x;"),
+			(6, "all_jobs[depth][jobs_index].shift_y = shift_y;"),
+			(6, "all_jobs[depth][jobs_index].valid_pieces = new_valid_pieces;"),
+			(6, "if (orientation == 0) {"),
+			(7, "shift_x++;"),
+			(7, "if (shift_x > new_column_width[ all_jobs[depth-1][previous_jobs_index].x ])"),
+			(8, "new_column_width[ all_jobs[depth-1][previous_jobs_index].x ] = shift_x;"),
+			(6, "} else {"),
+			(7, "shift_y++;"),
+			(7, "if (shift_y > new_line_height[ all_jobs[depth-1][previous_jobs_index].y ])"),
+			(8, "new_line_height[ all_jobs[depth-1][previous_jobs_index].y ] = shift_y;"),
+			(6, "}"),
+			(6, "jobs_index++;"),
+			(5, "} // new_valid_pieces"),
+			(5, "piece_index ++;"),
+			(4, "}"),
+			(4, ""),
+			(4, "previous_jobs_index ++;"),
+			(3, "} // While all_jobs"),
+			(3, ""),
+			(3, ""),
+			(3, "all_jobs[depth][jobs_index].x = 0xffffffff; // Marks the end of the list"),
+			(3, ""),
+			(3, "// Adjust the coordinates"),
+			(3, "new_column_position[0] = 0;"),
+			(3, "for (i=0; i<width[depth-1]; i++)"),
+			(4, "new_column_position[i+1] = new_column_position[i]+new_column_width[i];"),
+			(3, "width[depth] = new_column_position[i];"),
+			(3, ""),
+			(3, "new_line_position[0] = 0;"),
+			(3, "for (i=0; i<height[depth-1]; i++)"),
+			(4, "new_line_position[i+1] = new_line_position[i]+new_line_height[i];"),
+			(3, "height[depth] = new_line_position[i];"),
+			(3, ""),
+			(3, "jobs_index = 0;"),
+			(3, "while (all_jobs[depth][jobs_index].x != 0xffffffff) {"),
+			(4, "all_jobs[depth][jobs_index].x = all_jobs[depth][jobs_index].shift_x + new_column_position[all_jobs[depth][jobs_index].x];"),
+			(4, "all_jobs[depth][jobs_index].y = all_jobs[depth][jobs_index].shift_y + new_line_position[all_jobs[depth][jobs_index].y];"),
+			(4, "jobs_index ++;"),
+			(3, "}"),
+			(3, ""),
+			(3, 'printf("Depth %lld : Size of the jobs: %lld x %lld => %lld\\n", depth, width[depth], height[depth], jobs_index);' ),
+			(3, ""),
+			(3, "// If we have reached our target"),
+			(3, "if ((width[depth] > max_width) || (height[depth] > max_height)) break;"),
+			(3, ""),
+			(3, "depth ++;"),
+			(2, "} // While Depth"),
 
-			for p in valid_pieces[ space ]:
-				if space == piece_space:
-					# on the space, we keep only that piece
-					if p.p == piece_number and p.rotation == piece_rotation:
-						new_valid_list.append(p)
-				else:
-					# everywhere else, we remove that piece
-					if p.p != piece_number:
-						new_valid_list.append(p)
+			(2, 'return NULL;' ),
+			(1, ""),
+			(0, "}"),
+			])
 
-			if len(new_valid_list) == 0:
-				print("Fix Piece has reached a deadend on space", space)
-				return None
-
-			new_valid_pieces[space] = new_valid_list
-	
-		return new_valid_pieces
-
-
+		return output
 
 	# ----- 
 	def getJobs( self, valid_pieces, pre_fixed=[], max_width=1024, max_height=1024):
@@ -887,11 +1032,12 @@ class LibBigPicture( external_libs.External_Libs ):
 			#(1, 'return solve(NULL, NULL);'), 
 			(1, 'printf("Starting\\n");'), 
 			(1, 'PrintValidPieces( static_valid_pieces );'), 
-			(1, 'PrintValidPieces( FilterValidPieces( static_valid_pieces ) );'), 
+			(1, 'getJobs( static_valid_pieces, NULL, 1024, 1024 );'), 
+			#(1, 'PrintValidPieces( FilterValidPieces( static_valid_pieces ) );'), 
 			#(1, 'PrintValidPieces( FixPieces(static_valid_pieces,0,0,3) );'), 
-			(1, 'PrintValidPieces( FilterValidPieces( FixPieces(static_valid_pieces,0,0,3) ) );'), 
-			(1, 'PrintValidPieces( FilterValidPieces( FixPieces(static_valid_pieces,2,15,0) ) );'), 
-			(1, 'PrintValidPieces( FilterValidPieces( FixPieces(FilterValidPieces( FixPieces(static_valid_pieces,0,0,3) ),2,15,0) ) );'), 
+			#(1, 'PrintValidPieces( FilterValidPieces( FixPieces(static_valid_pieces,0,0,3) ) );'), 
+			#(1, 'PrintValidPieces( FilterValidPieces( FixPieces(static_valid_pieces,2,15,0) ) );'), 
+			#(1, 'PrintValidPieces( FilterValidPieces( FixPieces(FilterValidPieces( FixPieces(static_valid_pieces,0,0,3) ),2,15,0) ) );'), 
 			(1, 'return 0;'), 
 			(1, '' ),
 			(0, '}' ),
@@ -928,6 +1074,7 @@ class LibBigPicture( external_libs.External_Libs ):
 		self.writeGen( gen, self.gen_FilterValidPieces_function(only_signature=True) )
 		self.writeGen( gen, self.gen_FixPieces_function(only_signature=True) )
 		self.writeGen( gen, self.gen_PrintValidPieces_functions(only_signature=True) )
+		self.writeGen( gen, self.gen_getJobs_function(only_signature=True) )
 		"""
 		self.writeGen( gen, self.gen_allocate_blackwood_function( only_signature=True ) )
 		self.writeGen( gen, self.gen_free_blackwood_function( only_signature=True ) )
@@ -976,6 +1123,7 @@ class LibBigPicture( external_libs.External_Libs ):
 			self.writeGen( gen, self.gen_FilterValidPieces_function(only_signature=False) )
 			self.writeGen( gen, self.gen_FixPieces_function(only_signature=False) )
 			self.writeGen( gen, self.gen_PrintValidPieces_functions(only_signature=False) )
+			self.writeGen( gen, self.gen_getJobs_function(only_signature=False) )
 			"""
 			self.writeGen( gen, self.gen_allocate_blackwood_function( only_signature=False ) )
 			self.writeGen( gen, self.gen_free_blackwood_function( only_signature=False ) )
