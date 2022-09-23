@@ -519,6 +519,12 @@ class External_Libs( defs.Defs ):
 					return l.replace("voidp ","").rstrip("(")
 				elif l.startswith("p_blackwood "):
 					return l.replace("p_blackwood ","").rstrip("(")
+				elif l.startswith("p_bigpicture "):
+					return l.replace("p_bigpicture ","").rstrip("(")
+				elif l.startswith("p_job "):
+					return l.replace("p_job ","").rstrip("(")
+				elif l.startswith("p_piece_full "):
+					return l.replace("p_piece_full ","").rstrip("(")
 				elif l.startswith("p_funky "):
 					return l.replace("p_funky ","").rstrip("(")
 				elif l.startswith("int "):
@@ -536,6 +542,14 @@ class External_Libs( defs.Defs ):
 				elif l.startswith("voidp "):
 					return ctypes.c_void_p
 				elif l.startswith("p_blackwood "):
+					return ctypes.c_void_p
+				elif l.startswith("p_bigpicture "):
+					return ctypes.c_void_p
+				elif l.startswith("p_job "):
+					return ctypes.c_void_p
+				elif l.startswith("p_piece_full "):
+					return ctypes.c_void_p
+				elif l.startswith("p_piece_fixed "):
 					return ctypes.c_void_p
 				elif l.startswith("p_funky "):
 					return ctypes.c_void_p
@@ -556,6 +570,14 @@ class External_Libs( defs.Defs ):
 					t.append( ctypes.c_void_p )
 				elif l.startswith("p_blackwood "):
 					t.append( ctypes.c_void_p )
+				elif l.startswith("p_bigpicture "):
+					t.append( ctypes.c_void_p )
+				elif l.startswith("p_job "):
+					t.append( ctypes.c_void_p )
+				elif l.startswith("p_piece_full "):
+					t.append( ctypes.c_void_p )
+				elif l.startswith("p_piece_fixed "):
+					t.append( ctypes.c_void_p )
 				elif l.startswith("p_funky "):
 					t.append( ctypes.c_void_p )
 				elif l.startswith("voidp "):
@@ -574,6 +596,10 @@ class External_Libs( defs.Defs ):
 				if (l.startswith("uint64 ") or
 				    l.startswith("uint64p ") or
 				    l.startswith("p_blackwood ") or
+				    l.startswith("p_bigpicture ") or
+				    l.startswith("p_job ") or
+				    l.startswith("p_piece_full ") or
+				    l.startswith("p_piece_fixed ") or
 				    l.startswith("p_funky ") or
 				    l.startswith("voidp ") or
 				    l.startswith("charp ")):

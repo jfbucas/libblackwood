@@ -114,7 +114,6 @@ class LibValidpieces( external_libs.External_Libs ):
 
 		#output.extend( [
 		#	( 0, "// Valid Pieces" ),
-		#	( 0, "typedef t_piece_full t_valid_pieces[ WH*WH*4 ];" ),
 		#	( 0, "typedef t_valid_pieces * p_valid_pieces;" ),
 		#	] )
 
