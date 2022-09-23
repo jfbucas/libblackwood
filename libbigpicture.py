@@ -817,123 +817,239 @@ class LibBigPicture( external_libs.External_Libs ):
 	def gen_FilterValidPieces_function( self, only_signature=False ):
 		
 		output = []
-		for variant in [ "", "Overwrite"]:
-			output.extend( [
-				(0, "p_piece_full FilterValidPieces"+variant+"("),
-				(1, "p_bigpicture bigpicture,"),
-				(1, "p_piece_full valid_pieces"),
-				#(1, "uint64 allocate"),
-				] )
+		output.extend( [
+			(0, "p_piece_full FilterValidPieces("),
+			(1, "p_bigpicture bigpicture,"),
+			(1, "p_piece_full valid_pieces"),
+			#(1, "uint64 allocate"),
+			] )
 
-			if only_signature:
-				output.extend( [ (1, ');'), ])
-				continue
+		if only_signature:
+			output.extend( [ (1, ');'), ])
+			return output
 
-			output.extend( [
-				(1, ") {"),
-				(1, ""),
-				(1, "uint64 removed;"),
-				(1, "uint64 space;"),
-				(1, "uint64 piece_index, dst_piece_index;"),
-				(1, "t_piece_full piece;"),
-				(1, "t_patterns_seen patterns_seen[WH];"),
-				(1, "t_patterns_seen local_patterns;"),
-				(1, "t_piece_full * current_valid_pieces;" ),
-				(1, "t_piece_full * result_valid_pieces;" ),
-				(1, "t_piece_full tmp_valid_pieces[WH*WH*4];" if variant in [ "", "Overwrite" ] else "" ),
-				])
+		output.extend( [
+			(1, ") {"),
+			(1, ""),
+			(1, "uint64 removed;"),
+			(1, "uint64 space;"),
+			(1, "uint64 piece_index, dst_piece_index;"),
+			(1, "t_piece_full piece;"),
+			(1, "uint8 space_needs_refresh[WH];"),
+			(1, "t_patterns_seen patterns_seen[WH];"),
+			(1, "t_patterns_seen local_patterns;"),
+			(1, "t_piece_full * current_valid_pieces;" ),
+			(1, "t_piece_full * result_valid_pieces;" ),
+			(1, "t_piece_full tmp_valid_pieces[WH*WH*4];" ),
+			])
 
-			output.extend( [
-				(1, 'if (valid_pieces == NULL) return NULL;' ),
-				(1, '' ),
-				(1, "bigpicture->stats_filter_valid_pieces++;"),
-				])
+		output.extend( [
+			(1, 'if (valid_pieces == NULL) return NULL;' ),
+			(1, '' ),
+			(1, "bigpicture->stats_filter_valid_pieces++;"),
+			(1, '' ),
+			(1, 'for (space=0; space<WH; space++)' ),
+			(2, 'space_needs_refresh[space] = 1;' ),
+			])
 
-			output.extend( [
-				(1, 'current_valid_pieces = valid_pieces;' ),
-				(1, 'result_valid_pieces = AllocateValidPieces(bigpicture);' if variant == "" else ""),
-				(1, 'result_valid_pieces = tmp_valid_pieces;' if variant == "Overwrite" else ""),
-				(1, 'removed = 0xff;' ),
-				(1, 'while (removed != 0) {' ),
-				(2, '' ),
-				(2, 'removed = 0;' ),
-				(2, '' ),
-				(2, 'for (space=0; space<WH; space++) {' ),
-				(3, 'patterns_seen[space].u=0;' ),
-				(3, 'patterns_seen[space].r=0;' ),
-				(3, 'patterns_seen[space].d=0;' ),
-				(3, 'patterns_seen[space].l=0;' ),
-				(3, 'piece_index = space*WH*4;' ),
-				(3, 'while (current_valid_pieces[piece_index].u != 0xff) {' ),
-				(4, 'patterns_seen[space].u |= 1 << current_valid_pieces[piece_index].u;' ),
-				(4, 'patterns_seen[space].r |= 1 << current_valid_pieces[piece_index].r;' ),
-				(4, 'patterns_seen[space].d |= 1 << current_valid_pieces[piece_index].d;' ),
-				(4, 'patterns_seen[space].l |= 1 << current_valid_pieces[piece_index].l;' ),
-				(4, 'piece_index++;' ),
-				(3, '}' ),
-				(2, '}' ),
-				(2, '' ),
-				(2, 'for (space=0; space<WH; space++) {' ),
-				(3, '' ),
-				(3, 'local_patterns.u = 1<<0;' ),
-				(3, 'local_patterns.r = 1<<0;' ),
-				(3, 'local_patterns.d = 1<<0;' ),
-				(3, 'local_patterns.l = 1<<0;' ),
-				(3, '' ),
-				(3, 'if (space >= W)           { local_patterns.u = patterns_seen[space-W].d; }'), 
-				(3, 'if ((space % W) != (W-1)) { local_patterns.r = patterns_seen[space+1].l; }'), 
-				(3, 'if (space < (WH-W))       { local_patterns.d = patterns_seen[space+W].u; }'), 
-				(3, 'if ((space % W) != 0    ) { local_patterns.l = patterns_seen[space-1].r; }'), 
-				(3, '' ),
-				(3, 'piece_index = space*WH*4;' ),
-				(3, 'dst_piece_index = space*WH*4;' ),
-				(3, 'while (current_valid_pieces[piece_index].u != 0xff) {' ),
-				(4, '' ),
-				(4, 'if ( (local_patterns.u & (1 << current_valid_pieces[piece_index].u)) &&' ),
-				(4, '     (local_patterns.r & (1 << current_valid_pieces[piece_index].r)) &&' ),
-				(4, '     (local_patterns.d & (1 << current_valid_pieces[piece_index].d)) &&' ),
-				(4, '     (local_patterns.l & (1 << current_valid_pieces[piece_index].l)) ) {' ),
-				(5, 'result_valid_pieces[dst_piece_index] = current_valid_pieces[piece_index];' ), 
-				(5, 'dst_piece_index++;' ),
-				(4, '} else {' ),
-				(5, 'removed++;' ),
-				(4, '}' ),
-				(4, '' ),
-				(4, 'piece_index++;' ),
-				(3, '} // while' ),
-				(3, '' ),
-				(3, '// If nothing is copied, it is a deadend' ),
-				(3, 'if (dst_piece_index == space*WH*4) {' ),
-				#(4, 'printf("Filter Pieces deadend on space %lld\\n", space);' ),
-				(4, "bigpicture->stats_filter_valid_pieces_dead_end ++;"),
-				(4, 'free(result_valid_pieces);' if variant == "" else "" ),
-				(4, 'return NULL;' ),
-				(3, '}' ),
-				(3, '' ),
-				(3, '// Copy 0xff marker at the end of the list' ),
-				(3, 'result_valid_pieces[dst_piece_index] = current_valid_pieces[piece_index];' ), 
-				(3, '' ),
-				(2, '} // For space' ),
-				(2, '' ),
-				(2, '// If we need to go again, we copy into tmp_valid_pieces to use it as the new source' ),
-				(2, 'if (removed > 0) {' ),
-				(3, 'current_valid_pieces = tmp_valid_pieces;' if variant == "" else "" ),
-				(3, 'CopyValidPieces(bigpicture, result_valid_pieces, tmp_valid_pieces);' if variant == "" else "" ),
-				(3, 'CopyValidPieces(bigpicture, result_valid_pieces, valid_pieces);' if variant == "Overwrite" else "" ),
-				(2, '}' ),
-				(2, '' ),
-				(2, "bigpicture->stats_filter_valid_pieces_removed++;"),
-				(1, '} // While removed' ),
-				(1, '' ),
-				])
+		output.extend( [
+			(1, 'current_valid_pieces = valid_pieces;' ),
+			(1, 'result_valid_pieces = AllocateValidPieces(bigpicture);' ),
+			(1, 'removed = 0xff;' ),
+			(1, 'while (removed != 0) {' ),
+			(2, '' ),
+			(2, 'removed = 0;' ),
+			(2, '' ),
+			(2, 'for (space=0; space<WH; space++) {' ),
+			(3, 'if (space_needs_refresh[space]) {' ),
+			(4, 'patterns_seen[space].u=0;' ),
+			(4, 'patterns_seen[space].r=0;' ),
+			(4, 'patterns_seen[space].d=0;' ),
+			(4, 'patterns_seen[space].l=0;' ),
+			(4, 'piece_index = space*WH*4;' ),
+			(4, 'while (current_valid_pieces[piece_index].u != 0xff) {' ),
+			(5, 'patterns_seen[space].u |= 1 << current_valid_pieces[piece_index].u;' ),
+			(5, 'patterns_seen[space].r |= 1 << current_valid_pieces[piece_index].r;' ),
+			(5, 'patterns_seen[space].d |= 1 << current_valid_pieces[piece_index].d;' ),
+			(5, 'patterns_seen[space].l |= 1 << current_valid_pieces[piece_index].l;' ),
+			(5, 'piece_index++;' ),
+			(4, '} // while' ),
+			#(4, 'space_needs_refresh[space] = 0;' ),
+			(3, '}' ),
+			(2, '} // for space' ),
+			(2, '' ),
+			(2, 'for (space=0; space<WH; space++) {' ),
+			(3, '' ),
+			(3, 'local_patterns.u = 1<<0;' ),
+			(3, 'local_patterns.r = 1<<0;' ),
+			(3, 'local_patterns.d = 1<<0;' ),
+			(3, 'local_patterns.l = 1<<0;' ),
+			(3, '' ),
+			(3, 'if (space >= W)           { local_patterns.u = patterns_seen[space-W].d; }'), 
+			(3, 'if ((space % W) != (W-1)) { local_patterns.r = patterns_seen[space+1].l; }'), 
+			(3, 'if (space < (WH-W))       { local_patterns.d = patterns_seen[space+W].u; }'), 
+			(3, 'if ((space % W) != 0    ) { local_patterns.l = patterns_seen[space-1].r; }'), 
+			(3, '' ),
+			(3, 'piece_index = space*WH*4;' ),
+			(3, 'dst_piece_index = space*WH*4;' ),
+			(3, 'while (current_valid_pieces[piece_index].u != 0xff) {' ),
+			(4, '' ),
+			(4, 'if ( (local_patterns.u & (1 << current_valid_pieces[piece_index].u)) &&' ),
+			(4, '     (local_patterns.r & (1 << current_valid_pieces[piece_index].r)) &&' ),
+			(4, '     (local_patterns.d & (1 << current_valid_pieces[piece_index].d)) &&' ),
+			(4, '     (local_patterns.l & (1 << current_valid_pieces[piece_index].l)) ) {' ),
+			(5, 'result_valid_pieces[dst_piece_index] = current_valid_pieces[piece_index];' ), 
+			(5, 'dst_piece_index++;' ),
+			(4, '} else {' ),
+			(5, 'removed++;' ),
+			(5, 'space_needs_refresh[space] = 1;' ),
+			(4, '}' ),
+			(4, '' ),
+			(4, 'piece_index++;' ),
+			(3, '} // while' ),
+			(3, '' ),
+			(3, '// If nothing is copied, it is a deadend' ),
+			(3, 'if (dst_piece_index == space*WH*4) {' ),
+			#(4, 'printf("Filter Pieces deadend on space %lld\\n", space);' ),
+			(4, "bigpicture->stats_filter_valid_pieces_dead_end ++;"),
+			(4, 'free(result_valid_pieces);' ),
+			(4, 'return NULL;' ),
+			(3, '}' ),
+			(3, '' ),
+			(3, '// Copy 0xff marker at the end of the list' ),
+			(3, 'result_valid_pieces[dst_piece_index] = current_valid_pieces[piece_index];' ), 
+			(3, '' ),
+			(2, '} // For space' ),
+			(2, '' ),
+			(2, '// If we need to go again, we copy into tmp_valid_pieces to use it as the new source' ),
+			(2, 'if (removed > 0) {' ),
+			(3, 'current_valid_pieces = tmp_valid_pieces;' ),
+			(3, 'CopyValidPieces(bigpicture, result_valid_pieces, tmp_valid_pieces);' ),
+			(2, '}' ),
+			(2, '' ),
+			(2, "bigpicture->stats_filter_valid_pieces_removed++;"),
+			(1, '} // While removed' ),
+			(1, '' ),
+			])
 
-			output.extend( [
-				(1, 'CopyValidPieces(bigpicture, result_valid_pieces, valid_pieces);' if variant == "Overwrite" else "" ),
-				(1, ""),
-				(1, 'return result_valid_pieces;' if variant == "" else "" ),
-				(1, 'return valid_pieces;' if variant == "Overwrite" else "" ),
-				(0, "}"),
-				])
+		output.extend( [
+			(1, ""),
+			(1, 'return result_valid_pieces;' ),
+			(0, "}"),
+			])
+
+		return output
+
+	# ----- Filter based on edges/patterns the valid_pieces list
+	def gen_FilterValidPiecesOverwrite_function( self, only_signature=False ):
+		
+		output = []
+		output.extend( [
+			(0, "p_piece_full FilterValidPiecesOverwrite("),
+			(1, "p_bigpicture bigpicture,"),
+			(1, "p_piece_full valid_pieces"),
+			] )
+
+		if only_signature:
+			output.extend( [ (1, ');'), ])
+			return output
+
+		output.extend( [
+			(1, ") {"),
+			(1, ""),
+			(1, "uint64 removed;"),
+			(1, "uint64 space;"),
+			(1, "uint64 src_piece_index, dst_piece_index;"),
+			(1, "t_piece_full piece;"),
+			(1, "uint8 space_needs_refresh[WH];"),
+			(1, "t_patterns_seen patterns_seen[WH];"),
+			(1, "t_patterns_seen local_patterns;"),
+			])
+
+		output.extend( [
+			(1, 'if (valid_pieces == NULL) return NULL;' ),
+			(1, '' ),
+			(1, "bigpicture->stats_filter_valid_pieces++;"),
+			(1, '' ),
+			(1, 'for (space=0; space<WH; space++)' ),
+			(2, 'space_needs_refresh[space] = 1;' ),
+			])
+
+		output.extend( [
+			(1, 'removed = 0xff;' ),
+			(1, 'while (removed != 0) {' ),
+			(2, '' ),
+			(2, 'removed = 0;' ),
+			(2, '' ),
+			(2, 'for (space=0; space<WH; space++) {' ),
+			(3, 'if (space_needs_refresh[space]) {' ),
+			(4, 'patterns_seen[space].u=0;' ),
+			(4, 'patterns_seen[space].r=0;' ),
+			(4, 'patterns_seen[space].d=0;' ),
+			(4, 'patterns_seen[space].l=0;' ),
+			(4, 'src_piece_index = space*WH*4;' ),
+			(4, 'while (valid_pieces[src_piece_index].u != 0xff) {' ),
+			(5, 'patterns_seen[space].u |= 1 << valid_pieces[src_piece_index].u;' ),
+			(5, 'patterns_seen[space].r |= 1 << valid_pieces[src_piece_index].r;' ),
+			(5, 'patterns_seen[space].d |= 1 << valid_pieces[src_piece_index].d;' ),
+			(5, 'patterns_seen[space].l |= 1 << valid_pieces[src_piece_index].l;' ),
+			(5, 'src_piece_index++;' ),
+			(4, '} // while' ),
+			(4, 'space_needs_refresh[space] = 0;' ),
+			(3, '}' ),
+			(2, '} // for space' ),
+			(2, '' ),
+			(2, 'for (space=0; space<WH; space++) {' ),
+			(3, '' ),
+			(3, 'local_patterns.u = 1<<0;' ),
+			(3, 'local_patterns.r = 1<<0;' ),
+			(3, 'local_patterns.d = 1<<0;' ),
+			(3, 'local_patterns.l = 1<<0;' ),
+			(3, '' ),
+			(3, 'if (space >= W)           { local_patterns.u = patterns_seen[space-W].d; }'), 
+			(3, 'if ((space % W) != (W-1)) { local_patterns.r = patterns_seen[space+1].l; }'), 
+			(3, 'if (space < (WH-W))       { local_patterns.d = patterns_seen[space+W].u; }'), 
+			(3, 'if ((space % W) != 0    ) { local_patterns.l = patterns_seen[space-1].r; }'), 
+			(3, '' ),
+			(3, 'src_piece_index = space*WH*4;' ),
+			(3, 'dst_piece_index = space*WH*4;' ),
+			(3, 'while (valid_pieces[src_piece_index].u != 0xff) {' ),
+			(4, '' ),
+			(4, 'if ( (local_patterns.u & (1 << valid_pieces[src_piece_index].u)) &&' ),
+			(4, '     (local_patterns.r & (1 << valid_pieces[src_piece_index].r)) &&' ),
+			(4, '     (local_patterns.d & (1 << valid_pieces[src_piece_index].d)) &&' ),
+			(4, '     (local_patterns.l & (1 << valid_pieces[src_piece_index].l)) ) {' ),
+			(5, 'valid_pieces[dst_piece_index] = valid_pieces[src_piece_index];' ), 
+			(5, 'dst_piece_index++;' ),
+			(4, '} else {' ),
+			(5, 'removed++;' ),
+			(5, 'space_needs_refresh[space] = 1;' ),
+			(4, '}' ),
+			(4, '' ),
+			(4, 'src_piece_index++;' ),
+			(3, '} // while' ),
+			(3, '' ),
+			(3, '' ),
+			(3, '// Copy 0xff marker at the end of the list' ),
+			(3, 'valid_pieces[dst_piece_index] = valid_pieces[src_piece_index];' ), 
+			(3, '' ),
+			(3, '// If nothing is copied, it is a deadend' ),
+			(3, 'if (dst_piece_index == space*WH*4) {' ),
+			#(4, 'printf("Filter Pieces deadend on space %lld\\n", space);' ),
+			(4, "bigpicture->stats_filter_valid_pieces_dead_end ++;"),
+			(4, 'return NULL;' ),
+			(3, '}' ),
+			(2, '} // For space' ),
+			(2, '' ),
+			(2, "bigpicture->stats_filter_valid_pieces_removed++;"),
+			(1, '} // While removed' ),
+			(1, '' ),
+			])
+
+		output.extend( [
+			(1, 'return valid_pieces;' ),
+			(0, "}"),
+			])
 
 		return output
 
@@ -941,73 +1057,135 @@ class LibBigPicture( external_libs.External_Libs ):
 	def gen_FixPieces_function( self, only_signature=False ):
 	
 		output = []
-		for variant in [ "", "Overwrite"]:
-			output.extend( [
-				(0, "t_piece_full * FixPieces"+variant+"("),
-				(1, "p_bigpicture bigpicture,"),
-				(1, "p_piece_full valid_pieces,"),
-				(1, "uint64 piece_number,"),
-				(1, "uint64 piece_space,"),
-				(1, "uint64 piece_rotation"),
-				] )
 
-			if only_signature:
-				output.extend( [ (1, ');'), ])
-				continue
-			else:
+		output.extend( [
+			(0, "t_piece_full * FixPieces("),
+			(1, "p_bigpicture bigpicture,"),
+			(1, "p_piece_full valid_pieces,"),
+			(1, "uint64 piece_number,"),
+			(1, "uint64 piece_space,"),
+			(1, "uint64 piece_rotation"),
+			] )
 
-				output.extend( [
-					(1, ") {"),
-					(1, "uint64 space;"),
-					(1, "uint64 piece_index, dst_piece_index;"),
-					(1, "" ),
-					(1, "t_piece_full tmp_valid_pieces[WH*WH*4];" if variant == "Overwrite" else "" ),
-					(1, "t_piece_full * result_valid_pieces;" ),
-					(1, ""),
-					(1, 'if (valid_pieces == NULL) ' ),
-					(2, 'return NULL;' ),
-					(1, '' ),
-					(1, "bigpicture->stats_fix_pieces ++;"),
-					(1, '' ),
-					(1, "result_valid_pieces = AllocateValidPieces(bigpicture);" if variant == "" else ""),
-					(1, "result_valid_pieces = tmp_valid_pieces;" if variant == "Overwrite" else ""),
-					(1, 'for (space=0; space<WH; space++) {' ),
-					(1, '' ),
-					(2, 'piece_index = space*WH*4;' ),
-					(2, 'dst_piece_index = space*WH*4;' ),
-					(2, 'while (valid_pieces[piece_index].u != 0xff) {' ),
-					(3, 'if (space == piece_space) {' ),
-					(4, 'if ((valid_pieces[piece_index].number == piece_number)&&(valid_pieces[piece_index].rotation == piece_rotation)) {' ),
-					(5, 'result_valid_pieces[dst_piece_index] = valid_pieces[piece_index];' ), 
-					(5, 'dst_piece_index++;' ), 
-					(4, '}' ),
-					(3, '} else {' ),
-					(4, 'if (valid_pieces[piece_index].number != piece_number) {' ),
-					(5, 'result_valid_pieces[dst_piece_index] = valid_pieces[piece_index];' ), 
-					(5, 'dst_piece_index++;' ), 
-					(4, '}' ),
-					(3, '}' ),
-					(3, 'piece_index++;' ),
-					(2, '}' ),
-					(2, 'if (dst_piece_index == space*WH*4) {' ),
-					#(3, 'printf("Fix Piece has reached a deadend on space %lld\\n", space);' ),
-					(3, "bigpicture->stats_fix_pieces_dead_end ++;"),
-					(3, 'free(result_valid_pieces);' if variant == "" else "" ),
-					(3, 'return NULL;' ),
-					(2, '}' ),
-					(2, '// Copy 0xff marker at the end of the list' ),
-					(2, 'result_valid_pieces[dst_piece_index] = valid_pieces[piece_index];' ), 
-					(1, '} // For space' ),
-					(1, '' ),
-					])
+		if only_signature:
+			output.extend( [ (1, ');'), ])
+			return output
 
-				output.extend( [
-					(1, 'CopyValidPieces(bigpicture, result_valid_pieces, valid_pieces);' if variant == "Overwrite" else "" ),
-					(1, 'result_valid_pieces = valid_pieces;' if variant == "Overwrite" else "" ),
-					(1, ""),
-					(1, 'return result_valid_pieces;' ),
-					(0, "}"),
-					])
+		output.extend( [
+			(1, ") {"),
+			(1, "uint64 space;"),
+			(1, "uint64 piece_index, dst_piece_index;"),
+			(1, "" ),
+			(1, "t_piece_full * dst_valid_pieces;" ),
+			(1, ""),
+			(1, 'if (valid_pieces == NULL) ' ),
+			(2, 'return NULL;' ),
+			(1, '' ),
+			(1, "bigpicture->stats_fix_pieces ++;"),
+			(1, '' ),
+			(1, "dst_valid_pieces = AllocateValidPieces(bigpicture);"),
+			(1, 'for (space=0; space<WH; space++) {' ),
+			(1, '' ),
+			(2, 'piece_index = space*WH*4;' ),
+			(2, 'dst_piece_index = space*WH*4;' ),
+			(2, 'while (valid_pieces[piece_index].u != 0xff) {' ),
+			(3, 'if (space == piece_space) {' ),
+			(4, 'if ((valid_pieces[piece_index].number == piece_number)&&(valid_pieces[piece_index].rotation == piece_rotation)) {' ),
+			(5, 'dst_valid_pieces[dst_piece_index] = valid_pieces[piece_index];' ), 
+			(5, 'dst_piece_index++;' ), 
+			(4, '}' ),
+			(3, '} else {' ),
+			(4, 'if (valid_pieces[piece_index].number != piece_number) {' ),
+			(5, 'dst_valid_pieces[dst_piece_index] = valid_pieces[piece_index];' ), 
+			(5, 'dst_piece_index++;' ), 
+			(4, '}' ),
+			(3, '}' ),
+			(3, 'piece_index++;' ),
+			(2, '}' ),
+			(2, '// Copy 0xff marker at the end of the list' ),
+			(2, 'dst_valid_pieces[dst_piece_index] = valid_pieces[piece_index];' ), 
+			(2, 'if (dst_piece_index == space*WH*4) {' ),
+			#(3, 'printf("Fix Piece has reached a deadend on space %lld\\n", space);' ),
+			(3, "bigpicture->stats_fix_pieces_dead_end ++;"),
+			(3, 'free(dst_valid_pieces);'),
+			(3, 'return NULL;' ),
+			(2, '}' ),
+			(1, '} // For space' ),
+			(1, '' ),
+			])
+
+		output.extend( [
+			(1, ""),
+			(1, 'return dst_valid_pieces;' ),
+			(0, "}"),
+			])
+
+		return output
+	
+	# ----- Fix one Piece
+	def gen_FixPiecesOverwrite_function( self, only_signature=False ):
+	
+		output = []
+		output.extend( [
+			(0, "t_piece_full * FixPiecesOverwrite("),
+			(1, "p_bigpicture bigpicture,"),
+			(1, "p_piece_full valid_pieces,"),
+			(1, "uint64 piece_number,"),
+			(1, "uint64 piece_space,"),
+			(1, "uint64 piece_rotation"),
+			] )
+
+		if only_signature:
+			output.extend( [ (1, ');'), ])
+			return output
+
+		output.extend( [
+			(1, ") {"),
+			(1, "uint64 space;"),
+			(1, "uint64 src_piece_index, dst_piece_index;"),
+			(1, "" ),
+			(1, 'if (valid_pieces == NULL)' ),
+			(2, 'return NULL;' ),
+			(1, '' ),
+			(1, "bigpicture->stats_fix_pieces ++;"),
+			(1, '' ),
+			(1, 'for (space=0; space<WH; space++) {' ),
+			(1, '' ),
+			(2, 'src_piece_index = space*WH*4;' ),
+			(2, 'dst_piece_index = space*WH*4;' ),
+			(2, 'if (space == piece_space) {' ),
+			(3, 'while (valid_pieces[src_piece_index].u != 0xff) {' ),
+			(4, 'if ((valid_pieces[src_piece_index].number == piece_number)&&(valid_pieces[src_piece_index].rotation == piece_rotation)) {' ),
+			(5, 'valid_pieces[dst_piece_index] = valid_pieces[src_piece_index];' ), 
+			(5, 'dst_piece_index++;' ), 
+			(4, '}' ),
+			(4, 'src_piece_index++;' ),
+			(3, '}' ),
+			(2, '} else {' ),
+			(3, 'while (valid_pieces[src_piece_index].u != 0xff) {' ),
+			(4, 'if (valid_pieces[src_piece_index].number != piece_number) {' ),
+			(5, 'valid_pieces[dst_piece_index] = valid_pieces[src_piece_index];' ), 
+			(5, 'dst_piece_index++;' ), 
+			(4, '}' ),
+			(4, 'src_piece_index++;' ),
+			(3, '}' ),
+			(2, '}' ),
+			(2, '// Copy 0xff marker at the end of the list' ),
+			(2, 'valid_pieces[dst_piece_index] = valid_pieces[src_piece_index];' ), 
+			(2, 'if (dst_piece_index == space*WH*4) {' ),
+			#(3, 'printf("Fix Piece has reached a deadend on space %lld\\n", space);' ),
+			(3, "bigpicture->stats_fix_pieces_dead_end ++;"),
+			(3, 'return NULL;' ),
+			(2, '}' ),
+			(1, '} // For space' ),
+			(1, '' ),
+			])
+
+		output.extend( [
+			(1, ""),
+			(1, 'return valid_pieces;' ),
+			(0, "}"),
+			])
 
 		return output
 	
@@ -1063,7 +1241,7 @@ class LibBigPicture( external_libs.External_Libs ):
 			(2, 'was_allocated = 1;' ),
 			#(2, 'xorCommands(bigpicture, SHOW_STATS);' ),
 			(1, '}'), 
- 			#(2, "bigpicture->commands |= CLEAR_SCREEN;"),
+ 			(2, "bigpicture->commands |= CLEAR_SCREEN;"),
  			(2, "bigpicture->commands |= SHOW_STATS;"),
 			(1, ""),
 			(1, 'TTF=0;' ),
@@ -1449,7 +1627,9 @@ class LibBigPicture( external_libs.External_Libs ):
 		self.writeGen( gen, self.gen_AllocateValidPieces_function(only_signature=True) )
 		self.writeGen( gen, self.gen_CopyValidPieces_function(only_signature=True) )
 		self.writeGen( gen, self.gen_FilterValidPieces_function(only_signature=True) )
+		self.writeGen( gen, self.gen_FilterValidPiecesOverwrite_function(only_signature=True) )
 		self.writeGen( gen, self.gen_FixPieces_function(only_signature=True) )
+		self.writeGen( gen, self.gen_FixPiecesOverwrite_function(only_signature=True) )
 		self.writeGen( gen, self.gen_PrintValidPieces_functions(only_signature=True) )
 		self.writeGen( gen, self.gen_getJobs_function(only_signature=True) )
 		self.writeGen( gen, self.gen_do_commands(only_signature=True) )
@@ -1514,7 +1694,9 @@ class LibBigPicture( external_libs.External_Libs ):
 			self.writeGen( gen, self.gen_AllocateValidPieces_function(only_signature=False) )
 			self.writeGen( gen, self.gen_CopyValidPieces_function(only_signature=False) )
 			self.writeGen( gen, self.gen_FilterValidPieces_function(only_signature=False) )
+			self.writeGen( gen, self.gen_FilterValidPiecesOverwrite_function(only_signature=False) )
 			self.writeGen( gen, self.gen_FixPieces_function(only_signature=False) )
+			self.writeGen( gen, self.gen_FixPiecesOverwrite_function(only_signature=False) )
 			self.writeGen( gen, self.gen_PrintValidPieces_functions(only_signature=False) )
 			self.writeGen( gen, self.gen_getJobs_function(only_signature=False) )
 			"""
