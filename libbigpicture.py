@@ -124,7 +124,6 @@ class LibBigPicture( external_libs.External_Libs ):
 		#self.fixPiece(self.puzzle, self.valid_pieces)
 		#self.getJobs(self.valid_pieces, max_width=128, max_height=128)
 		self.getJobs(self.valid_pieces)
-		self.getImages()
 	"""
 
 	# ----- Load the C library
@@ -1232,6 +1231,7 @@ class LibBigPicture( external_libs.External_Libs ):
 			(2, "uint64 shift_y;"),
 			(1, ""),
 			(1, 'FILE * output;' ),
+			(1, 'FILE * jobsfile;' ),
 			(1, 'uint8 was_allocated;' ),
 			(1, 'uint8 TTF;' ),
 			(1, ""),
@@ -1370,6 +1370,26 @@ class LibBigPicture( external_libs.External_Libs ):
 			(4, "}"),
 			(4, ""),
 			(4, 'printf("Depth %lld : Size of the jobs: %lld x %lld => %lld\\n", depth, width[depth], height[depth], jobs_index);' ),
+			(4, ""),
+			(4, "// Write jobs"),
+			(4, 'jobsfile = fopen( "jobs/'+self.getFileFriendlyName( self.puzzle.name )+'_output.txt", "a" );' ),
+			(4, 'if (!jobsfile) { printf("Can\'t open %s\\n", "jobs/'+self.getFileFriendlyName( self.puzzle.name )+'_output.txt"); return NULL; }' ),
+			(4, "jobs_index = 0;"),
+			(4, "while ((all_jobs[depth][jobs_index].x != 0xffffffff)&&!TTF) {"),
+			(5, 'fprintf(jobsfile, "%lld_%lld_%lld|[", depth, all_jobs[depth][jobs_index].x, all_jobs[depth][jobs_index].y);'),
+			(5, 'for (space=0; space<WH; space++) {' ),
+			(6, 'piece_index = space*WH*4;' ),
+			(6, 'while ((all_jobs[depth][jobs_index].valid_pieces[piece_index].u != 0xff)&&!TTF) {' ),
+			(7, "piece_index ++;"),
+			(6, "}"),
+			(6, 'len_valid_pieces = piece_index - space*WH*4;' ),
+			(6, "if ((len_valid_pieces == 1)&&(static_spaces_type[space] != TYPE_FIXED))"),
+			(7, 'fprintf(jobsfile, "(%hd,%lld,%hd),", all_jobs[depth][jobs_index].valid_pieces[0].number, space, all_jobs[depth][jobs_index].valid_pieces[0].rotation );'),
+			(5, "}"),
+			(5, 'fprintf(jobsfile, "]\\n");'),
+			(5, "jobs_index ++;"),
+			(4, "}"),
+			(2, 'fclose(jobsfile);' ),
 			(4, ""),
 			(4, "// If we have reached our target"),
 			(4, "if ((width[depth] > max_width) && (height[depth] > max_height)) break;"),
@@ -1520,31 +1540,41 @@ class LibBigPicture( external_libs.External_Libs ):
 
 	def getImages( self, pre_fixed=[] ):
 
-		# Read the data
-		for depth in range(-1, self.puzzle.board_wh):
-			filename = "jobs/"+self.getFileFriendlyName( self.puzzle.name )+"_"+str(depth)+"_"+str(pre_fixed)+".jobs.txt"
+		filename = "jobs/"+self.getFileFriendlyName( self.puzzle.name )+"_output.txt"
 
-			if os.path.exists(filename):
-				coordinates=[]
+		if os.path.exists(filename):
+			
+			# Read the data
+			coordinates_for_depth={}
+			for depth in range(-1, self.puzzle.board_wh):
+				coordinates_for_depth[depth] = []
 
-				jobsfile = open( "jobs/"+self.getFileFriendlyName( self.puzzle.name )+"_"+str(depth)+"_"+str(pre_fixed)+".jobs.txt", "r" )
-				max_x = 0
-				max_y = 0
-				for line in jobsfile:
-					if line.startswith('#'):
-						continue
-					line = line.strip('\n').strip(' ')
-					line = line.split("|")
-					line = line[0].split("_")
-					x=int(line[1])
-					y=int(line[2])
-					if x > max_x:
-						max_x = x
-					if y > max_y:
-						max_y = y
-					coordinates.append( (x, y) )
-				jobsfile.close()
+			jobsfile = open( filename, "r" )
+			max_x = 0
+			max_y = 0
+			for line in jobsfile:
+				if line.startswith('#'):
+					continue
+				line = line.strip('\n').strip(' ')
+				line = line.split("|")
+				line = line[0].split("_")
+				depth=int(line[0])
+				x=int(line[1])
+				y=int(line[2])
+				if x > max_x:
+					max_x = x
+				if y > max_y:
+					max_y = y
+				coordinates_for_depth[depth].append( (x, y) )
+			jobsfile.close()
 
+		
+			# Create the image
+			for depth in range(-1, self.puzzle.board_wh):
+				if len(coordinates_for_depth[depth]) == 0:
+					continue
+
+				print( "Generate Image for depth", depth )
 
 				# Create the blank image
 				w = png.Writer(max_x+1, max_y+1, greyscale=True)
@@ -1554,11 +1584,11 @@ class LibBigPicture( external_libs.External_Libs ):
 					img.append(l)
 
 				# Insert the jobs
-				for x,y in coordinates:
+				for x,y in coordinates_for_depth[depth]:
 					img[y][x] = 255
 
 				# Write the image
-				f = open("jobs/"+self.getFileFriendlyName( self.puzzle.name )+"_"+str(depth)+"_"+str(pre_fixed)+".png", 'wb')      # binary mode is important
+				f = open("jobs/"+self.getFileFriendlyName( self.puzzle.name )+"_"+str(depth)+".png", 'wb')      # binary mode is important
 				w.write(f, img)
 				f.close()
 
@@ -1756,8 +1786,10 @@ class LibBigPicture( external_libs.External_Libs ):
 		valid_pieces = None #self.LibExt.get_static_valid_pieces()
 		#valid_pieces = self.LibExt.get_static_valid_pieces()
 		pre_fixed = None
-		max_width = 1024
-		max_height = 1024
+		max_width = 128
+		max_height = 128
+		#max_width = 1024
+		#max_height = 1024
 
 		# Call
 		l = self.gen_getJobs_function( only_signature=True )
@@ -1769,7 +1801,9 @@ class LibBigPicture( external_libs.External_Libs ):
 		print(args)
 		self.LibExtWrapper( self.getFunctionNameFromSignature(l), args, timeit=True )
 
-		
+
+		self.getImages()
+
 		"""
 		l = self.gen_main_function( only_signature=True )
 		args = []

@@ -243,6 +243,22 @@ class LibArrays( external_libs.External_Libs ):
 			output.append( (0 , "};") )
 			output.append( (0 , "") )
 			
+		# ---------------------
+		if only_signature:
+			output.append( (0 , "extern uint16 static_spaces_type[WH];") )
+		else:
+			output.append( (0 , "uint16 static_spaces_type[] = {") )
+			array = [ "" ] * WH
+			for y in range(H):
+				for x in range(W):
+					d = x+y*W
+					array[ d] = "TYPE_"+self.puzzle.static_spaces_type[d].upper()
+			for y in range(H):
+				l = ",".join(array[y*W:(y+1)*W])+","
+				output.append( (1, l) )
+			output.append( (0 , "};") )
+			output.append( (0 , "") )
+			
 
 		# ---------------------
 		if not only_signature:
