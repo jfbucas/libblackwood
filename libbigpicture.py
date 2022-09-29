@@ -1384,7 +1384,7 @@ class LibBigPicture( external_libs.External_Libs ):
 			(6, "}"),
 			(6, 'len_valid_pieces = piece_index - space*WH*4;' ),
 			(6, "if ((len_valid_pieces == 1)&&(static_spaces_type[space] != TYPE_FIXED))"),
-			(7, 'fprintf(jobsfile, "(%hd,%lld,%hd),", all_jobs[depth][jobs_index].valid_pieces[0].number, space, all_jobs[depth][jobs_index].valid_pieces[0].rotation );'),
+			(7, 'fprintf(jobsfile, "(%hd,%lld,%hd),", all_jobs[depth][jobs_index].valid_pieces[space*WH*4].number, space, all_jobs[depth][jobs_index].valid_pieces[space*WH*4].rotation );'),
 			(5, "}"),
 			(5, 'fprintf(jobsfile, "]\\n");'),
 			(5, "jobs_index ++;"),
@@ -1745,6 +1745,14 @@ class LibBigPicture( external_libs.External_Libs ):
 	# ----- Self test
 	def SelfTest( self ):
 
+		for d in range(self.puzzle.board_wh):
+			path = "jobs/depth_"+"{:03}".format(d)
+			try:
+				os.mkdir(path)
+			except OSError as error:
+				#print(error)
+				pass
+
 		sys.stdout.flush()
 		
 		# Start the chrono
@@ -1788,8 +1796,8 @@ class LibBigPicture( external_libs.External_Libs ):
 		pre_fixed = None
 		max_width = 128
 		max_height = 128
-		#max_width = 1024
-		#max_height = 1024
+		max_width = 1024
+		max_height = 1024
 
 		# Call
 		l = self.gen_getJobs_function( only_signature=True )

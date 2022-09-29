@@ -120,7 +120,7 @@ class LibBlackwood( external_libs.External_Libs ):
 
 
 		# Params for External_Libs
-		#self.EXTRA_NAME = extra_name
+		self.EXTRA_NAME = extra_name
 		self.GCC_EXTRA_PARAMS = ""
 		self.dependencies = [ "defs", "arrays" ]
 		self.modules_names = self.MACROS_NAMES_A + self.MACROS_NAMES_B
@@ -1594,6 +1594,21 @@ class LibBlackwood( external_libs.External_Libs ):
 
 
 		self.writeGen( gen, self.getFooterC( module=module ) )
+
+	# ----- Run
+	def simpleRun( self ):
+
+		thread_output_filename = None
+
+		cb = self.cb
+		self.copy_new_arrays_to_cb()
+
+		l = self.gen_solve_function( only_signature=True )
+		args = []
+		loc = locals()
+		for pname in self.getParametersNamesFromSignature(l):
+			args.append( loc[ pname ] )
+		self.LibExtWrapper( self.getFunctionNameFromSignature(l), args, timeit=True )
 
 	# ----- Self test
 	def SelfTest( self ):
