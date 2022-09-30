@@ -8,9 +8,9 @@ import requests
 import time
 import threading
 from multiprocessing import Queue
+import subprocess
 
 import data
-import libblackwood
 
 # Status codes
 status_eror = -2
@@ -24,7 +24,7 @@ serverPort = 21080
 
 all_jobs = None
 start_timestamp = str(time.time())
-timelimit = 2 # Minutes
+timelimit = 1 # Minutes
 
 class MyServer(BaseHTTPRequestHandler):
 	def do_GET(self):
@@ -187,14 +187,16 @@ class client_thread(threading.Thread):
 
 				# Do the job
 				if job != None:
-					print("Working on Job ID",job["job_id"], "with Prefix", job["prefix"])
-					prefix=eval(job["prefix"])
-					if "timelimit" in job:
-						os.environ["TIMELIMIT"] = str(job["timelimit"])
-					p = data.loadPuzzle(extra_fixed=prefix)
-					if p != None:
-						b = libblackwood.LibBlackwood( p, extra_name="_"+str(self.number).zfill(4) )
-						b.simpleRun()
+					print("Working on Job ID",job["job_id"], "with Prefix", job["prefix"], "in", job["timelimit"], "minutes")
+
+					os.environ["PREFIX"] = job["prefix"]
+					os.environ["TIMELIMIT"] = str(job["timelimit"])
+					os.environ["EXTRA_NAME"] = "_"+str(self.number).zfill(4) 
+
+					backtracker_result = subprocess.run(["python3", "libblackwood.py", "--simple"], stdout=subprocess.PIPE)
+					print(backtracker_result.stdout) 
+
+					job["result"] = json.dumps(str(backtracker_result.stdout))
 
 
 				# Submit results
@@ -229,6 +231,8 @@ def client( host ):
 	
 	for j in job_threads:
 		j.start()
+	
+	j.join()
 
 
 # ----- Parameters
@@ -256,8 +260,8 @@ def run( role = "" ):
 	else:
 		print( "ERROR: unknown parameter:", role )
 
-	print()
-	print( "Execution time: ", time.time() - startTime )
+	#print()
+	#print( "Execution time: ", time.time() - startTime )
 
 
 

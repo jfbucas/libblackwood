@@ -84,6 +84,8 @@ class External_Libs( defs.Defs ):
 				self.force_compile = True
 
 			if self.force_compile:
+				if os.environ.get('QUIET') == None:
+					print('[ Env FORCE_COMPILE found :', self.force_compile, ' ]')
 				if os.path.exists(self.getNameSO(arch=self.ARCH)):
 					os.remove(self.getNameSO(arch=self.ARCH))
 
@@ -114,6 +116,9 @@ class External_Libs( defs.Defs ):
 		if os.environ.get('NO_LOAD') == None:
 			if os.path.exists( self.getNameSO() ):
 				self.load()
+		else:
+			if os.environ.get('QUIET') == None:
+				print('[ Env NO_LOAD found ]')
 
 
 	# ----- 

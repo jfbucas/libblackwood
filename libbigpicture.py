@@ -1384,7 +1384,7 @@ class LibBigPicture( external_libs.External_Libs ):
 			(6, "}"),
 			(6, 'len_valid_pieces = piece_index - space*WH*4;' ),
 			(6, "if ((len_valid_pieces == 1)&&(static_spaces_type[space] != TYPE_FIXED))"),
-			(7, 'fprintf(jobsfile, "(%hd,%lld,%hd),", all_jobs[depth][jobs_index].valid_pieces[space*WH*4].number, space, all_jobs[depth][jobs_index].valid_pieces[space*WH*4].rotation );'),
+			(7, 'fprintf(jobsfile, "[%hd,%lld,%hd],", all_jobs[depth][jobs_index].valid_pieces[space*WH*4].number, space, all_jobs[depth][jobs_index].valid_pieces[space*WH*4].rotation );'),
 			(5, "}"),
 			(5, 'fprintf(jobsfile, "]\\n");'),
 			(5, "jobs_index ++;"),

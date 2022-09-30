@@ -22,23 +22,20 @@ class ForBigpicture( scenario.Scenario ):
 		self.timelimit = 1 # Minutes
 		if os.environ.get('TIMELIMIT') != None: 
 			self.timelimit = int(os.environ.get('TIMELIMIT')) # Minutes
+			if os.environ.get('QUIET') == None:
+				print('[ Env TIMELIMIT found :', self.timelimit, ' ]')
 
 		self.default_commands.extend( [ 
 				#"CLEAR_SCREEN",
 				#"SHOW_TITLE",
 				#"SHOW_HEARTBEAT",
 				"SHOW_RESULT_STATS_NODES_COUNT",
-				"SHOW_STATS_NODES_COUNT",
+				#"SHOW_STATS_NODES_COUNT",
 				#"ZERO_STATS_NODES_COUNT",
 				] )
 
 		self.STATS = True
 		#self.PERF = True
-
-		#self.puzzle.fixed.extend( [
-			#	[ 0,0,3 ],
-		##		#[ 2,7,0 ],
-		#			] )
 
 		self.prefered_reference = "lu"
 
@@ -54,14 +51,15 @@ class ForBigpicture( scenario.Scenario ):
 
 	def prepare_spaces_order( self ):
 
+		depth=0
+		for y in range(self.puzzle.board_h):
+			for x in range(self.puzzle.board_w):
+				s = x+y*self.puzzle.board_w
+				self.spaces_order[ s ] = depth 
+				depth+=1
 
+		"""
 		if self.puzzle.name != "EternityII":
-			depth=0
-			for y in range(self.puzzle.board_h):
-				for x in range(self.puzzle.board_w):
-					s = x+y*self.puzzle.board_w
-					self.spaces_order[ s ] = depth 
-					depth+=1
 		else:
 
 			self.spaces_order = [
@@ -86,5 +84,6 @@ class ForBigpicture( scenario.Scenario ):
 			# Reverse to start from the bottom
 			self.reverse_spaces_order = True
 			#self.flip_spaces_order = True
+		"""
 
 scenario.global_list.append(ForBigpicture)

@@ -14,6 +14,10 @@ def loadPuzzle( name = "E2ncud", extra_fixed=[]):
 		if os.environ.get('QUIET') == None:
 			print('[ Env PUZZLE found :', name, ' ]')
 
+	if os.environ.get('PREFIX') != None:
+		extra_prefix = eval(os.environ.get('PREFIX'))
+		if os.environ.get('QUIET') == None:
+			print('[ Env PREFIX found :', extra_prefix, ' ]')
 	"""
 	p = None
 

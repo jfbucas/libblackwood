@@ -121,6 +121,12 @@ class LibBlackwood( external_libs.External_Libs ):
 
 		# Params for External_Libs
 		self.EXTRA_NAME = extra_name
+
+		if os.environ.get('EXTRA_NAME') != None:
+			self.EXTRA_NAME = os.environ.get('EXTRA_NAME')
+			if os.environ.get('QUIET') == None:
+				print('[ Env EXTRA_NAME found :', self.EXTRA_NAME, ' ]')
+			
 		self.GCC_EXTRA_PARAMS = ""
 		self.dependencies = [ "defs", "arrays" ]
 		self.modules_names = self.MACROS_NAMES_A + self.MACROS_NAMES_B
@@ -277,7 +283,7 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, '}' ),
 				(0, '' ),
 
-				(1, 'if ((b->commands & SHOW_RESULT_'+flag+')&&(b->time_to_finish)) {' ),
+				(1, 'if ((b->commands & SHOW_RESULT_'+flag+')&&((b->time_to_finish)||(b->heartbeat > b->heartbeat_limit))) {' ),
 				(2, prefix+'print'+fname+'_for_stats_by_depth( '+out+' b );'  if self.puzzle.scenario.STATS else ""),
 				(2, 'printf( "'+vname+' = %llu  (avg = %llu)\\n", b->'+vtname+', b->'+vtname+' / b->heartbeat );' if self.puzzle.scenario.PERF else ""),
 				(1, '}' ),
@@ -1598,6 +1604,10 @@ class LibBlackwood( external_libs.External_Libs ):
 	# ----- Run
 	def simpleRun( self ):
 
+		# Start the periodic thread
+		myHB = thread_hb.HeartBeat_Thread( self, period=1 )
+		myHB.start()
+
 		thread_output_filename = None
 
 		cb = self.cb
@@ -1609,6 +1619,8 @@ class LibBlackwood( external_libs.External_Libs ):
 		for pname in self.getParametersNamesFromSignature(l):
 			args.append( loc[ pname ] )
 		self.LibExtWrapper( self.getFunctionNameFromSignature(l), args, timeit=True )
+
+		myHB.stop_hb_thread = True	
 
 	# ----- Self test
 	def SelfTest( self ):
@@ -1682,11 +1694,25 @@ class LibBlackwood( external_libs.External_Libs ):
 if __name__ == "__main__":
 	import data
 
-	#p = data.loadPuzzle()
-	p = data.loadPuzzle(extra_fixed=[[0,0,3],[2,9,0]])
-	if p != None:
+	found = False
 
-		lib = LibBlackwood( p )
-		while lib.SelfTest():
-			pass
+	# -------------------------------------------
+	# Get parameters
+	if len(sys.argv) > 1:
+		for a in sys.argv[1:]:
+			if a.startswith("--simple"):
+				found = True
+				p = data.loadPuzzle()
+				if p != None:
+					lib = LibBlackwood( p )
+					lib.simpleRun()
+				
+	if not found:
+		#p = data.loadPuzzle()
+		p = data.loadPuzzle(extra_fixed=[[0,0,3],[2,9,0]])
+		if p != None:
+
+			lib = LibBlackwood( p )
+			while lib.SelfTest():
+				pass
 
