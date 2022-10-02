@@ -164,9 +164,10 @@ class client_thread(threading.Thread):
 			# Get a job
 			r = None
 			try:
+				print("Connecting to "+self.host+":"+str(serverPort)+"...")
 				r = requests.get('http://'+self.host+":"+str(serverPort)+'/')
 			except:
-				print("Couldn't connect to "+self.host+". Try again in 5 sec.")
+				print("Couldn't connect to "+self.host+":"+str(serverPort)+". Try again in 5 sec.")
 				time.sleep(5)
 				
 
