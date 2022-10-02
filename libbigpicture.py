@@ -9,6 +9,8 @@ import multiprocessing
 import itertools
 import ctypes
 import signal
+import re
+import json
 
 import png
 import math
@@ -1592,6 +1594,65 @@ class LibBigPicture( external_libs.External_Libs ):
 				w.write(f, img)
 				f.close()
 
+	def getColorMap( self, pre_fixed=[] ):
+
+		filename = "jobs/depth_014/EternityII_jobs.txt.1664548405.1043289.sorted.tidy.line"
+
+		if os.path.exists(filename):
+			
+			# Read the data
+			coordinates_for_depth={}
+			for depth in range(-1, self.puzzle.board_wh):
+				coordinates_for_depth[depth] = []
+
+			jobsfile = open( filename, "r" )
+			max_x = 0
+			max_y = 0
+			for line in jobsfile:
+				if line.startswith('#'):
+					continue
+				line = line.strip('\n').strip(' ')
+				line = line.split(" ")
+				line.pop(-1)
+
+				coord = line[0].split("_")
+				depth=int(coord[0])
+				x=int(coord[1])
+				y=int(coord[2])
+				color = 1
+				while int(line[color]) > 0:
+					color +=1
+				if x > max_x:
+					max_x = x
+				if y > max_y:
+					max_y = y
+				coordinates_for_depth[depth].append( (x, y, color) )
+			jobsfile.close()
+
+		
+			# Create the image
+			for depth in range(-1, self.puzzle.board_wh):
+				if len(coordinates_for_depth[depth]) == 0:
+					continue
+
+				print( "Generate Image for depth", depth )
+
+				# Create the blank image
+				w = png.Writer(max_x+1, max_y+1, greyscale=True) #, bitdepth=16)
+				img = []
+				for h in range(max_y+1):
+					l = [ 0 ] * (max_x+1)
+					img.append(l)
+
+				# Insert the jobs
+				for x,y, color in coordinates_for_depth[depth]:
+					img[y][x] = color
+
+				# Write the image
+				f = open("jobs/"+self.getFileFriendlyName( self.puzzle.name )+"_"+str(depth)+"_colored.png", 'wb')      # binary mode is important
+				w.write(f, img)
+				f.close()
+
 	# ----- Generate Scoriste function
 	def gen_main_function( self, only_signature=False):
 
@@ -1846,8 +1907,9 @@ if __name__ == "__main__":
 	if p != None:
 
 		lib = LibBigPicture( p )
-		while lib.SelfTest():
-			pass
+		#while lib.SelfTest():
+		#	pass
+		lib.getColorMap()
 
 
 # Lapin
