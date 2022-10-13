@@ -5,9 +5,15 @@ class Tomy_EternityII( puzzle.Puzzle ):
 	"""The full Eternity II puzzle"""
 
 	name = "EternityII"
-	aliases = [ "Tomy_EternityII", "EternityII", "E2" ]
+	aliases = [ "Tomy_EternityII", "EternityII", "E2" ] + [ "E2nc", "E2clueless", "E2noclue", "E2noclues" ] + [ "E2ncud", "E2cluelessupsidedown", "E2noclueud", "E2nocluesud" ]
 
 	def __init__( self, extra_fixed=[], with_clues=True, upside_down=False  ):
+
+		if self.name in [ "E2nc", "E2clueless", "E2noclue", "E2noclues" ] + [ "E2ncud", "E2cluelessupsidedown", "E2noclueud", "E2nocluesud" ]:
+			with_clues = False
+
+		if self.name in [ "E2ncud", "E2cluelessupsidedown", "E2noclueud", "E2nocluesud" ]:
+			upside_down = True
 
 		self.motifs_order = "jef"
 		self.upside_down = upside_down

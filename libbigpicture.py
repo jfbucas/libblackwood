@@ -1619,14 +1619,25 @@ class LibBigPicture( external_libs.External_Libs ):
 				depth=int(coord[0])
 				x=int(coord[1])
 				y=int(coord[2])
-				color = 1
-				while int(line[color]) > 0:
-					color +=1
+				max_depth = 1
+				total = 0
+				while int(line[max_depth]) > 0:
+					max_depth +=1
+					total += int(line[max_depth])
+
+				mean_depth = 1
+				tmp_total = 0
+				while int(line[mean_depth]) > 0:
+					mean_depth +=1
+					tmp_total += int(line[mean_depth])
+					if tmp_total > int(0.50 * total):
+						break
+						
 				if x > max_x:
 					max_x = x
 				if y > max_y:
 					max_y = y
-				coordinates_for_depth[depth].append( (x, y, color) )
+				coordinates_for_depth[depth].append( (x, y, max_depth, mean_depth) )
 			jobsfile.close()
 
 		
@@ -1645,8 +1656,8 @@ class LibBigPicture( external_libs.External_Libs ):
 					img.append(l)
 
 				# Insert the jobs
-				for x,y, color in coordinates_for_depth[depth]:
-					img[y][x] = color
+				for x,y, max_depth, mean_depth in coordinates_for_depth[depth]:
+					img[y][x] = mean_depth
 
 				# Write the image
 				f = open("jobs/"+self.getFileFriendlyName( self.puzzle.name )+"_"+str(depth)+"_colored.png", 'wb')      # binary mode is important
