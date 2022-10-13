@@ -63,7 +63,8 @@ class Blackwood_Process( Process ):
 
 
 	def run(self):
-		self.blackwood = libblackwood.LibBlackwood( self.puzzle, extra_name="_"+str(self.number).zfill(4), skipcompile=True )
+		#self.blackwood = libblackwood.LibBlackwood( self.puzzle, extra_name="_"+str(self.number).zfill(4), skipcompile=True )
+		self.blackwood = libblackwood.LibBlackwood( self.puzzle, skipcompile=True )
 		self.blackwood.copy_new_arrays_to_cb()
 
 		cb = self.blackwood.cb
