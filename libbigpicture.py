@@ -1910,6 +1910,176 @@ class LibBigPicture( external_libs.External_Libs ):
 		return False
 
 
+	def validateCornerRotations( self, rotations):
+		
+		# Validate the 4 corner pieces have different rotations
+		if rotations[1] == rotations[0] or \
+			rotations[2] == rotations[0] or rotations[2] == rotations[1] or \
+			rotations[3] == rotations[0] or rotations[3] == rotations[1] or rotations[3] == rotations[2]:
+			return False
+
+		return True
+
+	def validateRotations( self, rotations, depth, pieces ):
+		
+		# Validate a maximum of border pieces per rotation
+		rotations_count = [[], [], [], []]
+		for d in range(4, depth):
+			rotations_count[ rotations[d] ].append(d) # += 1
+		#print(rotations_count)
+
+		if len(rotations_count[0]) > (self.puzzle.board_w-2) or \
+			len(rotations_count[1]) > (self.puzzle.board_h-2) or \
+			len(rotations_count[2]) > (self.puzzle.board_w-2) or \
+			len(rotations_count[3]) > (self.puzzle.board_h-2):
+			return False
+
+
+		# Validate if the border pieces can actually be combined, ie: the pieces edges are even
+		if len(rotations_count[0]) == (self.puzzle.board_w-2):
+			edges = [0] * self.puzzle.EDGE_DOMAIN_1_PIECE
+
+			for p in range(4):
+				if rotations[p] == 0:
+					edges[ pieces[p][1] ] += 1
+					edges[ pieces[p][3] ] += 1
+				if rotations[p] == 3:
+					edges[ pieces[p][1] ] += 1
+					edges[ pieces[p][3] ] += 1
+
+			for p in rotations_count[0]:
+				edges[ pieces[p][1] ] += 1
+				edges[ pieces[p][3] ] += 1
+
+			for e in edges:
+				if e & 1 != 0:
+					return False
+
+		if len(rotations_count[1]) == (self.puzzle.board_h-2):
+			edges = [0] * self.puzzle.EDGE_DOMAIN_1_PIECE
+
+			for p in range(4):
+				if rotations[p] == 0:
+					edges[ pieces[p][0] ] += 1
+					edges[ pieces[p][2] ] += 1
+				if rotations[p] == 1:
+					edges[ pieces[p][0] ] += 1
+					edges[ pieces[p][2] ] += 1
+
+			for p in rotations_count[1]:
+				edges[ pieces[p][0] ] += 1
+				edges[ pieces[p][2] ] += 1
+
+			for e in edges:
+				if e & 1 != 0:
+					return False
+
+		if len(rotations_count[2]) == (self.puzzle.board_w-2):
+			edges = [0] * self.puzzle.EDGE_DOMAIN_1_PIECE
+
+			for p in range(4):
+				if rotations[p] == 1:
+					edges[ pieces[p][1] ] += 1
+					edges[ pieces[p][3] ] += 1
+				if rotations[p] == 2:
+					edges[ pieces[p][1] ] += 1
+					edges[ pieces[p][3] ] += 1
+
+			for p in rotations_count[2]:
+				edges[ pieces[p][1] ] += 1
+				edges[ pieces[p][3] ] += 1
+
+			for e in edges:
+				if e & 1 != 0:
+					return False
+
+				
+		if len(rotations_count[3]) == (self.puzzle.board_h-2):
+			edges = [0] * self.puzzle.EDGE_DOMAIN_1_PIECE
+
+			for p in range(4):
+				if rotations[p] == 2:
+					edges[ pieces[p][0] ] += 1
+					edges[ pieces[p][2] ] += 1
+				if rotations[p] == 3:
+					edges[ pieces[p][0] ] += 1
+					edges[ pieces[p][2] ] += 1
+
+			for p in rotations_count[3]:
+				edges[ pieces[p][0] ] += 1
+				edges[ pieces[p][2] ] += 1
+
+			for e in edges:
+				if e & 1 != 0:
+					return False
+
+		return True
+	
+	def getRotationsColor( self, rotations, depth, pieces ):
+		# Dig into known best scores
+		return 255
+
+	def getImageRotations( self, depth, shift_x, shift_y, width, height ):
+		
+		# Get the Corners and Borders
+		pieces = []
+		for p in self.puzzle.pieces:
+			if self.puzzle.isPieceCorner(p):
+				pieces.append(p)
+		for p in self.puzzle.pieces:
+			if not self.puzzle.isPieceCorner(p) and \
+				 self.puzzle.isPieceBorder(p):
+				pieces.append(p)
+		
+		print(pieces)
+
+		rotations = [0] * len(pieces)
+		
+		if depth < 4 or depth > len(pieces):
+			return
+			
+		depth_size = 2**depth
+
+		img = []
+		for h in range(height):
+			l = [0] * width
+			img.append(l)
+
+		for y in range(shift_y, shift_y+height):
+			if y < 0 or y > depth_size:
+				continue
+			print(y)
+
+			for x in range(shift_x, shift_x+width):
+				if x < 0 or x > depth_size:
+					continue
+
+				# We validate corners rotations first - for speed
+				for d in range(0,4):
+					d_shift = 1<<((depth-1)-d)
+					rotations[d] = int(((x & d_shift) != 0)) + int((y & d_shift) != 0)*2
+
+				if not self.validateCornerRotations(rotations):
+					continue
+
+				# Then we validate the borders
+				for d in range(4, depth):
+					d_shift = 1<<((depth-1)-d)
+					rotations[d] = int(((x & d_shift) != 0)) + int((y & d_shift) != 0)*2
+
+				#print(x, y, rotations)
+
+				if not self.validateRotations(rotations, depth, pieces):
+					continue
+
+				img[y-shift_y][x-shift_x] = self.getRotationsColor(rotations, depth, pieces)
+
+		# Write the image
+		w = png.Writer(width, height, greyscale=True)
+		f = open("jobs/"+self.getFileFriendlyName( self.puzzle.name )+"_rotations_"+str(depth)+".png", 'wb')      # binary mode is important
+		w.write(f, img)
+		f.close()
+
 if __name__ == "__main__":
 	import data
 
@@ -1920,7 +2090,9 @@ if __name__ == "__main__":
 		lib = LibBigPicture( p )
 		#while lib.SelfTest():
 		#	pass
-		lib.getColorMap()
+		#lib.getColorMap()
 
+		lib.getImageRotations( 12, 0, 0, 4096, 4096 )
+		#lib.getImageRotations( 12, 1024, 1024, 1024, 1024 )
 
 # Lapin
