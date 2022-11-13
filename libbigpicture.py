@@ -2019,8 +2019,13 @@ class LibBigPicture( external_libs.External_Libs ):
 		# Dig into known best scores
 		return 255
 
-	def getImageRotations( self, depth, shift_x, shift_y, width, height ):
+	def getImageRotations( self, depth, shift_x, shift_y, width, height, force=False ):
+	
+		filename = "jobs/"+self.getFileFriendlyName( self.puzzle.name )+"/d="+str(depth)+"_x="+str(shift_x)+"_y="+str(shift_y)+".png"
 		
+		if os.path.exists(filename) and not force:
+			return
+
 		# Get the Corners and Borders
 		pieces = []
 		for p in self.puzzle.pieces:
@@ -2031,7 +2036,7 @@ class LibBigPicture( external_libs.External_Libs ):
 				 self.puzzle.isPieceBorder(p):
 				pieces.append(p)
 		
-		print(pieces)
+		#print(pieces)
 
 		rotations = [0] * len(pieces)
 		
@@ -2045,27 +2050,37 @@ class LibBigPicture( external_libs.External_Libs ):
 			l = [0] * width
 			img.append(l)
 
+		d_shift = [0] * len(pieces)
+		for d in range(0, depth):
+			d_shift[d] = 1<<((depth-1)-d)
+
 		for y in range(shift_y, shift_y+height):
 			if y < 0 or y > depth_size:
 				continue
-			print(y)
+
+			y_shift = [0] * len(pieces)
+			for d in range(0, depth):
+				y_shift[d] = int((y & d_shift[d]) != 0)*2
+
+			# Print progress
+			#print((y-shift_y)*100//height, "%")
 
 			for x in range(shift_x, shift_x+width):
 				if x < 0 or x > depth_size:
 					continue
 
 				# We validate corners rotations first - for speed
-				for d in range(0,4):
-					d_shift = 1<<((depth-1)-d)
-					rotations[d] = int(((x & d_shift) != 0)) + int((y & d_shift) != 0)*2
+				rotations[0] = int(((x & d_shift[0]) != 0)) + y_shift[0]
+				rotations[1] = int(((x & d_shift[1]) != 0)) + y_shift[1]
+				rotations[2] = int(((x & d_shift[2]) != 0)) + y_shift[2]
+				rotations[3] = int(((x & d_shift[3]) != 0)) + y_shift[3]
 
 				if not self.validateCornerRotations(rotations):
 					continue
 
 				# Then we validate the borders
 				for d in range(4, depth):
-					d_shift = 1<<((depth-1)-d)
-					rotations[d] = int(((x & d_shift) != 0)) + int((y & d_shift) != 0)*2
+					rotations[d] = int(((x & d_shift[d]) != 0)) + y_shift[d]
 
 				#print(x, y, rotations)
 
@@ -2073,10 +2088,16 @@ class LibBigPicture( external_libs.External_Libs ):
 					continue
 
 				img[y-shift_y][x-shift_x] = self.getRotationsColor(rotations, depth, pieces)
+		# Create folder
+		try:
+			os.mkdir("jobs/"+self.getFileFriendlyName( self.puzzle.name ))
+		except OSError as error:
+			#print(error)
+			pass
 
 		# Write the image
 		w = png.Writer(width, height, greyscale=True)
-		f = open("jobs/"+self.getFileFriendlyName( self.puzzle.name )+"_rotations_"+str(depth)+".png", 'wb')      # binary mode is important
+		f = open(filename, 'wb')      # binary mode is important
 		w.write(f, img)
 		f.close()
 
@@ -2092,7 +2113,19 @@ if __name__ == "__main__":
 		#	pass
 		#lib.getColorMap()
 
-		lib.getImageRotations( 12, 0, 0, 4096, 4096 )
+		# Start the chrono
+		lib.top("image")
+		# 8x8
+		#lib.getImageRotations( 14, 768*4, 768*4, 4096, 4096 )
+		#lib.getImageRotations( 16, (768*4+2048)*4, (768*4+0)*4, 4096, 4096 )
+		#lib.getImageRotations( 18, (768*4+2048)*4*4, (768*4+0)*4*4, 4096, 4096 )
+		lib.getImageRotations( 12, 0, 0, 4096, 4096, force=True )
+
+		top = lib.top("image", unit=False)
+		print()
+		print( "Self-Test execution time: ", top )
+
+		#lib.getImageRotations( 12, 0, 0, 4096, 4096 )
 		#lib.getImageRotations( 12, 1024, 1024, 1024, 1024 )
 
 # Lapin
