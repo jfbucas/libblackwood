@@ -32,6 +32,8 @@ all_jobs = None
 start_timestamp = str(time.time())
 timelimit = 1 # Minutes
 
+TILESIZE = 1024
+
 class MyServer(BaseHTTPRequestHandler):
 	def do_GET(self):
 		query = urlparse(self.path).query
@@ -47,11 +49,11 @@ class MyServer(BaseHTTPRequestHandler):
 			return
 
 		depth=int(qc["depth"])
-		x=int(qc["x"])*256
-		y=int(qc["y"])*256
+		x=int(qc["x"])*TILESIZE
+		y=int(qc["y"])*TILESIZE
 		print("Generating tile image for depth=",depth, "x=",x, "y=",y)
-		#lib.getImageRotations( depth, x, y, 256, 256 )
-		p = Process(target=lib.getImageRotations, args=( depth, x, y, 256, 256 ))
+		#lib.getImageRotations( depth, x, y, TILESIZE, TILESIZE )
+		p = Process(target=lib.getImageRotations, args=( depth, x, y, TILESIZE, TILESIZE ))
 
 		p.start()
 		p.join()

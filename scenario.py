@@ -20,6 +20,7 @@ class Scenario( defs.Defs ):
 	use_adaptative_filter_depth = True
 	default_commands = []
 	prefered_reference = None
+	report_all_solutions = False
 
 	def __init__( self ):
 
@@ -42,6 +43,7 @@ class Scenario( defs.Defs ):
 		self.spaces_references = [None] * self.puzzle.board_wh
 		self.reverse_spaces_order = False
 		self.flip_spaces_order = False
+		
 
 		self.score_target = self.puzzle.board_wh*2 - self.puzzle.board_w - self.puzzle.board_h
 		self.score_target -= len(self.conflicts_indexes_allowed)

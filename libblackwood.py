@@ -289,14 +289,14 @@ class LibBlackwood( external_libs.External_Libs ):
 				(1, '}' ),
 				(0, '' ),
 
-				(1, 'if (b->commands & ZERO_'+flag+')' ),
+				(1, 'if (b->commands & ZERO_'+flag+') {' ),
 				#(2, 'for(i=0;i<WH;i++) { b->'+vtname+' += b->'+vname+'[i]; b->'+vname+'[i] = 0; }' ),
 				(2, 'for(i=0;i<WH;i++) { b->'+vname+'[i] = 0; }' if self.puzzle.scenario.STATS else ""),
-				(0, '' ),
+				(1, '}' ),
 
-				(1, 'if (b->commands & ZERO_TOTAL_'+flag+')' ),
+				(1, 'if (b->commands & ZERO_TOTAL_'+flag+') {' ),
 				(2, 'b->'+vtname+' = 0;' if self.puzzle.scenario.PERF else ""),
-				(0, '' ),
+				(1, '}' ),
 				] )
 
 
@@ -1200,6 +1200,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			(1, 'if (thread_output_filename != NULL) {' ),
 			(2, 'output = fopen( thread_output_filename, "a" );' ),
 			(2, 'if (!output) { printf("Can\'t open %s\\n", thread_output_filename); return -1; }' ),
+			(2, 'printf("Using %s as output\\n", thread_output_filename);' ),
 			(1, '}' ),
 			(1, '' ),
 			(1, '// Local variables' ),
@@ -1228,12 +1229,17 @@ class LibBlackwood( external_libs.External_Libs ):
 		for depth in range(0,WH+1):
 			d=str(depth)
 
+			if depth > 0:
+				previous_space = self.puzzle.scenario.spaces_sequence[ depth-1 ]
+				sprevious_space = str(previous_space)
+
 			output.extend( [
 				(1, "// ==--==--==--==--[ Reaching depth "+d+" ]--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--== "),
 				(1, '' ),
 				(1, 'asm("# depth '+d+'");' ),
 				(1, 'depth'+d+":  // Labels are ugly, don't do this at home" ),
 				] )
+			#output.append( (2, 'printf("Depth '+d+'\\n");' ) )
 
 			if ((self.DEBUG > 0 and depth > WH//2) or (depth > self.puzzle.scenario.depth_first_notification-7)) and depth < self.puzzle.scenario.depth_first_notification:
 				output.append( (2, 'if (cb->best_depth_seen < '+d+') {') )
@@ -1257,20 +1263,26 @@ class LibBlackwood( external_libs.External_Libs ):
 				output.append( (2, '}' if depth<WH else '') )
 
 			if depth == WH:
-				output.append( (2, '// We have a complete puzzle !!' ) )
-				output.append( (2, 'cb->wait_for_notification = 1;' ) )
-				output.append( (2, 'for(i=0;(i<3000000) && (!cb->time_to_finish);i++) {') )
-				output.append( (3, 'fdo_commands(output, cb);' ) )
-				output.append( (3, 'sleep(1); // Wait for the WFN thread' ) )
-				output.append( (2, '}' ) )
-				output.append( (0, '' ) )
-				output.append( (2, "goto depth_end;"))
+				if self.puzzle.scenario.report_all_solutions:
+					output.append( (2, 'printf(".");' ) )
+					output.append( (2, 'for(i=0;i<WH;i++) cb->board[i] = board[i];') )
+					output.append( (2, 'cb->best_depth_seen = '+d+';') )
+					output.append( (2, 'cb->commands |= SHOW_BEST_BOARD_URL_ONCE;' ) )
+					output.append( (2, 'fdo_commands(output, cb);' ) )
+					output.append( (2, 'pieces_used[ board['+sprevious_space+'].info.p ] = 0;' ))
+					output.append( (2, "goto depth"+str(depth-1)+"_backtrack;" ))
+				else:
+					output.append( (2, '// We have a complete puzzle !!' ) )
+					output.append( (2, 'cb->wait_for_notification = 1;' ) )
+					output.append( (2, 'for(i=0;(i<3000000) && (!cb->time_to_finish);i++) {') )
+					output.append( (3, 'fdo_commands(output, cb);' ) )
+					output.append( (3, 'sleep(1); // Wait for the WFN thread' ) )
+					output.append( (2, '}' ) )
+					output.append( (0, '' ) )
+					output.append( (2, "goto depth_end;"))
 				break
 
 
-			if depth > 0:
-				previous_space = self.puzzle.scenario.spaces_sequence[ depth-1 ]
-				sprevious_space = str(previous_space)
 
 			space = self.puzzle.scenario.spaces_sequence[ depth ]
 			sspace = str(space)
@@ -1608,7 +1620,9 @@ class LibBlackwood( external_libs.External_Libs ):
 		myHB = thread_hb.HeartBeat_Thread( self, period=1 )
 		myHB.start()
 
-		thread_output_filename = None
+		#thread_output_filename = None
+		#thread_output_filename = ctypes.c_char_p((self.LIBFOLDER_PUZZLE+"/simple_run.txt").encode('utf-8'))
+		thread_output_filename = ctypes.c_char_p((self.LIBFOLDER_PUZZLE+"/output.txt").encode('utf-8'))
 
 		cb = self.cb
 		self.copy_new_arrays_to_cb()
@@ -1708,8 +1722,8 @@ if __name__ == "__main__":
 					lib.simpleRun()
 				
 	if not found:
-		#p = data.loadPuzzle()
-		p = data.loadPuzzle(extra_fixed=[[0,0,3],[2,9,0]])
+		p = data.loadPuzzle()
+		#p = data.loadPuzzle(extra_fixed=[[0,0,3],[2,9,0]])
 		if p != None:
 
 			lib = LibBlackwood( p )
