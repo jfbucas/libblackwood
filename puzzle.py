@@ -189,6 +189,8 @@ class Puzzle( defs.Defs ):
 
 	pieces_stats16_weight = []
 
+	solutions = []
+
 	# Precomputed statistics
 	stats = None
 
@@ -217,6 +219,9 @@ class Puzzle( defs.Defs ):
 
 		self.initStaticSpacesType()
 		self.initStaticValidPieces()
+		
+		
+		self.convertSolutions()
 
 		self.TITLE_STR += self.name+"("+ self.scenario.name +")"
 
@@ -1120,6 +1125,82 @@ class Puzzle( defs.Defs ):
 						print(self.static_valid_pieces[ space ])
 
 		
+	# ----- Convert the solutions URL into pieces
+	def convertSolutions(self):
+		
+		self.solutions_rotations = []
+
+		# Get the Corners, Borders and Centers
+		pieces = []
+		for p in self.pieces:
+			if self.isPieceCorner(p):
+				pieces.append(p)
+		for p in self.pieces:
+			if not self.isPieceCorner(p) and \
+				 self.isPieceBorder(p):
+				pieces.append(p)
+		for p in self.pieces:
+			if not self.isPieceCorner(p) and \
+				 not self.isPieceBorder(p):
+				pieces.append(p)
+
+
+		for url in self.solutions:
+
+			"https://e2.bucas.name/#puzzle=brendan_pieces_08x08.txt&board_w=8&board_h=8&board_pieces=003015026028007012010002017033045059053054061013006030048058040031051008023032052060037034029005019057050046043047038014025055064041044049056011024063042035062039036027001018016022009021020004&board_edges=accaacecadkcadldabgdablbabkbaacbcjbaegkjkkfglhjkghihlhghkllhcablbfdakgeffiggjlhiieklgfjelihfbabidfcaeghfgilghkkikeikjehehefebabeckdahigklfjikfhfifffhgjffejgbacedjdagihjjliihkelfflkjggfjkhgcabkdjbahljjigelehfgljihgiejhleibadlbcaajcacedacfbadidabedadecaddaac&motifs_order=jef"
+
+			url_pieces = [ 0 ] * self.board_wh
+			url_edges = [ None ] * self.board_wh
+
+			params = url.split("&")
+			for param in params:
+				if param.startswith("board_pieces="):
+					param = param.split("=")[1]
+					for i in range(self.board_wh):
+						url_pieces[i] = int(param[i*3:(i+1)*3])
+				elif param.startswith("board_edges="):
+					param = param.split("=")[1]
+					u = r = d = l = 0
+					for i in range(self.board_wh):
+						u = ord(param[i*4+0])-ord("a")
+						r = ord(param[i*4+1])-ord("a")
+						d = ord(param[i*4+2])-ord("a")
+						l = ord(param[i*4+3])-ord("a")
+
+						url_edges[i] = [ u, r, d, l ]
+
+			url_rotations = [ -1 ] * self.board_wh
+			pieces_rotations = [ -1 ] * self.board_wh
+			np = 0
+			for p in pieces:
+				[ pu, pr, pd, pl ] = p
+				for s in range(self.board_wh):
+					[ uu, ur, ud, ul ] = url_edges[ s ]
+					if (pu == uu) and (pr == ur) and (pd == ud) and (pl == ul):
+						url_rotations[s] = 0
+						pieces_rotations[np] = 0
+						break
+					if (pl == uu) and (pu == ur) and (pr == ud) and (pd == ul):
+						url_rotations[s] = 1
+						pieces_rotations[np] = 1
+						break
+					if (pd == uu) and (pl == ur) and (pu == ud) and (pr == ul):
+						url_rotations[s] = 2
+						pieces_rotations[np] = 2
+						break
+					if (pr == uu) and (pd == ur) and (pl == ud) and (pu == ul):
+						url_rotations[s] = 3
+						pieces_rotations[np] = 3
+						break
+				np += 1
+			#self.printArray(url_rotations, array_w=self.board_w, array_h=self.board_h)
+			#self.printArray(pieces_rotations, array_w=self.board_w, array_h=self.board_h)
+
+			self.solutions_rotations.append(pieces_rotations)			
+
+			
+
+
 
 
 

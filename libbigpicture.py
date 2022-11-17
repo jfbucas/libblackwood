@@ -2016,8 +2016,19 @@ class LibBigPicture( external_libs.External_Libs ):
 		return True
 	
 	def getRotationsColor( self, rotations, depth, pieces ):
+		result = 1
 		# Dig into known best scores
-		return 255
+		for s in self.puzzle.solutions_rotations:
+			nope = False
+			for d in range(depth):
+				if s[d] != rotations[d]:
+					nope = True
+					break
+			if not nope:
+				result = 2
+				return result
+
+		return result
 
 	def getImageRotations( self, depth, shift_x, shift_y, width, height, force=False ):
 	
@@ -2045,6 +2056,7 @@ class LibBigPicture( external_libs.External_Libs ):
 			
 		depth_size = 2**depth
 
+		# Empty image
 		img = []
 		for h in range(height):
 			l = [0] * width
@@ -2096,7 +2108,9 @@ class LibBigPicture( external_libs.External_Libs ):
 			pass
 
 		# Write the image
-		w = png.Writer(width, height, greyscale=True)
+		palette=[(0x00,0x00,0x00), (0x7f,0x7f,0x7f), (0xff,0x55,0x55), (0x99,0xff,0x99)]
+		w = png.Writer(width, height, palette=palette, bitdepth=2)
+		#w = png.Writer(width, height, greyscale=True)
 		f = open(filename, 'wb')      # binary mode is important
 		w.write(f, img)
 		f.close()
