@@ -195,7 +195,7 @@ class Puzzle( defs.Defs ):
 	stats = None
 
 	# ----- Init the puzzle
-	def __init__( self, scenario_name="", extra_fixed=[] ):
+	def __init__( self, scenario_name="JB470", extra_fixed=[] ):
 		"""
 		Initialize
 		"""

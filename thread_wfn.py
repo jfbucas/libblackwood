@@ -113,7 +113,7 @@ class Wait_For_Notification_Thread(threading.Thread):
 				max_depth_seen_hb+="]"
 
 				payload="{\"username\":\""+self.puzzle.HOSTNAME+"\","
-				payload+="\"icon_emoji\":\":puzzle:\","
+				payload+="\"icon_emoji\":\":jigsaw:\","
 				payload+="\"channel\":\""+channel+"\","
 				payload+="\"text\":\"@channel [View]("+self.notification_url.value.decode("utf-8")+") "+ "[Git]("+self.giturl+") "+str(self.puzzle.scenario)
 				payload+=" "+str(self.libblackwood.LibExt.getBestDepthSeen(self.libblackwood.cb))
