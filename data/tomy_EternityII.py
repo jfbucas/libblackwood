@@ -7,12 +7,14 @@ class Tomy_EternityII( puzzle.Puzzle ):
 	name = "EternityII"
 	aliases = [ "Tomy_EternityII", "EternityII", "E2" ] + [ "E2nc", "E2clueless", "E2noclue", "E2noclues" ] + [ "E2ncud", "E2cluelessupsidedown", "E2noclueud", "E2nocluesud" ]
 
-	def __init__( self, extra_fixed=[], with_clues=True, upside_down=False  ):
+	def __init__( self, alias="", extra_fixed=[], with_clues=True, upside_down=False  ):
 
-		if self.name in [ "E2nc", "E2clueless", "E2noclue", "E2noclues" ] + [ "E2ncud", "E2cluelessupsidedown", "E2noclueud", "E2nocluesud" ]:
+		if alias in [ "E2nc", "E2clueless", "E2noclue", "E2noclues" ] + [ "E2ncud", "E2cluelessupsidedown", "E2noclueud", "E2nocluesud" ]:
+			self.name = alias
 			with_clues = False
 
-		if self.name in [ "E2ncud", "E2cluelessupsidedown", "E2noclueud", "E2nocluesud" ]:
+		if alias in [ "E2ncud", "E2cluelessupsidedown", "E2noclueud", "E2nocluesud" ]:
+			self.name = alias
 			upside_down = True
 
 		self.motifs_order = "jef"

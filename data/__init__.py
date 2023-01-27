@@ -54,7 +54,7 @@ def loadPuzzle( name = "E2ncud", extra_fixed=[]):
 	# Try to match the name with one of the classes imported
 	for x in puzzle.global_list:
 		if name in x.aliases:
-			return x(extra_fixed)
+			return x(alias=name, extra_fixed=extra_fixed)
 
 	print( "ERROR: Unknown puzzle: ", name)
 	exit()

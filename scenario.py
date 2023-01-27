@@ -316,6 +316,18 @@ class Scenario( defs.Defs ):
 			conflicts_array = [ x for x in self.conflicts_indexes_allowed if x <= depth ]
 			self.heuristic_conflicts_count[ self.spaces_sequence[ depth ] ] = len(conflicts_array)
 
+		"""
+		possibilities = 1
+		ci = self.conflicts_indexes_allowed + [WH]
+		print(ci)
+		for bd in range(len(ci)-1):
+			possibilities *= ci[bd+1]-ci[bd]
+	
+		print("yo")
+		print(possibilities)
+		"""
+
+
 	# ----- 
 	def edges_types_from_references( self ):
 		u_type = r_type = d_type = l_type = "uint8"

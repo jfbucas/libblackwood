@@ -1367,16 +1367,26 @@ class LibBlackwood( external_libs.External_Libs ):
 
 			# Unlikely we need the master_lists_of_union_rotated_pieces_hp before reaching the max_index
 			index_piece_name = self.puzzle.scenario.get_index_piece_name(depth=depth)
+
+			if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
+				conflicts_allowed = self.puzzle.scenario.heuristic_conflicts_count[space]
+				if (conflicts_allowed > 0) and ("_conflicts" in index_piece_name):
+						output.append( (2, "if (cumulative_heuristic_conflicts_count["+d+"-1] < "+str(conflicts_allowed)+ ") { "))
+						output.append( (3, "index = cb->master_index_"+index_piece_name+"[ "+ref+" ];" ) )
+						output.append( (2, "}else{" ) )
+						output.append( (3, "index = cb->master_index_"+index_piece_name.replace("_conflicts","")+"[ "+ref+" ];" ) )
+						output.append( (2, "}" ) )
+				else:
+					output.append( (2, "index = cb->master_index_"+index_piece_name+"[ "+ref+" ];" ) )
+
 			#output.append( (2, "piece_to_try_next["+d+"] = &(cb->"+master_lists_of_union_rotated_pieces+"[cb->master_index_"+index_piece_name+"[ "+ref+" ] ]);" ) )
 			if self.puzzle.scenario.use_adaptative_filter_depth:
-				output.append( (2, "index = cb->master_index_"+index_piece_name+"[ "+ref+" ];" ) )
 				#output.append( (2, "if ( "+d+" >= cb->adaptative_filter_depth ) {" ) )
 				output.append( (2, "piece_to_try_next["+d+"] = &(cb->master_lists_of_union_rotated_pieces_for_adaptative_filter[index]);" ) )
 				#output.append( (2, "} else {" ) )
 				#output.append( (3, "piece_to_try_next["+d+"] = &(cb->master_lists_of_union_rotated_pieces[index]);" ) )
 				#output.append( (2, "}" ) )
 			else:
-				output.append( (2, "index = cb->master_index_"+index_piece_name+"[ "+ref+" ];" ) )
 				output.append( (2, "piece_to_try_next["+d+"] = &(cb->master_lists_of_union_rotated_pieces[index]);" ) )
 
 
@@ -1407,9 +1417,10 @@ class LibBlackwood( external_libs.External_Libs ):
 							output.append( (3, "}"))
 
 
+			"""
 			if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
 				conflicts_allowed = self.puzzle.scenario.heuristic_conflicts_count[space]
-				if conflicts_allowed > 0:
+				if (conflicts_allowed > 0) and ("_conflicts" in index_piece_name):
 					if self.puzzle.scenario.heuristic_conflicts_count[previous_space] != conflicts_allowed:
 						# if there is an increment in the heuristic, no need to test, it will always pass the test
 						pass
@@ -1419,6 +1430,7 @@ class LibBlackwood( external_libs.External_Libs ):
 						output.append( (4, "cb->stats_total_heuristic_conflicts_break_count ++; " if self.puzzle.scenario.PERF else "" ))
 						output.append( (4, "break;" ))
 						output.append( (3, "} // "+str(conflicts_allowed)))
+			"""
 			
 			output.append( (3, "if (pieces_used[ current_piece.info.p ] != 0) {"))
 			output.append( (4, 'cb->stats_pieces_used_count['+sspace+'] ++;' if self.puzzle.scenario.STATS else "") )
@@ -1443,8 +1455,12 @@ class LibBlackwood( external_libs.External_Libs ):
 			if sum(self.puzzle.scenario.heuristic_conflicts_count) > 0:
 				conflicts_allowed = self.puzzle.scenario.heuristic_conflicts_count[space]
 				if conflicts_allowed > 0:
-					cumul = "" if depth == self.puzzle.scenario.conflicts_indexes_allowed[0] else "cumulative_heuristic_conflicts_count["+d+"-1] + "
-					output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = "+cumul+" current_piece.info.heuristic_conflicts;"))
+					cumul = "" if depth == self.puzzle.scenario.conflicts_indexes_allowed[0] else "cumulative_heuristic_conflicts_count["+d+"-1]"
+					cumul_local = ""
+					if ("_conflicts" in index_piece_name):
+						cumul_local = " + current_piece.info.heuristic_conflicts"
+
+					output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = "+cumul+cumul_local+";"))
 			
 			output.append( (3, "goto depth"+str(depth+1)+";"))
 			output.append( (2, "}"))
