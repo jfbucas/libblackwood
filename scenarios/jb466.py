@@ -1,21 +1,20 @@
 import scenario
 
-class JB469( scenario.Scenario ):
-	"""The Joshua Blackwood 469 Scenario"""
+class JB466( scenario.Scenario ):
+	"""The Joshua Blackwood 466 Scenario"""
 
 	def __init__( self, puzzle, params={} ):
 
 		self.puzzle = puzzle
-		self.name = __name__.split(".")[1] + str(params)
+		self.name = __name__.split(".")[1]
 
 		self.heuristic_patterns = [ [ 9, 12, 15 ] ]
-		#self.heuristic_patterns = [ [ 17, 2, 18 ] ]
-		self.conflicts_indexes_allowed = [ 201, 206, 211, 216, 221, 225, 229, 233, 237, 239, 241 ]
+		self.conflicts_indexes_allowed = [ 201, 206, 211, 216, 221, 225, 229, 233, 235, 237, 239, 241, 243, 245 ]
 		self.heuristic_stats16 = False
-		self.depth_first_notification = 252
-		self.use_adaptative_filter_depth = False
+		self.depth_first_notification = 254
+		self.use_adaptative_filter_depth = True #False
 
-		self.timelimit = 180 # Minutes
+		self.timelimit = 15 # Minutes
 
 		scenario.Scenario.__init__(self, params=params)
 
@@ -23,6 +22,7 @@ class JB469( scenario.Scenario ):
 		return self.name + " Seed="+str(self.seed) + " Patterns:" + str(self.heuristic_patterns) + " Conflicts:" + str(self.conflicts_indexes_allowed)
 	def __repr__(self):
 		return self.__str__()
+
 
 	def prepare_patterns_count_heuristics( self ):
 
@@ -59,15 +59,7 @@ class JB469( scenario.Scenario ):
 			]
 
 		# Reverse to start from the bottom
-		#self.reverse_spaces_order = True
-
-	# Overload the scenario function
-	def prepare_spaces_references( self ):
-		if self.reverse_spaces_order:
-			self.spaces_references = ["dl"] * self.puzzle.board_wh
-		else:
-			self.spaces_references = ["lu"] * self.puzzle.board_wh
-		
+		self.reverse_spaces_order = True
 
 
-scenario.global_list.append(JB469)
+scenario.global_list.append(JB466)

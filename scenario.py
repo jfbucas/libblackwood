@@ -17,12 +17,29 @@ class Scenario( defs.Defs ):
 	STATS = False
 	PERF = False
 
+	params = {}
+
 	use_adaptative_filter_depth = True
 	default_commands = []
 	prefered_reference = None
 	report_all_solutions = False
 
-	def __init__( self ):
+	def __init__( self, params={} ):
+
+		# Add the parameters to the name of the scenario
+		sc = set("[]{}().'\",:")
+		self.name += ''.join([c if c not in sc else "_" for c in str(params).replace(" ", "") ])
+
+		# Parameters
+		self.params=params
+		if "timelimit" in params:
+			self.timelimit = params["timelimit"]
+
+		if "heuristic_patterns" in params:
+			self.heuristic_patterns = [ params["heuristic_patterns"] ]
+
+		if "conflicts_indexes_allowed" in params:
+			self.conflicts_indexes_allowed = params["conflicts_indexes_allowed"]
 
 		defs.Defs.__init__( self )
 

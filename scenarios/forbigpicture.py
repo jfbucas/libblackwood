@@ -5,10 +5,10 @@ import scenario
 class ForBigpicture( scenario.Scenario ):
 	"""The scenario for Bigpicture"""
 
-	def __init__( self, puzzle, discriminant="" ):
+	def __init__( self, puzzle, params={} ):
 
 		self.puzzle = puzzle
-		self.name = __name__.split(".")[1] + str(discriminant)
+		self.name = __name__.split(".")[1] + str(params)
 
 		self.heuristic_patterns = [ ]
 		self.conflicts_indexes_allowed = []
@@ -39,7 +39,7 @@ class ForBigpicture( scenario.Scenario ):
 
 		self.prefered_reference = "lu"
 
-		scenario.Scenario.__init__(self)
+		scenario.Scenario.__init__(self, params=params)
 
 	def __str__(self):
 		return self.name + " Seed="+str(self.seed)

@@ -6,10 +6,10 @@ import os
 class JB470Spiral( scenario.Scenario ):
 	"""The Joshua Blackwood 470 Scenario with a spiral"""
 
-	def __init__( self, puzzle, discriminant="" ):
+	def __init__( self, puzzle, params={} ):
 
 		self.puzzle = puzzle
-		self.name = __name__.split(".")[1] + str(discriminant)
+		self.name = __name__.split(".")[1] + str(params)
 
 		self.heuristic_patterns = []
 		self.conflicts_indexes_allowed = [ 220, 223, 227, 232, 237, 243, 246, 250, 252, 254 ]
@@ -19,7 +19,7 @@ class JB470Spiral( scenario.Scenario ):
 		#self.timelimit = 15 # Minutes
 		self.timelimit = 5*60 # Minutes
 
-		scenario.Scenario.__init__(self)
+		scenario.Scenario.__init__(self, params=params)
 
 	def __str__(self):
 		return self.name + " Seed="+str(self.seed) + " Patterns:" + str(self.heuristic_patterns) + " Conflicts:" + str(self.conflicts_indexes_allowed)

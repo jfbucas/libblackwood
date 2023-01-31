@@ -7,7 +7,7 @@ class Tomy_EternityII_Blackwood( puzzle.Puzzle ):
 	name = "tomy/pieces.txt.EternityII_blackwood.js"
 	aliases = [ "JB", "jb", "blackwood", "b" ]
 
-	def __init__( self, extra_fixed=[] ):
+	def __init__( self, params={} ):
 
 		self.motifs_order = "jblackwood"
 		self.upside_down = False
@@ -281,9 +281,6 @@ class Tomy_EternityII_Blackwood( puzzle.Puzzle ):
 			[ 138,135,2 ], # as the last one, so that it is on masks[2]
 		]
 
-		# Add extra fixed
-		self.extra_fixed = extra_fixed
-
-		puzzle.Puzzle.__init__( self )
+		puzzle.Puzzle.__init__( self, params=params )
 
 puzzle.global_list.append(Tomy_EternityII_Blackwood)

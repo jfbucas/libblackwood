@@ -8,7 +8,7 @@ for x in os.listdir("scenarios"):
 		exec("from . import "+x.replace(".py", ""))
 
 
-def loadScenario( puzzle, name = "JB470", discriminant="" ):
+def loadScenario( puzzle, name="JB470", params={} ):
 
 	if os.environ.get('SCENARIO') != None:
 		name = os.environ.get('SCENARIO')
@@ -19,7 +19,7 @@ def loadScenario( puzzle, name = "JB470", discriminant="" ):
 	# Try to match the name with one of the classes imported
 	for x in scenario.global_list:
 		if name.lower() == x.__name__.lower():
-			return x(puzzle, discriminant)
+			return x(puzzle, params=params)
 
 	puzzle.error( "ERROR: Unknown scenario: '"+ name +"'")
 	exit()

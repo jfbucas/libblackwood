@@ -7,18 +7,27 @@ class Tomy_EternityII( puzzle.Puzzle ):
 	name = "EternityII"
 	aliases = [ "Tomy_EternityII", "EternityII", "E2" ] + [ "E2nc", "E2clueless", "E2noclue", "E2noclues" ] + [ "E2ncud", "E2cluelessupsidedown", "E2noclueud", "E2nocluesud" ]
 
-	def __init__( self, alias="", extra_fixed=[], with_clues=True, upside_down=False  ):
+	def __init__( self, params={} ):
 
-		if alias in [ "E2nc", "E2clueless", "E2noclue", "E2noclues" ] + [ "E2ncud", "E2cluelessupsidedown", "E2noclueud", "E2nocluesud" ]:
-			self.name = alias
-			with_clues = False
+		self.with_clues = True
+		self.upside_down = False
 
-		if alias in [ "E2ncud", "E2cluelessupsidedown", "E2noclueud", "E2nocluesud" ]:
-			self.name = alias
-			upside_down = True
+		if "alias" in params:
+			if params["alias"] in [ "E2nc", "E2clueless", "E2noclue", "E2noclues" ] + [ "E2ncud", "E2cluelessupsidedown", "E2noclueud", "E2nocluesud" ]:
+				self.name = params["alias"]
+				self.with_clues = False
+
+			if params["alias"] in [ "E2ncud", "E2cluelessupsidedown", "E2noclueud", "E2nocluesud" ]:
+				self.name = params["alias"]
+				self.upside_down = True
+		
+		if "with_clues" in params:
+			self.with_clues = params["with_clues"]
+
+		if "upside_down" in params:
+			self.upside_down = params["upside_down"]
 
 		self.motifs_order = "jef"
-		self.upside_down = upside_down
 
 		self.board_w = 16
 		self.board_h = 16
@@ -287,8 +296,8 @@ class Tomy_EternityII( puzzle.Puzzle ):
 
 		self.fixed = []
 
-		if not upside_down:
-			if with_clues:
+		if not self.upside_down:
+			if self.with_clues:
 				self.fixed.extend( [
 					[ 180,210,3 ],
 					[ 207,34,3 ],
@@ -301,7 +310,7 @@ class Tomy_EternityII( puzzle.Puzzle ):
 				[ 138,135,2 ],
 				] )
 		else:
-			if with_clues:
+			if self.with_clues:
 				self.fixed.extend( [
 					[ 180,45,1 ],
 					[ 207,221,1 ],
@@ -314,9 +323,6 @@ class Tomy_EternityII( puzzle.Puzzle ):
 				[ 138,120,0 ],
 				] )
 
-		# Add extra fixed
-		self.extra_fixed = extra_fixed
-
-		puzzle.Puzzle.__init__( self )
+		puzzle.Puzzle.__init__( self, params=params )
 
 puzzle.global_list.append(Tomy_EternityII)

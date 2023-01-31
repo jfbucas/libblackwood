@@ -8,10 +8,10 @@ import os
 class JB470Struct( scenario.Scenario ):
 	"""Assessing structure order's influence on performance"""
 
-	def __init__( self, puzzle, discriminant="" ):
+	def __init__( self, puzzle, params={} ):
 
 		self.puzzle = puzzle
-		self.name = __name__.split(".")[1] + str(discriminant)
+		self.name = __name__.split(".")[1] + str(params)
 
 		self.heuristic_patterns = [ [ 9, 12, 15 ] ]
 		self.conflicts_indexes_allowed = [ 197, 203, 210, 216, 221, 225, 229, 233, 236, 238 ] # + [ 240, 242, 244, 246, 248, 250 ]
@@ -22,7 +22,7 @@ class JB470Struct( scenario.Scenario ):
 		self.timelimit = 1 # Minutes
 		#self.timelimit = 10 # Minutes
 
-		scenario.Scenario.__init__(self)
+		scenario.Scenario.__init__(self, params=params)
 
 	def __str__(self):
 		return self.name + " Seed="+str(self.seed) + " Patterns:" + str(self.heuristic_patterns) + " Conflicts:" + str(self.conflicts_indexes_allowed)

@@ -6,7 +6,7 @@ class Brendan_08x08( puzzle.Puzzle ):
 	name = "brendan/pieces_08x08.txt.js"
 	aliases = [ "Brendan_08x08", "B8x8", "8x8" ]
 
-	def __init__( self, extra_fixed=[] ):
+	def __init__( self, params={} ):
 
 		self.motifs_order = "jef"
 		self.upside_down = False
@@ -90,9 +90,6 @@ class Brendan_08x08( puzzle.Puzzle ):
 			]
 		"""
 	
-		# Add extra fixed
-		self.extra_fixed = extra_fixed
-
 
 		#
 		# FORCE_COMPILE=1 SCENARIO=allsolutions PUZZLE=8x8 python3 ./libblackwood.py  --simple
@@ -154,7 +151,7 @@ class Brendan_08x08( puzzle.Puzzle ):
 			"https://e2.bucas.name/#puzzle=brendan_pieces_08x08.txt&board_w=8&board_h=8&board_pieces=003015026028007012010002017033045059053054061013006030048058040031051008023032052060037034029005019057050046043047038014025055064041044049056011024063042035062039036027001018016022009021020004&board_edges=accaacecadkcadldabgdablbabkbaacbcjbaegkjkkfglhjkghihlhghkllhcablbfdakgeffiggjlhiieklgfjelihfbabidfcaeghfgilghkkikeikjehehefebabeckdahigklfjikfhfifffhgjffejgbacedjdagihjjliihkelfflkjggfjkhgcabkdjbahljjigelehfgljihgiejhleibadlbcaajcacedacfbadidabedadecaddaac&motifs_order=jef",
 		]
 
-		puzzle.Puzzle.__init__( self )
+		puzzle.Puzzle.__init__( self, params=params )
 
 puzzle.global_list.append(Brendan_08x08)
 

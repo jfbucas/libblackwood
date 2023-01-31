@@ -156,6 +156,7 @@ class Puzzle( defs.Defs ):
 	"""Defines properties for a puzzle"""
 
 	name = ""
+	params = {}
 
 	board_w = 0
 	board_h = 0
@@ -195,10 +196,14 @@ class Puzzle( defs.Defs ):
 	stats = None
 
 	# ----- Init the puzzle
-	def __init__( self, scenario_name="JB470", extra_fixed=[] ):
+	def __init__( self, scenario_name="JB470", params={} ):
 		"""
 		Initialize
 		"""
+
+		# Add extra fixed pieces from the parameters
+		if "extra_fixed" in params:
+			self.extra_fixed = params["extra_fixed"]
 
 		defs.Defs.__init__( self )
 
@@ -215,7 +220,7 @@ class Puzzle( defs.Defs ):
 
 		# Because Fixed pieces can be defined in the scenario
 		# it has to be placed before SpacesType
-		self.scenario = scenarios.loadScenario(self, scenario_name)
+		self.scenario = scenarios.loadScenario(self, scenario_name, params=params)
 
 		self.initStaticSpacesType()
 		self.initStaticValidPieces()

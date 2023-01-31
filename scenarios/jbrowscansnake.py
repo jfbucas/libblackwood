@@ -3,10 +3,10 @@ import scenario
 class JBRowScanSnake( scenario.Scenario ):
 	"""Joshua Blackwood Heuristics with a simple rowscan in the form of a snake Scenario"""
 
-	def __init__( self, puzzle, discriminant="" ):
+	def __init__( self, puzzle, params={} ):
 
 		self.puzzle = puzzle
-		self.name = __name__.split(".")[1] + str(discriminant)
+		self.name = __name__.split(".")[1] + str(params)
 
 		self.heuristic_patterns = [ [ 9, 12, 15 ] ]
 		self.conflicts_indexes_allowed = []
@@ -15,7 +15,7 @@ class JBRowScanSnake( scenario.Scenario ):
 
 		self.timelimit = 5 # Minutes
 
-		scenario.Scenario.__init__(self)
+		scenario.Scenario.__init__(self, params=params)
 
 	def __str__(self):
 		return self.name + " Seed="+str(self.seed) + " Patterns:" + str(self.heuristic_patterns)

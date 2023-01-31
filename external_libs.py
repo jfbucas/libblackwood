@@ -83,6 +83,10 @@ class External_Libs( defs.Defs ):
 			if os.environ.get('FORCECOMPILE') != None:
 				self.force_compile = True
 
+			if os.environ.get('ARCH') != None:
+				self.ARCH = os.environ.get('ARCH')
+				print('[ Env ARCH found :', self.ARCH, ' ]')
+
 			if self.force_compile:
 				if os.environ.get('QUIET') == None:
 					print('[ Env FORCE_COMPILE found :', self.force_compile, ' ]')
@@ -237,6 +241,7 @@ class External_Libs( defs.Defs ):
 	def getLD( self ):
 
 		#LD_CMD = "clang"
+		LD_CMD = "gcc"
 		
 		if self.ARCH == "":
 			LD_CMD = "gcc"

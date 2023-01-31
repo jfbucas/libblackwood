@@ -53,13 +53,15 @@ class Blackwood_Process( Process ):
 	queue_parent_child = None
 	queue_child_parent = None
 	myComm = None
+	loop_count_limit = 1<<32
 
-	def __init__(self, puzzle, number=0, queue_parent_child=None, queue_child_parent=None): 
+	def __init__(self, puzzle, number=0, queue_parent_child=None, queue_child_parent=None, loop_count_limit=1<<32): 
 		Process.__init__(self)
 		self.puzzle = puzzle
 		self.number = number
 		self.queue_parent_child = queue_parent_child
 		self.queue_child_parent = queue_child_parent
+		self.loop_count_limit = loop_count_limit
 
 
 	def run(self):
@@ -80,10 +82,9 @@ class Blackwood_Process( Process ):
 		myLCA = thread_lca.Leave_CPU_Alone_Thread( self.blackwood, period=5, desktop=self.puzzle.DESKTOP )
 		myLCA.start()
 
-		loop_count_limit = 1<<32
 		if os.environ.get('LOOPCOUNTLIMIT') != None:
-			loop_count_limit=int(os.environ.get('LOOPCOUNTLIMIT'))
-			self.puzzle.info("Limiting the number of loops to "+str(loop_count_limit))
+			self.loop_count_limit=int(os.environ.get('LOOPCOUNTLIMIT'))
+			self.puzzle.info("Limiting the number of loops to "+str(self.loop_count_limit))
 
 		thread_output_filename = ctypes.c_char_p(("generated/"+self.puzzle.HOSTNAME+"/progress_thread_"+'{:0>4d}'.format(self.number)).encode('utf-8'))
 
@@ -96,7 +97,7 @@ class Blackwood_Process( Process ):
 		self.queue_child_parent.put("running")
 
 		loop_count = 0
-		while not self.blackwood.LibExt.getTTF( self.blackwood.cb ) and (loop_count < loop_count_limit):
+		while not self.blackwood.LibExt.getTTF( self.blackwood.cb ) and (loop_count < self.loop_count_limit):
 			self.blackwood.LibExtWrapper( self.blackwood.getFunctionNameFromSignature(l), args, timeit=True )
 			if not self.blackwood.LibExt.getTTF( self.blackwood.cb ):
 				self.blackwood.copy_new_arrays_to_cb()

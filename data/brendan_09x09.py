@@ -6,7 +6,7 @@ class Brendan_09x09( puzzle.Puzzle ):
 	name = "brendan/pieces_09x09.txt.js"
 	aliases = [ "Brendan_09x09", "B9x9", "9x9" ]
 
-	def __init__( self, extra_fixed=[] ):
+	def __init__( self, params={} ):
 
 		self.motifs_order = "jef"
 		self.upside_down = False
@@ -105,10 +105,7 @@ class Brendan_09x09( puzzle.Puzzle ):
 			[ 0,0,1 ], # we fix a corner
 		]
 
-		# Add extra fixed
-		self.extra_fixed = extra_fixed
-
-		puzzle.Puzzle.__init__( self )
+		puzzle.Puzzle.__init__( self, params=params )
 
 
 puzzle.global_list.append(Brendan_09x09)

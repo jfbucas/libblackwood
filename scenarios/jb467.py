@@ -3,20 +3,30 @@ import scenario
 class JB467( scenario.Scenario ):
 	"""The Joshua Blackwood 467 Scenario"""
 
-	def __init__( self, puzzle, discriminant="" ):
+	def __init__( self, puzzle, params={} ):
 
 		self.puzzle = puzzle
-		self.name = __name__.split(".")[1] + str(discriminant)
+		self.name = __name__.split(".")[1] + str(params)
+
+		"""for a in self.puzzle.static_colors_border_count: 
+			for b in self.puzzle.static_colors_center_count: 
+				if a != b:
+					for c in self.puzzle.static_colors_center_count: 
+						if b != c:
+							print(a, b, c)
+		exit()
+		"""
 
 		self.heuristic_patterns = [ [ 9, 12, 15 ] ]
-		self.conflicts_indexes_allowed = [ 201, 206, 211, 216, 221, 225, 229, 233, 237, 239, 241, 243, 245 ]
+		#self.conflicts_indexes_allowed = [ 201, 206, 211, 216, 221, 225, 229, 233, 237, 239, 241, 243, 245 ]
+		self.conflicts_indexes_allowed = [ 200, 205, 210, 215, 220, 225, 230, 235, 240, 241, 242, 243, 244 ]
 		self.heuristic_stats16 = False
 		self.depth_first_notification = 254
 		self.use_adaptative_filter_depth = True #False
 
 		self.timelimit = 5 # Minutes
 
-		scenario.Scenario.__init__(self)
+		scenario.Scenario.__init__(self, params=params)
 
 	def __str__(self):
 		return self.name + " Seed="+str(self.seed) + " Patterns:" + str(self.heuristic_patterns) + " Conflicts:" + str(self.conflicts_indexes_allowed)

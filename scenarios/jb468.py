@@ -3,10 +3,10 @@ import scenario
 class JB468( scenario.Scenario ):
 	"""The Joshua Blackwood 468 Scenario"""
 
-	def __init__( self, puzzle, discriminant="" ):
+	def __init__( self, puzzle, params={} ):
 
 		self.puzzle = puzzle
-		self.name = __name__.split(".")[1] + str(discriminant)
+		self.name = __name__.split(".")[1] + str(params)
 
 		self.heuristic_patterns = [ [ 9, 12, 15 ] ]
 		self.conflicts_indexes_allowed = [ 201, 206, 211, 216, 221, 225, 229, 233, 237, 239, 241, 243 ]
@@ -15,7 +15,7 @@ class JB468( scenario.Scenario ):
 
 		self.timelimit = 80 # Minutes
 
-		scenario.Scenario.__init__(self)
+		scenario.Scenario.__init__(self, params=params)
 
 	def __str__(self):
 		return self.name + " Seed="+str(self.seed) + " Patterns:" + str(self.heuristic_patterns) + " Conflicts:" + str(self.conflicts_indexes_allowed)

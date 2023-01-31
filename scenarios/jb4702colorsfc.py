@@ -4,10 +4,10 @@ import random
 class JB4702ColorsFC( scenario.Scenario ):
 	"""The Joshua Blackwood 470 Scenario with only 2 colors and fixed corner"""
 
-	def __init__( self, puzzle, discriminant="" ):
+	def __init__( self, puzzle, params={} ):
 
 		self.puzzle = puzzle
-		self.name = __name__.split(".")[1] + str(discriminant)
+		self.name = __name__.split(".")[1] + str(params)
 
 		self.heuristic_patterns = [ [ 9, 15 ] ]
 		#self.heuristic_patterns = [ [ 3, 21 ] ] # XXX
@@ -38,7 +38,7 @@ class JB4702ColorsFC( scenario.Scenario ):
 			#self.puzzle.fixed.extend( [ [ 1, 240, 2 ] ] )  # Corner
 			self.puzzle.fixed.extend( [ [ 1, 255, 1 ] ] )  # Left Up Corner
 
-		scenario.Scenario.__init__(self)
+		scenario.Scenario.__init__(self, params=params)
 
 	def __str__(self):
 		return self.name + " Seed="+str(self.seed) + " Patterns:" + str(self.heuristic_patterns) + " Conflicts:" + str(self.conflicts_indexes_allowed)

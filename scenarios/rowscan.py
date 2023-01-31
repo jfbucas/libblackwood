@@ -3,10 +3,10 @@ import scenario
 class RowScan( scenario.Scenario ):
 	"""The Heuristics with a simple rowscan Scenario"""
 
-	def __init__( self, puzzle, discriminant="" ):
+	def __init__( self, puzzle, params={} ):
 
 		self.puzzle = puzzle
-		self.name = __name__.split(".")[1] + str(discriminant)
+		self.name = __name__.split(".")[1] + str(params)
 
 		self.heuristic_patterns = [ ]
 		self.conflicts_indexes_allowed = []
@@ -15,7 +15,7 @@ class RowScan( scenario.Scenario ):
 
 		self.timelimit = 800 # Minutes
 
-		scenario.Scenario.__init__(self)
+		scenario.Scenario.__init__(self, params=params)
 
 	def __str__(self):
 		return self.name + " Seed="+str(self.seed)

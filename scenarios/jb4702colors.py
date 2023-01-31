@@ -3,10 +3,10 @@ import scenario
 class JB4702Colors( scenario.Scenario ):
 	"""The Joshua Blackwood 470 Scenario with only 2 colors"""
 
-	def __init__( self, puzzle, discriminant="" ):
+	def __init__( self, puzzle, params={} ):
 
 		self.puzzle = puzzle
-		self.name = __name__.split(".")[1] + str(discriminant)
+		self.name = __name__.split(".")[1] + str(params)
 
 		self.heuristic_patterns = [ [ 9, 15 ] ]
 		self.conflicts_indexes_allowed = [ 197, 203, 210, 216, 221, 225, 229, 233, 236, 238 ]
@@ -18,7 +18,7 @@ class JB4702Colors( scenario.Scenario ):
 
 		self.timelimit = 45 # Minutes
 
-		scenario.Scenario.__init__(self)
+		scenario.Scenario.__init__(self, params=params)
 
 	def __str__(self):
 		return self.name + " Seed="+str(self.seed) + " Patterns:" + str(self.heuristic_patterns) + " Conflicts:" + str(self.conflicts_indexes_allowed)

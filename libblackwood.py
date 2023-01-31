@@ -28,15 +28,16 @@ import external_libs
 class LibBlackwood( external_libs.External_Libs ):
 	"""Blackwood generation library"""
 
-	cb = None
+	def __init__( self, puzzle, extra_name="", skipcompile=False ):
+		self.cb = None
 
-	MACROS_NAMES_A = [ "utils", "generate", "main" ]
-	MACROS_NAMES_B = [ ]
+		self.MACROS_NAMES_A = [ "utils", "generate", "main" ]
+		self.MACROS_NAMES_B = [ ]
 
-	DEPTH_COLORS = {}
+		self.DEPTH_COLORS = {}
 
-	COMMANDS = {}
-	COMMANDS_LIST = [
+		self.COMMANDS = {}
+		self.COMMANDS_LIST = [
 				'CLEAR_SCREEN',
 				'SHOW_TITLE',
 				'SHOW_HEARTBEAT',
@@ -57,7 +58,7 @@ class LibBlackwood( external_libs.External_Libs ):
 			]
 
 
-	FLAGS = [
+		self.FLAGS = [
 			[ "Time to finish",		"time_to_finish",		"TTF" ],
 			[ "Leave CPU alone",		"leave_cpu_alone",		"LCA" ],
 			[ "Pause",			"pause",			"Pause" ],
@@ -70,22 +71,21 @@ class LibBlackwood( external_libs.External_Libs ):
 			[ "Show help",			"help",				"Help" ],
 			[ "Max Depth Seen",		"best_depth_seen",		"BestDepthSeen" ],
 			[ "Seed",			"seed",				"Seed" ],
-		]
+			]
 
-	STATS =	[
+		self.STATS =	[
 			("StatsNodesCount", "stats_nodes_count", "nodes", "STATS_NODES_COUNT"),
 			("StatsPiecesTriedCount", "stats_pieces_tried_count", "pieces tried", "STATS_PIECES_TRIED_COUNT"),
 			("StatsPiecesUsedCount", "stats_pieces_used_count", "pieces already in use", "STATS_PIECES_USED_COUNT"),
 			("StatsHeuristicPatternsBreakCount", "stats_heuristic_patterns_break_count", "heuristic patterns breaks", "STATS_HEURISTIC_PATTERNS_BREAK_COUNT"),
 			("StatsHeuristicConflictsBreakCount", "stats_heuristic_conflicts_break_count", "heuristic conflicts breaks", "STATS_HEURISTIC_CONFLICTS_BREAK_COUNT"),
 			("StatsAdaptativeFilterCount", "stats_adaptative_filter_count", "adaptative filters", "STATS_ADAPTATIVE_FILTER_COUNT"),
-		]
+			]
 
-	ARRAYS = STATS + [
+		self.ARRAYS = self.STATS + [
 			("NodesHeartbeat", "nodes_heartbeat", "heartbeats", "NODES_HEARTBEAT"),
-		]
+			]
 
-	def __init__( self, puzzle, extra_name="", skipcompile=False ):
 
 		self.name = "libblackwood"
 
@@ -1460,7 +1460,8 @@ class LibBlackwood( external_libs.External_Libs ):
 					if ("_conflicts" in index_piece_name):
 						cumul_local = " + current_piece.info.heuristic_conflicts"
 
-					output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = "+cumul+cumul_local+";"))
+					if cumul+cumul_local != "":
+						output.append( (3, "cumulative_heuristic_conflicts_count["+d+"] = "+cumul+cumul_local+";"))
 			
 			output.append( (3, "goto depth"+str(depth+1)+";"))
 			output.append( (2, "}"))
@@ -1736,6 +1737,7 @@ if __name__ == "__main__":
 				if p != None:
 					lib = LibBlackwood( p )
 					lib.simpleRun()
+				
 				
 	if not found:
 		p = data.loadPuzzle()

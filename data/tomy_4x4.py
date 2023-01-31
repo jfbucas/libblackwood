@@ -7,7 +7,7 @@ class Tomy_4x4( puzzle.Puzzle ):
 	name = "tomy/pieces.txt.4x4.js"
 	aliases = [ "Tomy_4x4", "T4x4", "4x4" ]
 
-	def __init__( self, extra_fixed=[] ):
+	def __init__( self, params={} ):
 
 		self.motifs_order = "jef"
 		self.upside_down = False
@@ -34,10 +34,7 @@ class Tomy_4x4( puzzle.Puzzle ):
 			[4,2,3,0]
 		]
 	
-		# Add extra fixed
-		self.extra_fixed = extra_fixed
-
-		puzzle.Puzzle.__init__( self )
+		puzzle.Puzzle.__init__( self, params=params )
 
 
 puzzle.global_list.append(Tomy_4x4)

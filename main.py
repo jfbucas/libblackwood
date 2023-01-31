@@ -55,13 +55,8 @@ def getTTF():
 			return True
 	return False
 
-# ----- Standalone machine
-def standalone():
-
-	# Compile the library - this one is not actually executed
-	blackwood = libblackwood.LibBlackwood( puzzle, skipcompile=False )
-
-	# Create the threads
+# ----- get the number of CORES
+def getCores():
 	CORES=os.cpu_count()
 	if os.environ.get('CPUS') != None:
 		CORES=int(os.environ.get('CPUS'))
@@ -75,7 +70,16 @@ def standalone():
 	if CORES <= 0:
 		CORES=1
 
+	return CORES
 
+# ----- Standalone machine
+def standalone():
+
+	# Compile the library - this one is not actually executed
+	blackwood = libblackwood.LibBlackwood( puzzle, skipcompile=False )
+
+	# Create the queues/threads
+	CORES=getCores()
 	for c in range(CORES):
 		q_p_c = Queue() # Queue Parent-Child
 		q_c_p = Queue() # Queue Child-Parent
@@ -107,8 +111,64 @@ def standalone():
 	# Tell all processes to finish
 	standalone_blackwood_processes_command( "exit" )
 
+# ----- Statistics
+def statistics():
 
-# ----- Parameters
+	# Iterate through all combinations of 1 border + 2 center patterns
+	hp_to_test = []
+	
+	for a in puzzle.static_colors_border_count: 
+		for b in puzzle.static_colors_center_count: 
+			if a != b:
+				for c in puzzle.static_colors_center_count: 
+					if b != c:
+						hp_to_test.append( (a, b, c) )
+
+	print("Combination of heuristic patterns to try", len(hp_to_test))
+	
+	CORES=getCores()
+
+	for hp in hp_to_test:
+		p = data.loadPuzzle(params={ "heuristic_patterns": hp, "timelimit": 100 })
+		# Compile the library - this one is not actually executed
+		blackwood = libblackwood.LibBlackwood( p, skipcompile=False )
+
+		# Create the queues/threads
+		CORES=getCores()
+		for c in range(CORES):
+			q_p_c = Queue() # Queue Parent-Child
+			q_c_p = Queue() # Queue Child-Parent
+			gt = process_blackwood.Blackwood_Process( p, c, q_p_c, q_c_p, loop_count_limit=1 )
+			gt.status = "init"
+			blackwood_processes.append( gt )
+
+		# Start the input thread
+		myInput = thread_input.Input_Thread( standalone_blackwood_processes_command, blackwood, 0.1, stdin_fn=sys.stdin.fileno() )
+		myInput.start()
+
+
+		# Start the parallel jobs
+		print("x-]"+puzzle.XTermInfo+"  Starting "+str(CORES)+" thread"+ ("s" if CORES > 1 else "")+"  "+puzzle.XTermNormal+"[-x")
+		for gt in blackwood_processes:
+			print(".", end="", flush=True)
+			gt.start()
+		print()
+
+		# Wait for Time To Finish flag
+		while not getTTF():
+			standalone_blackwood_processes_status()
+			standalone_blackwood_processes_command( [ "heartbeat", "check_commands" ] )
+			time.sleep(1)
+		
+		myInput.stop_input_thread = True	
+
+		# Tell all processes to finish
+		standalone_blackwood_processes_command( "exit" )
+
+
+
+
+# ----- Run
 def run( role_id = "" ):
 
 	# timer
@@ -123,9 +183,12 @@ def run( role_id = "" ):
 
 	if role_id == "standalone":
 		standalone()
+	elif role_id == "stats":
+		statistics()
 	elif role_id == "help":
 		print( "+ Roles")
 		print( " [--standalone]\t\t\ttake on standalone mode (default)")
+		print( " [--stats]\t\t\ttry to get some stats")
 		print( )
 	else:
 		print( "ERROR: unknown Role:", role_id )
@@ -146,6 +209,8 @@ if __name__ == "__main__":
 		for a in sys.argv[1:]:
 			if a.startswith("--standalone"):
 				role_id = "standalone"
+			elif a.startswith("--stats"):
+				role_id = "stats"
 			elif a.startswith("--nop"):
 				role_id = "nop"
 			elif a.startswith("-h") or a.startswith("--help"):
@@ -155,7 +220,7 @@ if __name__ == "__main__":
 
 	# -------------------------------------------
 	# Validate parameters
-
+	pass
 	
 	# -------------------------------------------
 	# Do the thing
