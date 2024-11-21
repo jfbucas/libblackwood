@@ -1,0 +1,6 @@
+- set a node count limit
+- count how many times 2 colors have been fully placed within the constraints
+- stop once we reach the end of heuristic_patterns_count info
+- client return results as JSON
+- graph all results
+- client scenario to take JSON as parameters
